@@ -48,6 +48,59 @@ Audits your project for UX gaps, broken workflows, missing states, confusing ter
 
 **Usage:** `/product-planner`, `/product-planner refine`, or `/product-planner refine 5h`
 
+### [get-it-right](skills/get-it-right/SKILL.md)
+
+Re-evaluate and re-architect the current branch's work as if starting from scratch. Reduces complexity, consolidates fragmentation, auto-implements improvements, and outputs a testing playbook.
+
+**What it does:**
+
+1. Identifies the scope of work on the current branch (commits, changed files, linked issue)
+2. Deep-reads every changed and related file to understand context and dependencies
+3. Performs retrospective analysis: what should have been done differently, where complexity is unnecessary, where fragmentation exists
+4. Plans and auto-implements re-architecture without committing
+5. Runs format, lint, and tests to validate
+6. Outputs a brief testing playbook for manual validation
+
+**Usage:** Type `/get-it-right` in Claude Code when you want a fresh look at your current branch's approach.
+
+**Notes:** All changes are left unstaged for your review. The skill preserves existing behavior while reducing complexity and file count.
+
+### [pr](skills/pr/SKILL.md)
+
+Format, lint, test, commit, push, and create a pull request. The single "I'm done" command.
+
+**What it does:**
+
+1. Verifies you're not on main/master
+2. Runs format and lint (skips if already passing in this session)
+3. Runs tests (skips if already passing in this session)
+4. Commits any auto-fixed formatting changes
+5. Pushes to remote
+6. Extracts issue number from branch name (e.g., `fix/224-bug` → `#224`)
+7. Creates PR with summary, changes, testing notes, and "Closes #NNN"
+
+**Usage:** Type `/pr` in Claude Code when your feature branch is ready.
+
+**Notes:** If format/lint or tests fail, the skill stops and reports errors. If a PR already exists, it shows the URL and confirms the update.
+
+### [ship](skills/ship/SKILL.md)
+
+Commit, push, create/merge PR, sync local main, and delete the branch. The complete "I'm done with this branch" workflow.
+
+**What it does:**
+
+1. Reviews uncommitted changes and prompts for confirmation if anything looks suspect
+2. Commits with a descriptive message based on the diff
+3. Pushes to origin
+4. Creates a PR if none exists, or updates the existing one
+5. Merges the PR
+6. Syncs local main with `git pull`
+7. Deletes the merged branch locally and remotely (if not auto-deleted)
+
+**Usage:** Type `/ship` in Claude Code when your branch is complete and ready to merge.
+
+**Notes:** For forked repos, PRs target your fork (origin), never upstream. Only works on feature branches, not main.
+
 ### [convert-worktree](skills/convert-worktree/SKILL.md)
 
 Converts a git worktree into a regular local branch. Rebases onto the latest base branch, runs project cleanup, removes the worktree, and checks out the branch in the main workspace.
