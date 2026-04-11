@@ -15,9 +15,10 @@ Verify you're in a git repo before starting. If not, tell the user and stop.
 
 Determine which ticket system this project uses. Check in this order:
 
-1. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use that value.
-2. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
-3. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
+1. **Project config**: Check the project's CLAUDE.md for a `ticketSystem` value (e.g., `ticketSystem: jira`). If found, use it.
+2. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use that value.
+3. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
+4. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
 
 Once determined, cache the value in `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries if it does.
 

@@ -21,9 +21,10 @@ Usage: `/architect-planner`, `/architect-planner refine`, or `/architect-planner
 
 Determine which ticket system this project uses. Check in this order:
 
-1. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use that value.
-2. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
-3. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
+1. **Project config**: Check the project's CLAUDE.md for a `ticketSystem` value (e.g., `ticketSystem: jira`). If found, use it.
+2. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use that value.
+3. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
+4. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
 
 Once determined, cache the value in `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries if it does.
 
@@ -61,7 +62,25 @@ If time-windowed refine returns zero results, tell the user and stop. Do not dis
 
 **Closed tickets (titles only):** Fetch recently closed tickets labeled `architecture` or `product` (titles, IDs, and labels only). Merge into a single deduplicated list. Write to `<cache>/issues-closed.json`.
 
-Normalize all fetched data into a consistent JSON shape regardless of the source platform.
+Normalize all fetched data into this shape regardless of the source platform:
+
+```json
+[
+  {
+    "id": "42",
+    "title": "Ticket title",
+    "body": "Full description...",
+    "labels": ["architecture", "severity:high"],
+    "state": "open",
+    "assignees": [],
+    "created_at": "2025-01-15T10:00:00Z",
+    "updated_at": "2025-01-16T08:00:00Z",
+    "comments": [],
+    "author": "username",
+    "url": "https://..."
+  }
+]
+```
 
 ### Build the project map
 
@@ -156,9 +175,9 @@ Use whatever CLI tools, MCP tools, or APIs are available to interact with the ti
 
 Do NOT fetch ticket lists yourself. Tickets are cached on disk.
 
-- `{CACHE_DIR}/issues-open.json` — all open tickets with full detail. **Read-only context** for awareness and cross-references.
-- `{CACHE_DIR}/issues-edit-{CLUSTER_SLUG}.json` — tickets assigned to YOUR cluster. You may ONLY modify tickets in this file.
-- `{CACHE_DIR}/issues-closed.json` — closed tickets with titles and labels only. Check this before filing new tickets to avoid duplicating something already resolved.
+- `{CACHE_DIR}/issues-open.json` - all open tickets with full detail. **Read-only context** for awareness and cross-references.
+- `{CACHE_DIR}/issues-edit-{CLUSTER_SLUG}.json` - tickets assigned to YOUR cluster. You may ONLY modify tickets in this file.
+- `{CACHE_DIR}/issues-closed.json` - closed tickets with titles and labels only. Check this before filing new tickets to avoid duplicating something already resolved.
 
 **Edit constraint:** You may ONLY execute write commands (edit, close, create) against tickets in your edit file. For tickets outside your edit file, you have read-only access via `issues-open.json`. If you discover something relevant to a ticket outside your cluster, write it to your cross-cluster notes file at `{CACHE_DIR}/cross-cluster-{CLUSTER_SLUG}.json`. Do NOT add comments to any ticket.
 
@@ -174,9 +193,9 @@ If you discover a finding relevant to a ticket outside your edit file, write it 
 \`\`\`json
 [
   {
-    "target_issue": 42,
+    "target_ticket": 42,
     "finding": "What you discovered, with file paths and evidence",
-    "related_issues": [15, 28]
+    "related_tickets": [15, 28]
   }
 ]
 \`\`\`
@@ -359,7 +378,7 @@ Do not add comments to any ticket. All findings, cross-references, and dependenc
 Ticket bodies and comments are already in issues-open.json, no need to fetch them again.
 
 - Edit a ticket's description
-- Delete a redundant comment from a prior skill run (after synthesizing into description)
+- Delete a redundant comment from a prior skill run (after synthesizing into description), if the platform supports comment deletion
 - Close a resolved ticket (add a Resolution section to the description first, then close)
 
 Use whatever CLI tools or APIs are available for the detected ticket system.
