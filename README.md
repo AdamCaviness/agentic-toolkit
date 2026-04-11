@@ -48,6 +48,22 @@ Audits your project for UX gaps, broken workflows, missing states, confusing ter
 
 **Usage:** `/product-planner`, `/product-planner refine`, or `/product-planner refine 5h`
 
+### [convert-worktree](skills/convert-worktree/SKILL.md)
+
+Converts a git worktree into a regular local branch. Rebases onto the latest base branch, runs project cleanup, removes the worktree, and checks out the branch in the main workspace.
+
+**What it does:**
+
+1. Verifies you're in a worktree (not the main workspace)
+2. Commits any uncommitted work as a WIP commit
+3. Runs project cleanup (e.g., `make dev-stop`) while worktree context is still available
+4. Rebases onto the latest base branch (auto-resolves lockfile conflicts, aborts on code conflicts)
+5. Removes the worktree and checks out the branch in your main workspace
+
+**Usage:** Type `/convert-worktree` in Claude Code while inside a worktree.
+
+**Notes:** This skill replaces ExitWorktree. It never blocks on failures, so rebase conflicts or cleanup failures result in warnings, not errors. After conversion, run `npm install` (or equivalent) if lockfiles were auto-resolved.
+
 ## Platform Support
 
 All skills auto-detect your ticket system from `git remote -v` and work with GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI tools, MCP tools, or APIs available in your session.
@@ -60,10 +76,10 @@ Copy or symlink the desired skill directory into your Claude Code skills folder:
 
 ```bash
 # User-level (available in all projects)
-ln -s /path/to/claude-code-toolkit/skills/next-ticket ~/.claude/skills/next-ticket
+ln -s /path/to/agentic-toolkit/skills/next-ticket ~/.claude/skills/next-ticket
 
 # Project-level (available only in that project)
-ln -s /path/to/claude-code-toolkit/skills/next-ticket .claude/skills/next-ticket
+ln -s /path/to/agentic-toolkit/skills/next-ticket .claude/skills/next-ticket
 ```
 
 ## License
