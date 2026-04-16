@@ -1,6 +1,6 @@
 ---
 name: convert-worktree
-description: Convert a git worktree into a local branch — rebase onto latest main, clean up project resources, remove worktree, checkout branch in main workspace. Use when finishing work in a worktree.
+description: Convert a git worktree into a local branch. Rebase onto latest main, clean up project resources, remove worktree, checkout branch in main workspace. Use when finishing work in a worktree.
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Convert a git worktree into a regular local branch. Rebases onto the latest base branch, runs project cleanup, removes the worktree, and checks out the branch in the main workspace.
 
-This skill replaces ExitWorktree — do not call ExitWorktree after this skill runs.
+This skill replaces ExitWorktree. Do not call ExitWorktree after this skill runs.
 
 ## Steps
 
@@ -28,7 +28,7 @@ fi
 # Confirm not detached HEAD
 BRANCH=$(git branch --show-current)
 if [ -z "$BRANCH" ]; then
-  # FAIL: "Detached HEAD — nothing to convert. Checkout a branch first."
+  # FAIL: "Detached HEAD. Nothing to convert. Checkout a branch first."
 fi
 
 WORKTREE_PATH=$(pwd)
@@ -138,5 +138,5 @@ Branch <BRANCH> checked out in <MAIN_WORKTREE>
 - **Never push, create PRs, delete branches, or merge.** Those are separate user decisions.
 - **Cleanup before rebase.** Project cleanup needs worktree context (variables, paths). Rebase happens after.
 - **Always use `git add -A` for WIP commits.** New untracked files are common in worktrees. `.gitignore` handles exclusions.
-- **Detect the base branch dynamically.** Don't hardcode `main` — check `git symbolic-ref refs/remotes/origin/HEAD`, fall back to `main`, then `master`.
+- **Detect the base branch dynamically.** Don't hardcode `main`. Check `git symbolic-ref refs/remotes/origin/HEAD`, fall back to `main`, then `master`.
 - If on main/master or not in a worktree, warn and stop.

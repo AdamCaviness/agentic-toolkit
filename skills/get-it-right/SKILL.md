@@ -1,6 +1,6 @@
 ---
 name: get-it-right
-description: Use when work on a branch is complete or in-progress and you want to re-evaluate the approach from scratch — performs retrospective analysis, re-architects to reduce complexity and fragmentation, auto-implements without committing, and outputs a brief testing playbook for validation
+description: Use when work on a branch is complete or in-progress and you want to re-evaluate the approach from scratch. Performs retrospective analysis, re-architects to reduce complexity and fragmentation, auto-implements without committing, and outputs a brief testing playbook for validation.
 ---
 
 # Get It Right
@@ -24,14 +24,14 @@ digraph get_it_right {
 ### 1. Identify Scope
 
 Determine what work is being done on the current branch:
-- `git log main..HEAD --oneline` — all commits on this branch
-- `git diff main...HEAD --stat` — all changed files
+- `git log main..HEAD --oneline`, all commits on this branch
+- `git diff main...HEAD --stat`, all changed files
 - If issue number is in branch name, read the GitHub issue for original intent
 
 ### 2. Deep-Read Current Implementation
 
 Read every changed and related file in full (not just diffs):
-- `git diff main...HEAD` — the full diff
+- `git diff main...HEAD`, the full diff
 - Read each changed file end-to-end to understand surrounding context
 - Trace dependencies: what else calls, imports, or is affected by these files?
 - Map the architecture: where does logic live, how does data flow?
@@ -64,14 +64,14 @@ Execute the plan without user interaction:
 - Run format and lint (check CLAUDE.md for project commands)
 - Run tests (check CLAUDE.md for project test commands)
 - Fix any failures from format/lint/tests
-- **Do NOT commit** — leave all changes unstaged for user review
+- **Do NOT commit.** Leave all changes unstaged for user review.
 
 ### 6. Output Testing Playbook
 
 After implementation, output a brief playbook the user follows in the running app:
 - Just the key scenarios to validate: happy path, primary edge case, primary error case
 - Be specific: what to do, what to expect
-- Keep it short — 3-6 items max, not an exhaustive checklist
+- Keep it short. 3-6 items max, not an exhaustive checklist.
 
 ## Key Principles
 

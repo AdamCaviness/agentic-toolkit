@@ -125,15 +125,28 @@ If auto-detect gets it wrong, correct it once and the detection is cached for th
 
 ## Installation
 
-Copy or symlink the desired skill directory into your Claude Code skills folder:
+Symlink each desired skill directory into your Claude Code skills folder. Claude Code discovers skills at `~/.claude/skills/<name>/SKILL.md` (user-level) or `.claude/skills/<name>/SKILL.md` (project-level).
+
+### User-level (available in all projects)
 
 ```bash
-# User-level (available in all projects)
+# Individual skills
 ln -s /path/to/agentic-toolkit/skills/next-ticket ~/.claude/skills/next-ticket
+ln -s /path/to/agentic-toolkit/skills/ship ~/.claude/skills/ship
 
-# Project-level (available only in that project)
+# All skills at once
+for skill in /path/to/agentic-toolkit/skills/*/; do
+  ln -s "$skill" ~/.claude/skills/"$(basename "$skill")"
+done
+```
+
+### Project-level (available only in that project)
+
+```bash
 ln -s /path/to/agentic-toolkit/skills/next-ticket .claude/skills/next-ticket
 ```
+
+User-level and project-level skills can coexist. You can also keep additional local skills in `~/.claude/skills/` alongside the symlinked ones.
 
 ## License
 

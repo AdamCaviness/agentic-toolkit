@@ -16,7 +16,7 @@ Complete the current branch by committing, pushing, merging, and cleaning up.
 5. **Resolve merge strategy**: Read cached repository policy from `$(git rev-parse --git-dir)/agents/repo-policy.json` if present and fresh. If missing, stale, invalid, or for a different repository, refresh it with `gh repo view --json nameWithOwner,mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed,deleteBranchOnMerge` and write the result back to the cache.
 6. **Merge PR**: Choose the first allowed strategy in this order: `--merge` when `mergeCommitAllowed` is true, else `--squash` when `squashMergeAllowed` is true, else `--rebase` when `rebaseMergeAllowed` is true. Merge with `gh pr merge <strategy>`. For forked repos, use `--repo` targeting the fork. If no strategy is allowed, stop and report the repository merge policy.
 7. **Sync main**: `git checkout main && git pull origin main`
-8. **Clean up**: Delete the merged branch locally (`git branch -D`). Only delete the remote branch (`git push origin --delete`) if it still exists — some repos auto-delete branches on merge.
+8. **Clean up**: Delete the merged branch locally (`git branch -D`). Only delete the remote branch (`git push origin --delete`) if it still exists. Some repos auto-delete branches on merge.
 9. **Report**: Confirm done with the merged PR URL.
 
 ## Repository Policy Cache
@@ -49,6 +49,6 @@ Complete the current branch by committing, pushing, merging, and cleaning up.
 - If the branch has no commits ahead of main and no uncommitted changes, warn and stop.
 - If there's an open PR already, push any new commits to update it, then merge it.
 - If the merge fails due to stale repository policy cache, refresh the cache once and retry only with an allowed strategy.
-- If the merge fails for any other reason, report the error — don't retry or force.
+- If the merge fails for any other reason, report the error. Don't retry or force.
 - Do not bypass failing required checks, conflicts, review requirements, or permissions errors.
-- If on main, warn and stop — ship only works on feature branches.
+- If on main, warn and stop. Ship only works on feature branches.

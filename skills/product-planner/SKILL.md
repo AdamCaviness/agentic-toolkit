@@ -156,9 +156,9 @@ Use whatever CLI tools, MCP tools, or APIs are available to interact with the ti
 
 Do NOT fetch ticket lists yourself. Tickets are cached on disk.
 
-- `{CACHE_DIR}/issues-open.json` — all open tickets with full detail. **Read-only context** for awareness and cross-references.
-- `{CACHE_DIR}/issues-edit-{CLUSTER_SLUG}.json` — tickets assigned to YOUR cluster. You may ONLY modify tickets in this file.
-- `{CACHE_DIR}/issues-closed.json` — closed tickets with titles and labels only. Check this before filing new tickets to avoid duplicating something already resolved.
+- `{CACHE_DIR}/issues-open.json`, all open tickets with full detail. **Read-only context** for awareness and cross-references.
+- `{CACHE_DIR}/issues-edit-{CLUSTER_SLUG}.json`, tickets assigned to YOUR cluster. You may ONLY modify tickets in this file.
+- `{CACHE_DIR}/issues-closed.json`, closed tickets with titles and labels only. Check this before filing new tickets to avoid duplicating something already resolved.
 
 **Edit constraint:** You may ONLY execute write commands (edit, close, create) against tickets in your edit file. For tickets outside your edit file, you have read-only access via `issues-open.json`. If you discover something relevant to a ticket outside your cluster, write it to your cross-cluster notes file at `{CACHE_DIR}/cross-cluster-{CLUSTER_SLUG}.json`. Do NOT add comments to any ticket.
 
