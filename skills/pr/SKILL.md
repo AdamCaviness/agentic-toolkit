@@ -1,9 +1,9 @@
 ---
 name: pr
-description: Format, lint, test, commit, push, and create a pull request — the single "I'm done" command.
+description: Format, lint, test, commit, push, and create a pull request. The single "I'm done" command.
 ---
 
-# PR — Format, Lint, Test, Commit, Push, Create Pull Request
+# PR: Format, Lint, Test, Commit, Push, Create Pull Request
 
 Single command to go from "I'm done" to "PR is open."
 
@@ -34,7 +34,7 @@ Single command to go from "I'm done" to "PR is open."
 6. **Extract issue number from branch name**:
    - Pattern: `<category>/<number>-<desc>` → `#<number>`
    - Example: `fix/224-streaming-upload-size-check` → `224`
-   - If no number found: warn "No issue number found in branch name — add Closes #NNN manually if applicable"
+   - If no number found: warn "No issue number found in branch name. Add Closes #NNN manually if applicable."
 
 7. **Create or update PR**:
    - Check if PR exists: `gh pr view --json number,url 2>/dev/null`
@@ -64,11 +64,11 @@ Single command to go from "I'm done" to "PR is open."
 
 - **On main branch**: Stop immediately, suggest creating feature branch
 - **No changes AND no commits ahead of main**: Inform user there's nothing to PR
-- **Format/lint fails**: Stop, show errors — cannot push unlinted code
-- **Tests fail**: Stop, show failures — cannot push broken code
+- **Format/lint fails**: Stop, show errors. Cannot push unlinted code.
+- **Tests fail**: Stop, show failures. Cannot push broken code.
 - **Push rejected (behind remote)**: Suggest `git pull --rebase origin <branch>`
 - **`gh` not authenticated**: Detect with `gh auth status`, show clear error
-- **No issue number in branch**: Warn but continue — don't block the PR
+- **No issue number in branch**: Warn but continue. Don't block the PR.
 
 ## Usage
 
