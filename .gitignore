@@ -1,0 +1,23 @@
+# Symlink (CLAUDE.md -> AGENTS.md)
+CLAUDE.md
+
+# Local settings (never commit personal config)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node (if dependencies are ever added)
+node_modules/
+npm-debug.log*
+
+# Memory (auto-generated, user-specific)
+.claude/projects/

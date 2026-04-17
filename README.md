@@ -1,6 +1,62 @@
-# Claude Code Toolkit
+# Agentic Toolkit
 
-A collection of skills and extensions for [Claude Code](https://claude.ai/code).
+A collection of skills for agentic coding tools, including [Claude Code](https://claude.ai/code), [Codex](https://openai.com/codex/), and [Gemini CLI](https://github.com/google-gemini/gemini-cli).
+
+## Installation
+
+Installation differs by platform. All three platforms consume the same `skills/<name>/SKILL.md` format, so one install gets you every skill.
+
+### Claude Code
+
+Register the marketplace, then install the plugin:
+
+```bash
+/plugin marketplace add adamcaviness/agentic-marketplace
+/plugin install agentic-toolkit@agentic-marketplace
+```
+
+### Codex
+
+See [.codex/INSTALL.md](.codex/INSTALL.md). Short version:
+
+```bash
+git clone https://github.com/adamcaviness/agentic-toolkit.git ~/.codex/agentic-toolkit
+mkdir -p ~/.agents/skills
+ln -s ~/.codex/agentic-toolkit/skills ~/.agents/skills/agentic-toolkit
+```
+
+Restart Codex to discover the skills.
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/adamcaviness/agentic-toolkit
+```
+
+Update with `gemini extensions update agentic-toolkit`.
+
+<details>
+<summary>Manual symlink install (any platform)</summary>
+
+If you prefer not to use a plugin/extension system, symlink the skill directories directly.
+
+```bash
+# Claude Code (user-level)
+for skill in /path/to/agentic-toolkit/skills/*/; do
+  ln -s "$skill" ~/.claude/skills/"$(basename "$skill")"
+done
+
+# Codex (user-level)
+for skill in /path/to/agentic-toolkit/skills/*/; do
+  ln -s "$skill" ~/.agents/skills/"$(basename "$skill")"
+done
+```
+
+For a single skill: `ln -s /path/to/agentic-toolkit/skills/next-ticket ~/.claude/skills/next-ticket`.
+
+For project-level install, symlink into `.claude/skills/` or `.agents/skills/` inside the project root.
+
+</details>
 
 ## Skills
 
@@ -16,7 +72,7 @@ Picks the highest-value open ticket from your project's issue tracker, implement
 4. Writes failing tests first, implements until green, formats, and commits
 5. Stops and waits for you to review before pushing
 
-**Usage:** Type `/next-ticket` in Claude Code.
+**Usage:** Type `/next-ticket` in your agent.
 
 **Platform detection:** The skill reads your git remote to determine your ticket system. If it guesses wrong, just correct it. For projects where the git host doesn't match the ticket system (e.g., GitHub repo using Jira), add `ticketSystem: jira` to your CLAUDE.md.
 
@@ -61,9 +117,25 @@ Re-evaluate and re-architect the current branch's work as if starting from scrat
 5. Runs format, lint, and tests to validate
 6. Outputs a brief testing playbook for manual validation
 
-**Usage:** Type `/get-it-right` in Claude Code when you want a fresh look at your current branch's approach.
+**Usage:** Type `/get-it-right` in your agent when you want a fresh look at your current branch's approach.
 
 **Notes:** All changes are left unstaged for your review. The skill preserves existing behavior while reducing complexity and file count.
+
+### [code-review](skills/code-review/SKILL.md)
+
+Dispatches a code-reviewer subagent to evaluate completed work against requirements, keeping the reviewer focused on the diff and preserving your own context.
+
+**What it does:**
+
+1. Captures the base and head git SHAs for the changes under review
+2. Fills a review template with what you built, what it should do, and the git range
+3. Dispatches a code-reviewer subagent via the Task tool with that context only
+4. Returns categorized feedback (Critical, Important, Minor) plus a merge verdict
+5. You fix Critical/Important issues, note Minor for later, and push back on weak feedback
+
+**Usage:** Invoke after completing a task, finishing a major feature, or before merging to main.
+
+**Notes:** Adapted from the superpowers project's `requesting-code-review` skill under MIT. See [skills/code-review/ATTRIBUTIONS.md](skills/code-review/ATTRIBUTIONS.md).
 
 ### [pr](skills/pr/SKILL.md)
 
@@ -79,7 +151,7 @@ Format, lint, test, commit, push, and create a pull request. The single "I'm don
 6. Extracts issue number from branch name (e.g., `fix/224-bug` → `#224`)
 7. Creates PR with summary, changes, testing notes, and "Closes #NNN"
 
-**Usage:** Type `/pr` in Claude Code when your feature branch is ready.
+**Usage:** Type `/pr` in your agent when your feature branch is ready.
 
 **Notes:** If format/lint or tests fail, the skill stops and reports errors. If a PR already exists, it shows the URL and confirms the update.
 
@@ -97,7 +169,7 @@ Commit, push, create/merge PR, sync local main, and delete the branch. The compl
 6. Syncs local main with `git pull`
 7. Deletes the merged branch locally and remotely (if not auto-deleted)
 
-**Usage:** Type `/ship` in Claude Code when your branch is complete and ready to merge.
+**Usage:** Type `/ship` in your agent when your branch is complete and ready to merge.
 
 **Notes:** For forked repos, PRs target your fork (origin), never upstream. Only works on feature branches, not main.
 
@@ -113,40 +185,29 @@ Converts a git worktree into a regular local branch. Rebases onto the latest bas
 4. Rebases onto the latest base branch (auto-resolves lockfile conflicts, aborts on code conflicts)
 5. Removes the worktree and checks out the branch in your main workspace
 
-**Usage:** Type `/convert-worktree` in Claude Code while inside a worktree.
+**Usage:** Type `/convert-worktree` in your agent while inside a worktree.
 
 **Notes:** This skill replaces ExitWorktree. It never blocks on failures, so rebase conflicts or cleanup failures result in warnings, not errors. After conversion, run `npm install` (or equivalent) if lockfiles were auto-resolved.
 
-## Platform Support
+## Ticket Systems
 
-All skills auto-detect your ticket system from `git remote -v` and work with GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI tools, MCP tools, or APIs available in your session.
+Ticket-aware skills (`next-ticket`, `architect-planner`, `product-planner`) auto-detect your system from `git remote -v` and work with GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs available in your session.
 
 If auto-detect gets it wrong, correct it once and the detection is cached for the session. For persistent override, add `ticketSystem: <name>` to your project's CLAUDE.md.
 
-## Installation
+## Releasing
 
-Symlink each desired skill directory into your Claude Code skills folder. Claude Code discovers skills at `~/.claude/skills/<name>/SKILL.md` (user-level) or `.claude/skills/<name>/SKILL.md` (project-level).
+Releases are fully automated by [release-please](https://github.com/googleapis/release-please). Use [Conventional Commits](https://www.conventionalcommits.org/) on PRs merged to `main`. Release-please opens a "chore: release" PR that bumps the version across `.claude-plugin/plugin.json` and `gemini-extension.json`, and updates `CHANGELOG.md`. Merge that PR to cut the release, tag, and publish GitHub Release notes. No manual tagging. After release, update the corresponding `version` entry in the companion [adamcaviness/agentic-marketplace](https://github.com/adamcaviness/agentic-marketplace) repo's `marketplace.json`.
 
-### User-level (available in all projects)
+Commit types map to changelog sections and version bumps:
 
-```bash
-# Individual skills
-ln -s /path/to/agentic-toolkit/skills/next-ticket ~/.claude/skills/next-ticket
-ln -s /path/to/agentic-toolkit/skills/ship ~/.claude/skills/ship
+| Type                          | Section                               | Bump  |
+| ----------------------------- | ------------------------------------- | ----- |
+| `feat:`                       | Features                              | minor |
+| `fix:`                        | Bug Fixes                             | patch |
+| `docs:`, `perf:`, `refactor:` | Documentation/Performance/Refactoring | patch |
 
-# All skills at once
-for skill in /path/to/agentic-toolkit/skills/*/; do
-  ln -s "$skill" ~/.claude/skills/"$(basename "$skill")"
-done
-```
-
-### Project-level (available only in that project)
-
-```bash
-ln -s /path/to/agentic-toolkit/skills/next-ticket .claude/skills/next-ticket
-```
-
-User-level and project-level skills can coexist. You can also keep additional local skills in `~/.claude/skills/` alongside the symlinked ones.
+Use `feat(skill): add X` to classify new skills. The scope appears in the changelog entry. Add `!` after the type or a `BREAKING CHANGE:` body for a major bump. Only `feat:` and `fix:` commits drive a release PR on their own, so at least one of those must land between releases.
 
 ## License
 
