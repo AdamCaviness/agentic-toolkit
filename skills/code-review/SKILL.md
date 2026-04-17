@@ -102,4 +102,4 @@ You: [Fix progress indicators]
 - Show code or tests that prove it works
 - Request clarification
 
-See template at: code-review/code-reviewer.md
+See template at: code-reviewer.md

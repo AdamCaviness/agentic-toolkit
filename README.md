@@ -201,11 +201,11 @@ Releases are fully automated by [release-please](https://github.com/googleapis/r
 
 Commit types map to changelog sections and version bumps:
 
-| Type                          | Section                               | Bump  |
-| ----------------------------- | ------------------------------------- | ----- |
-| `feat:`                       | Features                              | minor |
-| `fix:`                        | Bug Fixes                             | patch |
-| `docs:`, `perf:`, `refactor:` | Documentation/Performance/Refactoring | patch |
+| Type                          | Section                               | Bump            |
+| ----------------------------- | ------------------------------------- | --------------- |
+| `feat:`                       | Features                              | minor           |
+| `fix:`                        | Bug Fixes                             | patch           |
+| `docs:`, `perf:`, `refactor:` | Documentation/Performance/Refactoring | changelog only  |
 
 Use `feat(skill): add X` to classify new skills. The scope appears in the changelog entry. Add `!` after the type or a `BREAKING CHANGE:` body for a major bump. Only `feat:` and `fix:` commits drive a release PR on their own, so at least one of those must land between releases.
 
