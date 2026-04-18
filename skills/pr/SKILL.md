@@ -1,7 +1,6 @@
 ---
 name: pr
 description: Format, lint, test, commit, push, and create a pull request. The single "I'm done" command.
-model: sonnet
 ---
 
 # PR: Format, Lint, Test, Commit, Push, Create Pull Request

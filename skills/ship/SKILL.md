@@ -1,7 +1,6 @@
 ---
 name: ship
 description: Commit, push, create/merge PR, sync local main, delete branch. The standard "I'm done with this branch" workflow.
-model: sonnet
 ---
 
 # Ship
