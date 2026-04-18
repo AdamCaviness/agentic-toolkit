@@ -76,7 +76,7 @@ Picks the highest-value open ticket from your project's issue tracker, implement
 
 **Platform detection:** The skill reads your git remote to determine your ticket system. If it guesses wrong, just correct it. For projects where the git host doesn't match the ticket system (e.g., GitHub repo using Jira), add `ticketSystem: jira` to your CLAUDE.md.
 
-### [architect-planner](skills/architect-planner/SKILL.md)
+### [triage-architecture](skills/triage-architecture/SKILL.md)
 
 Audits your codebase for bugs, security vulnerabilities, missing error handling, race conditions, architectural gaps, DRY violations, and incomplete implementations. Spawns 4 parallel sub-agents (Safety, Correctness, Maintainability, Completeness) that read code, check for duplicates, and file well-scoped tickets.
 
@@ -88,11 +88,11 @@ Audits your codebase for bugs, security vulnerabilities, missing error handling,
 4. Sub-agents file new tickets (create mode) or refine existing ones (refine mode)
 5. Post-processes cross-cluster findings into the relevant tickets
 
-**Usage:** `/architect-planner`, `/architect-planner refine`, or `/architect-planner refine 5h`
+**Usage:** `/triage-architecture`, `/triage-architecture refine`, or `/triage-architecture refine 5h`
 
-### [product-planner](skills/product-planner/SKILL.md)
+### [triage-product](skills/triage-product/SKILL.md)
 
-Audits your project for UX gaps, broken workflows, missing states, confusing terminology, visual inconsistency, accessibility issues, and competitive table stakes. Same parallel architecture as architect-planner but focused on user-facing concerns.
+Audits your project for UX gaps, broken workflows, missing states, confusing terminology, visual inconsistency, accessibility issues, and competitive table stakes. Same parallel architecture as triage-architecture but focused on user-facing concerns.
 
 **What it does:**
 
@@ -102,7 +102,22 @@ Audits your project for UX gaps, broken workflows, missing states, confusing ter
 4. Sub-agents file new tickets (create mode) or refine existing ones (refine mode)
 5. Post-processes cross-cluster findings into the relevant tickets
 
-**Usage:** `/product-planner`, `/product-planner refine`, or `/product-planner refine 5h`
+**Usage:** `/triage-product`, `/triage-product refine`, or `/triage-product refine 5h`
+
+### [triage-bugs](skills/triage-bugs/SKILL.md)
+
+Investigates your codebase for proven defects using adversarial 4-pass analysis. Spawns 4 parallel sub-agents (Data & State, Security & Auth, Correctness, Silent Failures) that investigate, prove, and document bugs with enough rigor that a skeptical maintainer could fix each from the report alone.
+
+**What it does:**
+
+1. Detects your ticket system and caches all open/closed tickets to disk
+2. Builds a project map with bug-relevant infrastructure (error handling, async boundaries, auth chain, database patterns)
+3. Spawns 4 focused agents in parallel, each investigating a different bug category
+4. Each agent applies a 4-pass method: frame the claim, trace the code, falsify, prove
+5. Only files tickets that clear the certainty bar (reproduction, code-path proof, or failing test)
+6. Collects a unified summary of confirmed bugs and investigated-but-rejected candidates
+
+**Usage:** `/triage-bugs`, `/triage-bugs refine`, or `/triage-bugs refine 5h`
 
 ### [get-it-right](skills/get-it-right/SKILL.md)
 
@@ -191,7 +206,7 @@ Converts a git worktree into a regular local branch. Rebases onto the latest bas
 
 ## Ticket Systems
 
-Ticket-aware skills (`next-ticket`, `architect-planner`, `product-planner`) auto-detect your system from `git remote -v` and work with GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs available in your session.
+Ticket-aware skills (`next-ticket`, `triage-architecture`, `triage-product`, `triage-bugs`) auto-detect your system from `git remote -v` and work with GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs available in your session.
 
 If auto-detect gets it wrong, correct it once and the detection is cached for the session. For persistent override, add `ticketSystem: <name>` to your project's CLAUDE.md.
 
