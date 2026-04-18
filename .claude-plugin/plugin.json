@@ -1,0 +1,19 @@
+{
+  "name": "agentic-toolkit",
+  "description": "A collection of skills for agentic coding tools: next-ticket, architect-planner, product-planner, get-it-right, code-review, pr, ship, convert-worktree",
+  "version": "0.1.0",
+  "author": {
+    "name": "Adam Caviness"
+  },
+  "homepage": "https://github.com/adamcaviness/agentic-toolkit",
+  "repository": "https://github.com/adamcaviness/agentic-toolkit",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "tickets",
+    "planning",
+    "code-review",
+    "workflows",
+    "worktree"
+  ]
+}
