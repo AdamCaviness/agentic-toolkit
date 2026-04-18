@@ -1,10 +1,10 @@
 ---
-name: architect-planner
+name: triage-architecture
 description: Audits a codebase for bugs, security vulnerabilities, missing error handling, race conditions, architectural gaps, DRY violations, naming inconsistencies, incomplete implementations, and robustness issues. Caches tickets to disk, then spawns 4 parallel sub-agents (one per focus cluster) to scrutinize and file tickets.
 argument-hint: "[create | refine [<duration>]]"
 ---
 
-# Architect Planner
+# Triage Architecture
 
 You are an **orchestrator**. You do NOT audit code yourself. Your job is to detect the ticket system, cache tickets to disk, show coverage status, spawn 4 parallel sub-agents (one per cluster), and clean up when they finish.
 
@@ -15,7 +15,7 @@ Check the argument passed to this skill:
 - **`refine`**: Refine mode, sub-agents scrutinize, improve, correct, and close existing tickets but **create ZERO new tickets**
 - **`refine <duration>`**: Time-windowed refine, same as refine but only tickets created within the window (e.g., `5h`, `10m`, `6d`)
 
-Usage: `/architect-planner`, `/architect-planner refine`, or `/architect-planner refine 5h`
+Usage: `/triage-architecture`, `/triage-architecture refine`, or `/triage-architecture refine 5h`
 
 ## Step 0: Detect Ticket System
 
@@ -41,7 +41,7 @@ Verify that CLI tools for the detected ticket system are available. If not, tell
 
 ### Derive project identity
 
-Determine the project root path, project name (from the directory name), and a short hash of the root path to prevent collisions between repos with the same name. Use these to construct a unique `PROJECT_ID` in the form `<project-name>-<hash>` and a cache directory path in the system temp directory: `<temp>/architect-planner-<PROJECT_ID>`.
+Determine the project root path, project name (from the directory name), and a short hash of the root path to prevent collisions between repos with the same name. Use these to construct a unique `PROJECT_ID` in the form `<project-name>-<hash>` and a cache directory path in the system temp directory: `<temp>/triage-architecture-<PROJECT_ID>`.
 
 ### Destroy stale cache
 
@@ -59,7 +59,7 @@ Using the detected ticket system's CLI tools, MCP tools, or APIs, fetch tickets 
 
 If time-windowed refine returns zero results, tell the user and stop. Do not dispatch sub-agents.
 
-**Closed tickets (titles only):** Fetch recently closed tickets labeled `architecture` or `product` (titles, IDs, and labels only). Merge into a single deduplicated list. Write to `<cache>/issues-closed.json`.
+**Closed tickets (titles only):** Fetch recently closed tickets labeled `architecture`, `product`, or `bug` (titles, IDs, and labels only). Merge into a single deduplicated list. Write to `<cache>/issues-closed.json`.
 
 Normalize all fetched data into a consistent JSON shape regardless of the source platform.
 
@@ -118,14 +118,14 @@ Check the planner state file at `<temp>/planner-state/<PROJECT_ID>.json`. Create
 **You MUST print coverage status so the user knows when this was last run:**
 
 ```
-Coverage Status (architect-planner):
+Coverage Status (triage-architecture):
 Last run: 2026-03-15 10:30
 Mode: create | refine | refine (last 5h, tickets since 2026-03-17T14:00:00Z)
 
 Clusters: Safety, Correctness, Maintainability, Completeness
 ```
 
-Read the `architect-planner` value from the state file for the "Last run" timestamp. If null or missing, show "never". Show the active mode and, if time-windowed refine, the window and cutoff.
+Read the `triage-architecture` value from the state file for the "Last run" timestamp (fall back to legacy key `architect-planner` if the new key is absent). If null or missing, show "never". Show the active mode and, if time-windowed refine, the window and cutoff.
 
 ## Step 3: Deploy Cluster Agents
 
@@ -162,10 +162,10 @@ Do NOT fetch ticket lists yourself. Tickets are cached on disk.
 
 **Edit constraint:** You may ONLY execute write commands (edit, close, create) against tickets in your edit file. For tickets outside your edit file, you have read-only access via `issues-open.json`. If you discover something relevant to a ticket outside your cluster, write it to your cross-cluster notes file at `{CACHE_DIR}/cross-cluster-{CLUSTER_SLUG}.json`. Do NOT add comments to any ticket.
 
-Use the labels/tags to distinguish ticket types. Tickets labeled `architecture` are yours; tickets labeled `product` are cross-reference. Tickets with neither label may need triage.
+Tickets in your edit file may carry any label (`architecture`, `product`, `bug`, or unlabeled). Work with them based on their content, not their label. If you add architectural context to a ticket with a different label, add the `architecture` label alongside the existing ones.
 
 Read every open ticket title in `issues-open.json`. Note which topics are covered.
-If a product ticket covers a related user-facing concern, don't duplicate. Reference it and focus on the technical root cause.
+If another ticket covers a related concern from a different lens (product, bug), don't duplicate. Reference it and focus on the architectural root cause.
 
 ## Cross-Cluster Notes
 
@@ -386,7 +386,7 @@ After all 4 sub-agents complete, check for cross-cluster findings:
 ### Post-Processor Agent Prompt
 
 ```
-You are a post-processor for the architect-planner. Parallel cluster agents have completed their work and left cross-cluster findings that need to be woven into ticket descriptions. Your job is to incorporate each finding into the target ticket's description.
+You are a post-processor for triage-architecture. Parallel cluster agents have completed their work and left cross-cluster findings that need to be woven into ticket descriptions. Your job is to incorporate each finding into the target ticket's description.
 
 ## Ticket System: {TICKET_SYSTEM}
 
@@ -415,4 +415,4 @@ After all sub-agents and post-processing complete:
 
 **Delete the cache directory and verify it's gone.** If cleanup fails, do NOT proceed. Investigate and retry. Stale cache left behind will corrupt the next run.
 
-**Update the state file** at `<temp>/planner-state/<PROJECT_ID>.json`. Read the existing JSON, set `architect-planner` to the current ISO timestamp (e.g., `2026-03-15T10:30:00`). Write back. Preserve any existing `product-planner` data.
+**Update the state file** at `<temp>/planner-state/<PROJECT_ID>.json`. Read the existing JSON, set `triage-architecture` to the current ISO timestamp (e.g., `2026-03-15T10:30:00`). Write back. Preserve any existing data for other triage skills.
