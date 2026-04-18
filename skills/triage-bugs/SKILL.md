@@ -178,7 +178,7 @@ If another ticket covers a related concern from a different lens (architecture, 
 
 If you discover a finding relevant to a ticket outside your edit file, write it to your cross-cluster notes file at `{CACHE_DIR}/cross-cluster-{CLUSTER_SLUG}.json`. Write a JSON array of objects:
 
-```json
+\`\`\`json
 [
   {
     "target_issue": 42,
@@ -186,7 +186,7 @@ If you discover a finding relevant to a ticket outside your edit file, write it 
     "related_issues": [15, 28]
   }
 ]
-```
+\`\`\`
 
 If you have no cross-cluster findings, write an empty array: `[]`
 
@@ -236,7 +236,7 @@ For each candidate defect, work in four passes. Do not skip ahead.
 
 You MUST write a ledger file at `{CACHE_DIR}/ledger-{CLUSTER_SLUG}.json` when you finish, regardless of whether you found any bugs. Write this JSON structure:
 
-```json
+\`\`\`json
 {
   "confirmed": [
     { "id": 201, "title": "Race in session refresh allows double-spend", "severity": "high" }
@@ -248,7 +248,7 @@ You MUST write a ledger file at `{CACHE_DIR}/ledger-{CLUSTER_SLUG}.json` when yo
     }
   ]
 }
-```
+\`\`\`
 
 Both arrays may be empty. The file must always be written so the orchestrator can distinguish "no findings" from "agent failed to write ledger."
 
