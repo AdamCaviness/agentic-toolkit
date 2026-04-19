@@ -64,6 +64,17 @@ If no manifests match the requested scope, tell the user and stop.
 
 Using whatever CLI is available (e.g., `gh pr list`), fetch open PRs authored by known dependency bots: `dependabot`, `renovate`, `snyk-bot`, `greenkeeper`.
 
+**Important**: `gh pr list --author` accepts only a single value. You MUST run a separate query per bot and merge the results. Note that `dependabot`, `renovate`, and `greenkeeper` are GitHub Apps (use the `app/` prefix), while `snyk-bot` is a regular GitHub user account (no prefix).
+
+```bash
+(
+  gh pr list --author "app/dependabot" --state open --json number,title,author,body 2>/dev/null
+  gh pr list --author "app/renovate" --state open --json number,title,author,body 2>/dev/null
+  gh pr list --author "snyk-bot" --state open --json number,title,author,body 2>/dev/null
+  gh pr list --author "app/greenkeeper" --state open --json number,title,author,body 2>/dev/null
+) | jq -s 'add // []'
+```
+
 For each bot PR:
 
 1. Extract the dependency name and target version from the PR title or body.
