@@ -114,7 +114,7 @@ Updates all safe (minor/patch, non-CVE) deps in a single batch per manifest:
 1. Run appropriate update commands
 2. Run the project's test suite
 3. If tests pass: commit all safe updates in one commit listing the updated deps
-4. If tests fail: bisect to find which update caused the failure, revert that dep, retry. Deps that can't be safely updated get reported as needing manual attention.
+4. If tests fail: isolate which update caused the failure (revert deps one at a time until tests pass), exclude that dep from the batch, and retry. Deps that can't be safely updated get reported as needing manual attention.
 
 Commit message format:
 
@@ -246,7 +246,7 @@ Never push, create PRs, or merge. User reviews first.
 
 ## Edge Cases
 
-**Branch naming**: `chore/<issue>-update-deps` if there's a related issue, otherwise `chore/update-deps`. Append scope if specified: `chore/update-deps-frontend`. If the branch already exists with uncommitted work, warn the user and stop. If clean, reuse it.
+**Branch naming**: `chore/update-deps`. Append scope if specified: `chore/update-deps-frontend`. If the branch already exists with uncommitted work, warn the user and stop. If clean, reuse it.
 
 **No outdated deps**: If discovery finds nothing to update and no bot PRs, tell the user and stop. Don't create a branch.
 
