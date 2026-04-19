@@ -30,17 +30,11 @@ Examples:
 
 Verify you are in a git repo. If not, tell the user and stop.
 
-Verify you are NOT on `main` or `master`. If you are, tell the user to create a feature branch and stop.
+Note the current branch. Branch creation happens after Step 3 once we know there is work to do.
 
 ## Branch Naming
 
 Branch name: `chore/update-deps` for all-scope runs, `chore/update-deps-<scope>` for a single named scope (e.g., `chore/update-deps-frontend`). For multi-scope runs, use `chore/update-deps`.
-
-Check whether the branch already exists:
-
-- If it exists and is **clean** (no uncommitted changes), check it out and reuse it.
-- If it exists and is **dirty** (uncommitted changes present), warn the user and stop. Do not overwrite in-progress work.
-- If it does not exist, create it from the current branch.
 
 ## Step 1: Detect Project Structure and Scope Mapping
 
@@ -124,6 +118,12 @@ Dependency audit (backend scope):
 
 If no outdated deps are found and no bot PRs exist, tell the user everything is up to date and stop. Do not create a branch.
 
+If there is work to do, create the branch now using the convention from Branch Naming:
+
+- If it exists and is **clean** (no uncommitted changes), check it out and reuse it.
+- If it exists and is **dirty** (uncommitted changes present), warn the user and stop. Do not overwrite in-progress work.
+- If it does not exist, create it from the current branch.
+
 Lockfile-only updates are valid. Include them in safe updates.
 
 ## Step 4: Apply Safe Updates
@@ -184,9 +184,17 @@ Write two files to the cache:
 
 ## Step 6: Deploy Parallel Research Sub-Agents
 
-Read `<cache>/research-requests.json`. Spawn one sub-agent per entry, **all in a single message** so they execute concurrently. Use `description: "Research <package> upgrade"` for each.
+Read `<cache>/research-requests.json`. Spawn one sub-agent per entry, **all in a single message** so they execute concurrently. Use `description: "Research <package> <current> -> <target>"` for each.
 
-For each entry, construct a prompt by substituting the placeholders in the Sub-Agent Prompt Template below.
+For each entry, construct a prompt by substituting the placeholders in the Sub-Agent Prompt Template below:
+
+- `{PACKAGE}` with the package name from the research request
+- `{CURRENT_VERSION}` with the current installed version
+- `{TARGET_VERSION}` with the target version
+- `{REASON}` with `cve` or `major`
+- `{CVE_ID}` with the CVE ID, or `N/A` if not CVE-related
+- `{MANIFEST}` with the manifest file path
+- `{CACHE_DIR}` with the cache directory path
 
 ---
 
@@ -215,6 +223,8 @@ Use WebSearch to find the official migration guide, changelog, and release notes
 - "{PACKAGE} upgrade {CURRENT_VERSION} {TARGET_VERSION}"
 - GitHub release notes for the package repository
 
+If WebSearch is not available in your environment, check for local changelogs: `CHANGELOG.md`, `HISTORY.md`, or release notes in the package's repository. Use the package registry CLI to inspect available versions and their metadata.
+
 Read the actual pages, not just search result snippets. Community resources, Stack Overflow threads, and GitHub Discussions often document real-world pitfalls that official docs miss.
 
 If a CVE ID is provided, also search for "{CVE_ID} {PACKAGE}" to understand the vulnerability and the fix.
@@ -241,6 +251,7 @@ Write a JSON change plan to `{CACHE_DIR}/change-plan-{PACKAGE}.json`:
   "current_version": "{CURRENT_VERSION}",
   "target_version": "{TARGET_VERSION}",
   "reason": "{REASON}",
+  "cve_id": "{CVE_ID}",
   "breaking_changes": [
     {
       "description": "What changed",
@@ -258,6 +269,7 @@ Write a JSON change plan to `{CACHE_DIR}/change-plan-{PACKAGE}.json`:
   ],
   "new_requirements": "Any new runtime or platform requirements (e.g., Node.js >= 18)",
   "estimated_risk": "low | medium | high",
+  "risk_rationale": "Why this risk level",
   "sources": [
     "https://example.com/migration-guide"
   ]
@@ -285,6 +297,8 @@ Determine application order: if two major bumps could interact (e.g., a framewor
 For each change plan:
 
 ### 7a. Write tests that pin current behavior
+
+If the change plan has an empty `breaking_changes` array and an empty `deprecated_apis_used` array (no impact on this codebase), skip directly to 7f.
 
 Before touching the dependency, write tests (or extend existing tests) that exercise the specific APIs and call patterns listed in `breaking_changes[].affected_files` and `deprecated_apis_used[].affected_files`. Cover the `test_strategy` described in each breaking change entry. Run the tests and confirm they pass against the current version.
 
@@ -329,7 +343,7 @@ For non-CVE major bumps, omit the CVE reference from the subject line.
 ## Step 8: Final Validation
 
 1. Run the full test suite to catch interaction effects between independently applied updates.
-2. Run the project's linter and formatter (check CLAUDE.md for commands). If auto-fixes are applied, commit them separately with message `Auto-format after dependency updates`.
+2. Run the project's linter and formatter (check CLAUDE.md for commands). If auto-fixes are applied, commit them separately with message `Auto-format and lint fixes`.
 3. If the final test suite fails, identify which combination of updates caused the interaction and report it to the user.
 
 ## Step 9: Cleanup and Summary
