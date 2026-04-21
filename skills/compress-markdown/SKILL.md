@@ -2,39 +2,25 @@
 name: compress-markdown
 model: sonnet
 description: >
-  Compress CLAUDE.md and other natural language files into concise format to save input tokens.
+  Compress markdown files (CLAUDE.md, docs, specs) into concise prose to save input tokens.
   Preserves all technical substance, code, URLs, and structure.
-  Compressed version overwrites the original file. Human-readable backup saved as FILE.original.md.
-  Trigger: /compress-markdown <filepath> or "compress CLAUDE.md"
+  Trigger: /compress-markdown <filepath>
 ---
 
-# Compress
-
-## Purpose
-
-Compress CLAUDE.md and other natural language files (.md, .txt) into concise prose to reduce input tokens. Compressed version overwrites original. Human-readable backup saved as `<filename>.original.md`.
+# Compress Markdown
 
 ## Trigger
 
-`/compress-markdown <filepath>` or when user asks to compress a CLAUDE.md file.
+`/compress-markdown <filepath>` or when user asks to compress a markdown file.
 
 ## Process
 
-1. This SKILL.md lives alongside `scripts/` in the same directory. Find that directory.
-
-2. Run:
-
-cd <directory_containing_this_SKILL.md> && python3 -m scripts <absolute_filepath>
-
-3. The CLI will:
-- detect file type (no tokens)
-- call Claude to compress
-- validate output (no tokens)
-- if errors: cherry-pick fix with Claude (targeted fixes only, no recompression)
-- retry up to 2 times
-- if still failing after 2 retries: report error to user, leave original file untouched
-
-4. Return result to user
+1. **Guard.** Check the file extension. Only compress `.md`, `.txt`, `.markdown`, `.rst`, or extensionless files. Refuse anything else. Skip files ending in `.original.md`.
+2. **Backup.** If `<stem>.original.md` already exists, stop and tell the user (prevents overwriting a previous backup). Otherwise copy the original file to `<stem>.original.md`.
+3. **Compress.** Read the file and rewrite it following the Compression Rules below. Write the compressed content back to the original path.
+4. **Validate.** Run `python3 validate.py <backup_path> <compressed_path>` using the `validate.py` in the same directory as this SKILL.md. Read the output.
+5. **Fix if needed.** If validation reports errors, read the backup to see what was lost, then fix only the specific issues in the compressed file (do not recompress from scratch). Re-run validation. After 2 failed fix attempts, restore the backup to the original path, remove the backup file, and report the failure.
+6. **Report.** Tell the user what was compressed and where the backup lives.
 
 ## Compression Rules
 
@@ -56,13 +42,13 @@ cd <directory_containing_this_SKILL.md> && python3 -m scripts <absolute_filepath
 - Proper nouns (project names, people, companies)
 - Dates, version numbers, numeric values
 - Environment variables (`$HOME`, `NODE_ENV`)
+- Frontmatter/YAML headers
 
 ### Preserve Structure
 - All markdown headings (keep exact heading text, compress body below)
 - Bullet point hierarchy (keep nesting level)
 - Numbered lists (keep numbering)
 - Tables (compress cell text, keep structure)
-- Frontmatter/YAML headers in markdown files
 
 ### Compress
 - Use short synonyms: "big" not "extensive", "fix" not "implement a solution for", "use" not "utilize"
@@ -71,42 +57,19 @@ cd <directory_containing_this_SKILL.md> && python3 -m scripts <absolute_filepath
 - Merge redundant bullets that say the same thing differently
 - Keep one example where multiple examples show the same pattern
 
-CRITICAL RULE:
-Anything inside ``` ... ``` must be copied EXACTLY.
-Do not:
-- remove comments
-- remove spacing
-- reorder lines
-- shorten commands
-- simplify anything
+### Code blocks are read-only
+Anything inside ``` ... ``` or inline backticks must be copied character-for-character. Do not remove comments, spacing, or reorder lines inside code. If a file mixes prose and code, only compress the prose around the code blocks. Do not merge sections across code block boundaries.
 
-Inline code (`...`) must be preserved EXACTLY.
-Do not modify anything inside backticks.
+## Examples
 
-If file contains code blocks:
-- Treat code blocks as read-only regions
-- Only compress text outside them
-- Do not merge sections around code
-
-## Pattern
-
-Original:
+Before:
 > You should always make sure to run the test suite before pushing any changes to the main branch. This is important because it helps catch bugs early and prevents broken builds from being deployed to production.
 
-Compressed:
+After:
 > Run tests before push to main. Catch bugs early, prevent broken prod deploys.
 
-Original:
+Before:
 > The application uses a microservices architecture with the following components. The API gateway handles all incoming requests and routes them to the appropriate service. The authentication service is responsible for managing user sessions and JWT tokens.
 
-Compressed:
+After:
 > Microservices architecture. API gateway route all requests to services. Auth service manage user sessions + JWT tokens.
-
-## Boundaries
-
-- ONLY compress natural language files (.md, .txt, extensionless)
-- NEVER modify: .py, .js, .ts, .json, .yaml, .yml, .toml, .env, .lock, .css, .html, .xml, .sql, .sh
-- If file has mixed content (prose + code), compress ONLY the prose sections
-- If unsure whether something is code or prose, leave it unchanged
-- Original file is backed up as FILE.original.md before overwriting
-- Never compress FILE.original.md (skip it)
