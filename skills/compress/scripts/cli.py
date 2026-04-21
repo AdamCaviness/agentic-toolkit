@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+"""
+Compress CLI
+
+Usage:
+    python -m scripts <filepath>
+"""
+
+import sys
+from pathlib import Path
+
+from .compress import compress_file
+from .detect import should_compress
+
+
+def print_usage():
+    print("Usage: python -m scripts <filepath>")
+
+
+def main():
+    if len(sys.argv) != 2:
+        print_usage()
+        sys.exit(1)
+
+    filepath = Path(sys.argv[1])
+
+    if not filepath.exists():
+        print(f"File not found: {filepath}")
+        sys.exit(1)
+
+    if not filepath.is_file():
+        print(f"Not a file: {filepath}")
+        sys.exit(1)
+
+    filepath = filepath.resolve()
+
+    if not should_compress(filepath):
+        print(f"Skipping: {filepath.name} is not a CLAUDE.md file")
+        sys.exit(0)
+
+    print(f"Starting compression of {filepath.name}...\n")
+
+    try:
+        success = compress_file(filepath)
+
+        if success:
+            print("\nCompression completed successfully")
+            backup_path = filepath.with_name(filepath.stem + ".original.md")
+            print(f"Compressed: {filepath}")
+            print(f"Original:   {backup_path}")
+            sys.exit(0)
+        else:
+            print("\nCompression failed after retries")
+            sys.exit(2)
+
+    except KeyboardInterrupt:
+        print("\nInterrupted by user")
+        sys.exit(130)
+
+    except Exception as e:
+        print(f"\nError: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
