@@ -1,11 +1,11 @@
 ---
-name: compress
+name: compress-claude-md
 model: sonnet
 description: >
   Compress CLAUDE.md files into concise format to save input tokens.
   Preserves all technical substance, code, URLs, and structure.
   Compressed version overwrites the original file. Human-readable backup saved as FILE.original.md.
-  Trigger: /compress <filepath> or "compress CLAUDE.md"
+  Trigger: /compress-claude-md <filepath> or "compress CLAUDE.md"
 ---
 
 # Compress
@@ -16,7 +16,7 @@ Compress CLAUDE.md files into concise prose to reduce input tokens. Compressed v
 
 ## Trigger
 
-`/compress <filepath>` or when user asks to compress a CLAUDE.md file.
+`/compress-claude-md <filepath>` or when user asks to compress a CLAUDE.md file.
 
 ## Process
 
