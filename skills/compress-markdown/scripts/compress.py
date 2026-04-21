@@ -148,7 +148,7 @@ def compress_file(filepath: Path) -> bool:
         raise ValueError(f"File too large to compress safely (max 500KB): {filepath}")
 
     if not should_compress(filepath):
-        print(f"Skipping (not a CLAUDE.md file): {filepath}")
+        print(f"Skipping (not a natural language file): {filepath}")
         return False
 
     if is_sensitive_path(filepath):

@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from .compress import compress_file
-from .detect import should_compress
+from .detect import detect_file_type, should_compress
 
 
 def print_usage():
@@ -34,8 +34,11 @@ def main():
 
     filepath = filepath.resolve()
 
+    file_type = detect_file_type(filepath)
+    print(f"Detected: {file_type}")
+
     if not should_compress(filepath):
-        print(f"Skipping: {filepath.name} is not a CLAUDE.md file")
+        print("Skipping: file is not natural language (code/config)")
         sys.exit(0)
 
     print(f"Starting compression of {filepath.name}...\n")

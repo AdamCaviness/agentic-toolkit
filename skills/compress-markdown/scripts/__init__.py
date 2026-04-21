@@ -1,6 +1,6 @@
 """Compress scripts.
 
-Tools to compress CLAUDE.md files
+Tools to compress natural language markdown files
 into concise format to save input tokens.
 """
 

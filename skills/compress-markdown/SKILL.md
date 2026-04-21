@@ -1,22 +1,22 @@
 ---
-name: compress-claude-md
+name: compress-markdown
 model: sonnet
 description: >
-  Compress CLAUDE.md files into concise format to save input tokens.
+  Compress CLAUDE.md and other natural language files into concise format to save input tokens.
   Preserves all technical substance, code, URLs, and structure.
   Compressed version overwrites the original file. Human-readable backup saved as FILE.original.md.
-  Trigger: /compress-claude-md <filepath> or "compress CLAUDE.md"
+  Trigger: /compress-markdown <filepath> or "compress CLAUDE.md"
 ---
 
 # Compress
 
 ## Purpose
 
-Compress CLAUDE.md files into concise prose to reduce input tokens. Compressed version overwrites original. Human-readable backup saved as `<filename>.original.md`.
+Compress CLAUDE.md and other natural language files (.md, .txt) into concise prose to reduce input tokens. Compressed version overwrites original. Human-readable backup saved as `<filename>.original.md`.
 
 ## Trigger
 
-`/compress-claude-md <filepath>` or when user asks to compress a CLAUDE.md file.
+`/compress-markdown <filepath>` or when user asks to compress a CLAUDE.md file.
 
 ## Process
 
@@ -104,8 +104,8 @@ Compressed:
 
 ## Boundaries
 
-- ONLY compress CLAUDE.md files (any casing, any directory depth)
-- NEVER modify any other file type
+- ONLY compress natural language files (.md, .txt, extensionless)
+- NEVER modify: .py, .js, .ts, .json, .yaml, .yml, .toml, .env, .lock, .css, .html, .xml, .sql, .sh
 - If file has mixed content (prose + code), compress ONLY the prose sections
 - If unsure whether something is code or prose, leave it unchanged
 - Original file is backed up as FILE.original.md before overwriting
