@@ -20,7 +20,7 @@ description: >
 
 **Default (lossless):** Reduce verbosity of prose without consulting the codebase. Every distinct idea survives, just stated more concisely. Safe for any markdown file.
 
-**Deep (lossy):** Read the file section by section and verify each claim against the actual codebase. Remove content that is demonstrably stale or incorrect. Flag ambiguous cases to the user. Then apply the same verbosity reduction as default mode. Only meaningful for files that reference a codebase (CLAUDE.md, architecture docs, onboarding guides).
+**Deep (lossy):** Read the file section by section and verify each claim against the actual codebase. Remove content that is stale or incorrect. Update content that is partially right. Then apply the same verbosity reduction as default mode. Only meaningful for files that reference a codebase (CLAUDE.md, architecture docs, onboarding guides).
 
 ## Process
 
@@ -35,21 +35,38 @@ description: >
 
 ### Deep mode
 
+Deep mode trusts you to read the codebase and make intelligent editorial decisions, the same way you would if a user asked you to "update my CLAUDE.md to reflect the current codebase." The difference is structure: you work section by section, verify before changing, and the backup provides a safety net.
+
 1. **Guard and Backup.** Same as default mode.
-2. **Audit.** Read the file and split it by top-level headings into sections. For each section:
-   - Extract file paths, function/class names, command examples, and architectural claims.
-   - Verify each reference against the codebase:
-     - **File paths:** Do they exist? Use glob/find to check.
-     - **Symbols in inline code:** Grep for function names, class names, variable names. Are they still defined?
-     - **Commands:** Are the referenced tools/scripts still present?
-     - **Conventions/patterns described:** Spot-check a few files to see if the described pattern holds.
-   - Classify each finding:
-     - **Auto-remove:** The referenced thing no longer exists at all (deleted file, removed function). Remove the content silently.
-     - **Flag to user:** The reference is ambiguous (renamed, moved, partially changed). Present the finding and ask whether to keep, update, or remove.
-     - **Keep:** The reference checks out. Leave it for compression.
-3. **Apply removals.** Delete auto-remove content. Wait for user decisions on flagged items. Write the audited file.
-4. **Compress.** Apply the same verbosity reduction as default mode to the surviving content.
-5. **Validate, Fix, Report.** Same as default mode.
+
+2. **Read the whole file first.** Understand the document's purpose, scope, and how its sections relate to each other before making changes.
+
+3. **Audit section by section.** Split by headings. For each section, read what it claims and verify against the codebase:
+
+   - **File paths and imports:** Do they exist? Check with glob. If a path moved, find where it went.
+   - **Function, class, and variable names:** Grep for them. Are they still defined? Still used the way the section describes?
+   - **Commands and scripts:** Are the referenced tools present? Do the flags and arguments described still work?
+   - **Behavioral descriptions:** If the section says "the auth middleware validates JWT tokens," read the actual auth middleware and confirm. If the behavior changed, the description is stale.
+   - **Conventions and patterns:** If the section says "we use tabs" or "components follow the container pattern," spot-check 3-5 representative files. If the codebase contradicts the claim, the claim is stale.
+   - **Architecture and data flow:** If the section describes how services communicate or how data moves through the system, verify against the actual code structure.
+
+4. **Make decisions.** For each finding, act:
+
+   - **Accurate:** Keep it. Move on.
+   - **Stale (the thing no longer exists or the description is wrong):** Remove the content. If an entire section is stale, remove the section including its heading.
+   - **Partially correct (moved, renamed, behavior changed):** Update the content to reflect reality. Don't just delete, fix it.
+   - **Genuinely uncertain (can't determine from the codebase alone):** Keep it and add a note in the report. Don't remove what you can't disprove.
+
+5. **Write the audited file.** Apply all removals and updates.
+
+6. **Compress.** Apply the same verbosity reduction as default mode to the surviving content.
+
+7. **Validate, Fix.** Same as default mode.
+
+8. **Report.** In addition to the standard compression stats, include:
+   - Sections or content removed and why (one line each)
+   - Content updated and what changed
+   - Anything kept despite uncertainty
 
 ## Compression Rules
 
@@ -74,6 +91,8 @@ description: >
 - Frontmatter/YAML headers
 - Directive keywords: NEVER, MUST, ALWAYS, CRITICAL, DO NOT, REQUIRED, IMPORTANT, FORBIDDEN, MANDATORY. These carry imperative force that must survive compression. The validator checks for their presence.
 
+**Note:** In deep mode, the "Preserve EXACTLY" rules apply to the compression step only. During the audit step, stale paths, commands, and inline code references are updated or removed, that is the point of deep mode.
+
 ### Preserve Structure
 - All markdown headings (keep exact heading text, compress body below)
 - Bullet point hierarchy (keep nesting level)
@@ -90,7 +109,11 @@ description: >
 ### Code blocks are read-only
 Anything inside ``` ... ``` or inline backticks must be copied character-for-character. Do not remove comments, spacing, or reorder lines inside code. If a file mixes prose and code, only compress the prose around the code blocks. Do not merge sections across code block boundaries.
 
+**Note:** In deep mode, code blocks containing stale examples (referencing deleted files, removed APIs) are removed along with their surrounding context during the audit step. The "read-only" rule applies during compression, not during auditing.
+
 ## Examples
+
+### Default mode
 
 Before:
 > You should always make sure to run the test suite before pushing any changes to the main branch. This is important because it helps catch bugs early and prevents broken builds from being deployed to production.
@@ -98,8 +121,19 @@ Before:
 After:
 > Run tests before push to main. Important: catch bugs early, prevent broken prod deploys.
 
-Before:
-> The application uses a microservices architecture with the following components. The API gateway handles all incoming requests and routes them to the appropriate service. The authentication service is responsible for managing user sessions and JWT tokens.
+### Deep mode
+
+Before (CLAUDE.md section):
+> ## Database
+> The application uses `src/db/legacy-connector.js` to connect to MongoDB. Always call `initPool()` before running queries. The pool size is configured in `config/database.yaml`.
+
+After auditing the codebase, the agent finds `src/db/legacy-connector.js` no longer exists, the app now uses `src/db/prisma.ts` with PostgreSQL, and `config/database.yaml` was replaced by environment variables:
 
 After:
-> Microservices architecture. API gateway route all requests to services. Auth service manage user sessions + JWT tokens.
+> ## Database
+> Uses `src/db/prisma.ts` with PostgreSQL. Connection configured via `DATABASE_URL` env var.
+
+Report includes:
+> - Removed: reference to `src/db/legacy-connector.js` (file deleted, replaced by `src/db/prisma.ts`)
+> - Removed: `initPool()` guidance (no longer applicable with Prisma)
+> - Updated: database config from `config/database.yaml` to `DATABASE_URL` env var
