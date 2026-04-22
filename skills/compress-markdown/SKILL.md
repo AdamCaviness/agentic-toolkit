@@ -12,9 +12,9 @@ description: >
 
 ## Trigger
 
-`/compress-markdown <filepath>` — reduce verbosity, preserve all content.
+`/compress-markdown <filepath>`, reduce verbosity, preserve all content.
 
-`/compress-markdown <filepath> --deep` — verify against codebase first, then compress.
+`/compress-markdown <filepath> --deep`, verify against codebase first, then compress.
 
 ## Modes
 
@@ -57,11 +57,11 @@ Deep mode trusts you to read the codebase and make intelligent editorial decisio
    - **Partially correct (moved, renamed, behavior changed):** Update the content to reflect reality. Don't just delete, fix it.
    - **Genuinely uncertain (can't determine from the codebase alone):** Keep it and add a note in the report. Don't remove what you can't disprove.
 
-5. **Write the audited file.** Apply all removals and updates.
+5. **Write the audited file.** Apply all removals and updates. Save a copy of this audited content as the validation baseline (e.g., `<stem>.audited.md`).
 
-6. **Compress.** Apply the same verbosity reduction as default mode to the surviving content.
+6. **Compress.** Apply the same verbosity reduction as default mode to the surviving content. Write the compressed result to the original path.
 
-7. **Validate, Fix.** Same as default mode.
+7. **Validate, Fix.** Run `validate.py` comparing the **audited file** (step 5) against the **compressed file** (step 6), not the original backup. The audit intentionally changed content, so the original is the wrong baseline. After validation passes or the fix loop completes, remove the audited file.
 
 8. **Report.** In addition to the standard compression stats, include:
    - Sections or content removed and why (one line each)

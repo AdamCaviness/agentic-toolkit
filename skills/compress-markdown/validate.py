@@ -11,7 +11,7 @@ HEADING_REGEX = re.compile(r"^(#{1,6})\s+(.*)", re.MULTILINE)
 BULLET_REGEX = re.compile(r"^\s*[-*+]\s+", re.MULTILINE)
 INLINE_CODE_REGEX = re.compile(r"(?<!`)(`(?!`)(.+?)(?<!`)`)(?!`)")
 PATH_REGEX = re.compile(
-    r"(?:\./|\.\./|/|[A-Za-z]:\\)[\w\-/\\\.]+|[\w\-\.]+[/\\][\w\-/\\\.]+")
+    r"(?<!\w)(?:\./|\.\./)[\\w\-/\\\.]+|(?<!\w)/[\w\-\.]+/[\w\-/\\\.]+|[A-Za-z]:\\[\w\-/\\\.]+|[\w\-\.]+/[\w\-/\\\.]+\.\w+")
 FRONTMATTER_REGEX = re.compile(r"\A---\n(.*?\n)---\n", re.DOTALL)
 
 IMPERATIVE_KEYWORDS = re.compile(
@@ -111,7 +111,9 @@ def validate(original_path, compressed_path):
     h1 = extract_headings(orig)
     h2 = extract_headings(comp)
     if h1 != h2:
-        errors.append(f"Heading mismatch: expected {len(h1)}, got {len(h2)}")
+        missing = [h for h in h1 if h not in h2]
+        added = [h for h in h2 if h not in h1]
+        errors.append(f"Heading mismatch: missing={missing}, added={added}")
 
     c1 = extract_code_blocks(orig)
     c2 = extract_code_blocks(comp)
