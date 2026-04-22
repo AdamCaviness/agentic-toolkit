@@ -14,6 +14,12 @@ PATH_REGEX = re.compile(
     r"(?:\./|\.\./|/|[A-Za-z]:\\)[\w\-/\\\.]+|[\w\-\.]+[/\\][\w\-/\\\.]+")
 FRONTMATTER_REGEX = re.compile(r"\A---\n(.*?\n)---\n", re.DOTALL)
 
+IMPERATIVE_KEYWORDS = re.compile(
+    r"\b(NEVER|MUST|ALWAYS|CRITICAL|DO NOT|REQUIRED|IMPORTANT|FORBIDDEN|MANDATORY)\b",
+    re.IGNORECASE)
+
+TOKENS_PER_WORD = 1.3
+
 
 def extract_frontmatter(text):
     m = FRONTMATTER_REGEX.match(text)
@@ -74,6 +80,19 @@ def count_bullets(text):
     return len(BULLET_REGEX.findall(text))
 
 
+def extract_imperative_sentences(text):
+    """Extract sentences containing imperative keywords (NEVER, MUST, ALWAYS, etc.)."""
+    sentences = re.split(r"(?<=[.!?\n])\s+", text)
+    result = []
+    for s in sentences:
+        s = s.strip()
+        if s and IMPERATIVE_KEYWORDS.search(s):
+            keywords = set(
+                m.group(0).upper() for m in IMPERATIVE_KEYWORDS.finditer(s))
+            result.append((keywords, s))
+    return result
+
+
 def validate(original_path, compressed_path):
     orig = Path(original_path).read_text(errors="ignore")
     comp = Path(compressed_path).read_text(errors="ignore")
@@ -120,7 +139,29 @@ def validate(original_path, compressed_path):
     if b1 > 0 and abs(b1 - b2) / b1 > 0.15:
         warnings.append(f"Bullet count changed significantly: {b1} -> {b2}")
 
+    orig_imperatives = extract_imperative_sentences(orig)
+    comp_lower = comp.lower()
+    weakened_directives = []
+    for keywords, sentence in orig_imperatives:
+        has_keyword = any(
+            kw.lower() in comp_lower for kw in keywords)
+        if not has_keyword:
+            weakened_directives.append(
+                f"{', '.join(keywords)} in: {sentence[:100]}")
+    if weakened_directives:
+        errors.append(
+            f"Directive keywords lost ({len(weakened_directives)} "
+            f"sentence(s) had imperative force removed):\n"
+            + "\n".join(f"    - {d}" for d in weakened_directives))
+
     is_valid = len(errors) == 0
+
+    orig_words = len(orig.split())
+    comp_words = len(comp.split())
+    orig_tokens = int(orig_words * TOKENS_PER_WORD)
+    comp_tokens = int(comp_words * TOKENS_PER_WORD)
+    reduction = (
+        100 * (orig_words - comp_words) / orig_words if orig_words > 0 else 0)
 
     print(f"Valid: {is_valid}")
     if errors:
@@ -131,6 +172,10 @@ def validate(original_path, compressed_path):
         print("\nWarnings:")
         for w in warnings:
             print(f"  - {w}")
+    print(f"\nStats:")
+    print(f"  Words:  {orig_words} -> {comp_words}")
+    print(f"  Tokens: ~{orig_tokens} -> ~{comp_tokens} (estimated)")
+    print(f"  Reduction: {reduction:.1f}%")
 
     return is_valid
 

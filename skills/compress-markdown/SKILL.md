@@ -43,6 +43,7 @@ description: >
 - Dates, version numbers, numeric values
 - Environment variables (`$HOME`, `NODE_ENV`)
 - Frontmatter/YAML headers
+- Directive keywords: NEVER, MUST, ALWAYS, CRITICAL, DO NOT, REQUIRED, IMPORTANT, FORBIDDEN, MANDATORY. These carry imperative force that must survive compression. The validator checks for their presence.
 
 ### Preserve Structure
 - All markdown headings (keep exact heading text, compress body below)
