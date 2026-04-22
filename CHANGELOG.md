@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.3.0...v0.3.1) (2026-04-22)
+
+
+### Documentation
+
+* add compress-markdown and update-deps to README and manifests ([#15](https://github.com/AdamCaviness/agentic-toolkit/issues/15)) ([747987b](https://github.com/AdamCaviness/agentic-toolkit/commit/747987ba8dd3ec4a6e0d2b65c4c754133497c4be))
+
 ## [0.3.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.2.1...v0.3.0) (2026-04-22)
 
 
