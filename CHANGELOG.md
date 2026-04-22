@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.2.1...v0.3.0) (2026-04-22)
+
+
+### Features
+
+* **skill:** add compress-markdown skill ([#13](https://github.com/AdamCaviness/agentic-toolkit/issues/13)) ([ba2fbe6](https://github.com/AdamCaviness/agentic-toolkit/commit/ba2fbe6b8548dda73aec17f51e62658737502b39))
+
 ## [0.2.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.2.0...v0.2.1) (2026-04-19)
 
 

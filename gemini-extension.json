@@ -1,6 +1,6 @@
 {
   "name": "agentic-toolkit",
   "description": "A collection of skills for agentic coding tools: next-ticket, architect-planner, product-planner, get-it-right, code-review, pr, ship, convert-worktree",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "contextFileName": "AGENTS.md"
 }
