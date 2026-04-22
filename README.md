@@ -204,6 +204,38 @@ Converts a git worktree into a regular local branch. Rebases onto the latest bas
 
 **Notes:** This skill replaces ExitWorktree. It never blocks on failures, so rebase conflicts or cleanup failures result in warnings, not errors. After conversion, run `npm install` (or equivalent) if lockfiles were auto-resolved.
 
+### [compress-markdown](skills/compress-markdown/SKILL.md)
+
+Compress markdown files into concise prose to save input tokens. Two modes: default (lossless verbosity reduction) and deep (codebase-verified lossy compression).
+
+**What it does:**
+
+1. Backs up the original file to `<stem>.original.md`
+2. Rewrites prose to be concise: drops filler, uses short synonyms, converts sentences to fragments
+3. Preserves code blocks, inline code, URLs, paths, headings, frontmatter, and directive keywords (NEVER, MUST, CRITICAL, etc.) character-for-character
+4. Runs a deterministic validator (`validate.py`) to catch structural regressions, with a fix-and-retry loop
+5. In `--deep` mode, reads each section and verifies claims against the codebase first, removing stale content and updating partially correct references before compressing
+
+**Usage:** `/compress-markdown <filepath>` for lossless, `/compress-markdown <filepath> --deep` for lossy codebase-verified compression.
+
+**Notes:** Deep mode is only meaningful for files that reference a codebase (CLAUDE.md, architecture docs, onboarding guides). The validator checks headings, code blocks, inline code, URLs, paths, frontmatter, imperative keywords, and prints compression stats (word count, token estimate, reduction %).
+
+### [update-deps](skills/update-deps/SKILL.md)
+
+Updates project dependencies. Checks open bot PRs for CVE patches, applies safe minor/patch updates, and researches breaking changes for major bumps.
+
+**What it does:**
+
+1. Detects the project's package manager and dependency files
+2. Checks for open bot PRs (Dependabot, Renovate) with CVE patches and merges them first
+3. Applies safe minor and patch updates
+4. With the `major` flag, researches each major bump in parallel via sub-agents, then applies sequentially
+5. Runs tests after each update batch and rolls back on failure
+
+**Usage:** `/update-deps` for safe updates, `/update-deps major` for all updates including major bumps, `/update-deps frontend` to scope to frontend dependencies.
+
+**Notes:** Scope options are `frontend`, `backend`, `infra`, or `all` (default). Can combine scopes with `|` separator.
+
 ## Ticket Systems
 
 Ticket-aware skills (`next-ticket`, `triage-architecture`, `triage-product`, `triage-bugs`) auto-detect your system from `git remote -v` and work with GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs available in your session.
