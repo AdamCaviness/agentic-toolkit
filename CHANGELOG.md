@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.3.0...v0.3.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* **ci:** prevent docs-only commits from triggering releases ([#18](https://github.com/AdamCaviness/agentic-toolkit/issues/18)) ([b106c5b](https://github.com/AdamCaviness/agentic-toolkit/commit/b106c5b5552c72b028c6b90c47baa3716586575e))
+
 ## [0.3.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.2.1...v0.3.0) (2026-04-22)
 
 
