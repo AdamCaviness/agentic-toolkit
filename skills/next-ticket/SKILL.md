@@ -13,17 +13,16 @@ Verify you're in a git repo before starting. If not, tell the user and stop.
 
 ## Step 1: Detect Ticket System
 
-Determine which ticket system this project uses. Check in this order:
+Determine which ticket system this project uses.
 
-1. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use that value.
-2. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
-3. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
+1. **Cached config (always wins)**: Check `next-ticket-config.json` in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip straight to Step 1b — never re-detect when the cache has an answer.
+2. **Model-judgement detection**: Use your own judgement on whatever signals the repo happens to provide. Different teams hint at their tracker in different places and different formats — so there is no prescribed file or key to look for. Read whatever seems informative: the README, CLAUDE.md, CONTRIBUTING.md, issue templates, `docs/`, the git remotes, URLs anywhere in the repo, prose mentions of ticket-ID shapes (`PROJ-42`, `#42`, `AB#42`), commit message conventions, CI config references, etc. Lean on model intelligence; don't follow a rigid ladder.
+3. **Confirm with the user.** Tell them what you concluded and where the evidence came from, e.g., "Detected ticket system: Jira (acme.atlassian.net link in README.md). Correct?" If they confirm, cache it. If they correct, cache the correction.
+4. **Can't tell?** Ask plainly: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut"), then cache.
 
-Once determined, cache the value in `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries if it does.
+Cache writes go to `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries; never overwrite unrelated keys.
 
-Confirm the detected system to the user (e.g., "Detected ticket system: GitHub Issues"). If the user corrects it, update the cached value and proceed with their answer.
-
-> **Tip**: If auto-detect consistently gets it wrong for a project (e.g., a GitHub-hosted repo that uses Jira), add `ticketSystem: jira` to the project's CLAUDE.md to skip detection.
+After run 1, the cached value makes detection effectively 100% reliable on subsequent runs — teams are not forced to adopt any particular file, key, or format.
 
 ## Step 1b: Establish User Identity
 
