@@ -5,15 +5,15 @@ A collection of skills for agentic coding tools, including [Claude Code](https:/
 | | Skill | Command | What it does |
 |---|-------|---------|-------------|
 | **Tickets** | [next-ticket](#next-ticket) | `/next-ticket` | Pick the best open ticket, implement it with TDD, wait for review |
-| | [triage-architecture](#triage-architecture) | `/triage-architecture` | Audit code for structural and safety issues, file or refine tickets |
-| | [triage-bugs](#triage-bugs) | `/triage-bugs` | Prove real defects with 4-pass analysis, file or refine only what clears the bar |
-| | [triage-product](#triage-product) | `/triage-product` | Audit UX for broken workflows and gaps, file or refine tickets |
+| | [triage-architecture](#triage-architecture) | `/triage-architecture` | Audit code for structural/safety issues; file tickets or `refine` existing |
+| | [triage-bugs](#triage-bugs) | `/triage-bugs` | Prove real defects with 4-pass analysis; file or `refine` what clears the bar |
+| | [triage-product](#triage-product) | `/triage-product` | Audit UX for broken workflows/gaps; file tickets or `refine` existing |
 | **Quality** | [code-review](#code-review) | `/code-review` | Dispatch a reviewer subagent to evaluate all branch work (committed + uncommitted) |
 | | [get-it-right](#get-it-right) | `/get-it-right` | Re-architect the current branch from scratch, leave unstaged for review |
 | **Workflow** | [pr](#pr) | `/pr` | Format, lint, test, commit, push, open PR |
 | | [ship](#ship) | `/ship` | Commit, push, merge PR, sync main, delete branch |
 | | [convert-worktree](#convert-worktree) | `/convert-worktree` | Cleanly convert a worktree back into a local branch |
-| **Utility** | [compress-markdown](#compress-markdown) | `/compress-markdown` | Compress markdown to save tokens; `--deep` validates against codebase first |
+| **Utility** | [compress-markdown](#compress-markdown) | `/compress-markdown` | Compress markdown to save tokens; `deep` validates against codebase first |
 | | [update-deps](#update-deps) | `/update-deps` | Check CVEs, apply minor/patch updates, `major` for breaking changes; scopeable |
 
 ## Installation
@@ -72,15 +72,11 @@ For project-level install, symlink into `.claude/skills/` or `.agents/skills/` i
 
 </details>
 
-## Skills
+## Tickets
 
-### Ticket Systems
-
-Skills that interact with tickets (`next-ticket`, `triage-architecture`, `triage-product`, `triage-bugs`) auto-detect your ticket system using model-judgement detection: the agent reads repo signals (README, CLAUDE.md, git remotes, commit conventions) to determine which system you use. Supported out of the box: GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs in your session.
+These skills auto-detect your ticket system using model-judgement detection: the agent reads repo signals (README, CLAUDE.md, git remotes, commit conventions) to determine which system you use. Supported out of the box: GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs in your session.
 
 Detection results and your user identity (git name, platform handles) are cached to `next-ticket-config.json` in your system temp directory, so detection only runs once per project. For persistent override, add `ticketSystem: <name>` to your project's CLAUDE.md.
-
-**Tickets**
 
 ### [next-ticket](skills/next-ticket/SKILL.md)
 
@@ -112,13 +108,11 @@ Audits for UX gaps, broken workflows, missing states, confusing terminology, acc
 
 **Usage:** `/triage-product`, `/triage-product refine`, `/triage-product refine 5h`
 
----
-
-**Quality**
+## Quality
 
 ### [code-review](skills/code-review/SKILL.md)
 
-Dispatches a code-reviewer subagent to evaluate your diff against requirements. The reviewer gets a crafted context (git range, what you built, what it should do), never your session history. Returns categorized feedback (Critical, Important, Minor) plus a merge verdict.
+Dispatches a code-reviewer subagent to evaluate all branch work against requirements: every commit since the merge base with the default branch, plus any staged or unstaged changes in your working tree. The reviewer gets a crafted context (git range, working-tree state, what you built, what it should do), never your session history. Returns categorized feedback (Critical, Important, Minor) plus a merge verdict.
 
 **Usage:** Invoke after completing a task, finishing a major feature, or before merging.
 
@@ -130,9 +124,7 @@ Re-evaluates the current branch's work as if starting from scratch. Deep-reads e
 
 **Usage:** `/get-it-right`
 
----
-
-**Workflow**
+## Workflow
 
 ### [pr](skills/pr/SKILL.md)
 
@@ -152,13 +144,11 @@ Converts a git worktree into a regular local branch. Commits any uncommitted wor
 
 **Usage:** `/convert-worktree` (from inside a worktree)
 
----
-
-**Utility**
+## Utility
 
 ### [compress-markdown](skills/compress-markdown/SKILL.md)
 
-Reduces markdown verbosity to save input tokens, particularly useful for CLAUDE.md files but works on any markdown. Default mode is lossless: drops filler words, uses short synonyms, converts sentences to fragments while preserving all code blocks, URLs, paths, and directive keywords character-for-character. Deep mode (`--deep`) verifies each section against the codebase first, removing stale content before compressing. A deterministic validator catches structural regressions.
+Reduces markdown verbosity to save input tokens, particularly useful for CLAUDE.md files but works on any markdown. Default mode is lossless: drops filler words, uses short synonyms, converts sentences to fragments while preserving all code blocks, URLs, paths, and directive keywords character-for-character. Deep mode (pass `deep` as the second arg) verifies each section against the codebase first, removing stale content before compressing. A deterministic validator catches structural regressions.
 
 **Usage:** `/compress-markdown <filepath>`, `/compress-markdown <filepath> deep`
 
