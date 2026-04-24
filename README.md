@@ -2,6 +2,20 @@
 
 A collection of skills for agentic coding tools, including [Claude Code](https://claude.ai/code), [Codex](https://openai.com/codex/), and [Gemini CLI](https://github.com/google-gemini/gemini-cli).
 
+| | Skill | Command | What it does |
+|---|-------|---------|-------------|
+| **Tickets** | [next-ticket](#next-ticket) | `/next-ticket` | Pick the best open ticket, implement it with TDD, wait for review |
+| | [triage-architecture](#triage-architecture) | `/triage-architecture` | Audit code for structural/safety issues; file tickets or `refine` existing |
+| | [triage-bugs](#triage-bugs) | `/triage-bugs` | Prove real defects with 4-pass analysis; file or `refine` what clears the bar |
+| | [triage-product](#triage-product) | `/triage-product` | Audit UX for broken workflows/gaps; file tickets or `refine` existing |
+| **Quality** | [code-review](#code-review) | `/code-review` | Dispatch a reviewer subagent to evaluate all branch work (committed + uncommitted) |
+| | [get-it-right](#get-it-right) | `/get-it-right` | Re-architect the current branch from scratch, leave unstaged for review |
+| **Workflow** | [pr](#pr) | `/pr` | Format, lint, test, commit, push, open PR |
+| | [ship](#ship) | `/ship` | Commit, push, merge PR, sync main, delete branch |
+| | [convert-worktree](#convert-worktree) | `/convert-worktree` | Cleanly convert a worktree back into a local branch |
+| **Utility** | [compress-markdown](#compress-markdown) | `/compress-markdown` | Compress markdown to save tokens; `deep` validates against codebase first |
+| | [update-deps](#update-deps) | `/update-deps` | Check CVEs, apply minor/patch updates, `major` for breaking changes; scopeable |
+
 ## Installation
 
 Installation differs by platform. All three platforms consume the same `skills/<name>/SKILL.md` format, so one install gets you every skill.
@@ -58,189 +72,93 @@ For project-level install, symlink into `.claude/skills/` or `.agents/skills/` i
 
 </details>
 
-## Skills
+## Tickets
+
+These skills auto-detect your ticket system using model-judgement detection: the agent reads repo signals (README, CLAUDE.md, git remotes, commit conventions) to determine which system you use. Supported out of the box: GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs in your session.
+
+Detection results and your user identity (git name, platform handles) are cached to `next-ticket-config.json` in your system temp directory, so detection only runs once per project. For persistent override, add `ticketSystem: <name>` to your project's CLAUDE.md.
 
 ### [next-ticket](skills/next-ticket/SKILL.md)
 
-Picks the highest-value open ticket from your project's issue tracker, implements it end-to-end using TDD, and waits for your review before pushing.
+Picks the highest-value open ticket from your issue tracker, implements it end-to-end with TDD, and waits for your review. Tickets are scored by severity, simplicity, blocking power, and value. Before branching, the skill validates the ticket against current code (checking for prior fixes or partial resolution) and claims it with a team-safe self-assignment protocol: re-reads the assignee field after a randomized pause to avoid collisions, self-assigns, and confirms the read-back matches before proceeding.
 
-**What it does:**
+**Usage:** `/next-ticket`
 
-1. Detects your ticket system automatically (GitHub Issues, Jira, GitLab Issues, Azure Boards, or anything else)
-2. Fetches all open tickets and scores them by severity, simplicity, blocking power, and value
-3. Picks the best candidate, validates it against the current code, and creates a branch
-4. Writes failing tests first, implements until green, formats, and commits
-5. Stops and waits for you to review before pushing
+**Triage skills** share the same architecture: cache tickets to disk, build a project map, spawn 4 parallel sub-agents (one per concern cluster), and post-process cross-cluster findings. Each supports three modes:
 
-**Usage:** Type `/next-ticket` in your agent.
-
-**Platform detection:** The skill reads your git remote to determine your ticket system. If it guesses wrong, just correct it. For projects where the git host doesn't match the ticket system (e.g., GitHub repo using Jira), add `ticketSystem: jira` to your CLAUDE.md.
+- **Create** (default): Find new problems, file up to 3 tickets per cluster
+- **Refine**: Improve existing tickets, create none
+- **Refine with duration** (e.g., `refine 5h`): Scope refinement to tickets updated within the given time window
 
 ### [triage-architecture](skills/triage-architecture/SKILL.md)
 
-Audits your codebase for bugs, security vulnerabilities, missing error handling, race conditions, architectural gaps, DRY violations, and incomplete implementations. Spawns 4 parallel sub-agents (Safety, Correctness, Maintainability, Completeness) that read code, check for duplicates, and file well-scoped tickets.
+Audits code for bugs, security vulnerabilities, missing error handling, race conditions, architectural gaps, DRY violations, and incomplete implementations. Clusters: Safety, Correctness, Maintainability, Completeness.
 
-**What it does:**
-
-1. Detects your ticket system and caches all open/closed tickets to disk
-2. Builds a project map so sub-agents skip discovery
-3. Spawns 4 focused agents in parallel, each auditing a different concern cluster
-4. Sub-agents file new tickets (create mode) or refine existing ones (refine mode)
-5. Post-processes cross-cluster findings into the relevant tickets
-
-**Usage:** `/triage-architecture`, `/triage-architecture refine`, or `/triage-architecture refine 5h`
-
-### [triage-product](skills/triage-product/SKILL.md)
-
-Audits your project for UX gaps, broken workflows, missing states, confusing terminology, visual inconsistency, accessibility issues, and competitive table stakes. Same parallel architecture as triage-architecture but focused on user-facing concerns.
-
-**What it does:**
-
-1. Detects your ticket system and caches all open/closed tickets to disk
-2. Builds a project map with product context (who the user is, what the product promises)
-3. Spawns 4 focused agents in parallel (Core Experience, Error & Edge States, Polish & Consistency, Reach & Access)
-4. Sub-agents file new tickets (create mode) or refine existing ones (refine mode)
-5. Post-processes cross-cluster findings into the relevant tickets
-
-**Usage:** `/triage-product`, `/triage-product refine`, or `/triage-product refine 5h`
+**Usage:** `/triage-architecture`, `/triage-architecture refine`, `/triage-architecture refine 5h`
 
 ### [triage-bugs](skills/triage-bugs/SKILL.md)
 
-Investigates your codebase for proven defects using adversarial 4-pass analysis. Spawns 4 parallel sub-agents (Data & State, Security & Auth, Correctness, Silent Failures) that investigate, prove, and document bugs with enough rigor that a skeptical maintainer could fix each from the report alone.
+Investigates the codebase for proven defects. Each sub-agent (Data & State, Security & Auth, Correctness, Silent Failures) applies a 4-pass method: frame the specific claim, trace the code path end-to-end, actively try to falsify the suspicion, then prove it with a reproduction, code-path proof, or failing test. Only findings that clear this certainty bar get filed. The result includes both confirmed bugs and a rejection ledger of investigated-but-dismissed candidates.
 
-**What it does:**
+**Usage:** `/triage-bugs`, `/triage-bugs refine`, `/triage-bugs refine 5h`
 
-1. Detects your ticket system and caches all open/closed tickets to disk
-2. Builds a project map with bug-relevant infrastructure (error handling, async boundaries, auth chain, database patterns)
-3. Spawns 4 focused agents in parallel, each investigating a different bug category
-4. Each agent applies a 4-pass method: frame the claim, trace the code, falsify, prove
-5. Only files tickets that clear the certainty bar (reproduction, code-path proof, or failing test)
-6. Collects a unified summary of confirmed bugs and investigated-but-rejected candidates
+### [triage-product](skills/triage-product/SKILL.md)
 
-**Usage:** `/triage-bugs`, `/triage-bugs refine`, or `/triage-bugs refine 5h`
+Audits for UX gaps, broken workflows, missing states, confusing terminology, accessibility issues, and competitive table stakes. Clusters: Core Experience, Error & Edge States, Polish & Consistency, Reach & Access. Sub-agents judge against what the product actually promises (from its README), not abstract ideals.
 
-### [get-it-right](skills/get-it-right/SKILL.md)
+**Usage:** `/triage-product`, `/triage-product refine`, `/triage-product refine 5h`
 
-Re-evaluate and re-architect the current branch's work as if starting from scratch. Reduces complexity, consolidates fragmentation, auto-implements improvements, and outputs a testing playbook.
-
-**What it does:**
-
-1. Identifies the scope of work on the current branch (commits, changed files, linked issue)
-2. Deep-reads every changed and related file to understand context and dependencies
-3. Performs retrospective analysis: what should have been done differently, where complexity is unnecessary, where fragmentation exists
-4. Plans and auto-implements re-architecture without committing
-5. Runs format, lint, and tests to validate
-6. Outputs a brief testing playbook for manual validation
-
-**Usage:** Type `/get-it-right` in your agent when you want a fresh look at your current branch's approach.
-
-**Notes:** All changes are left unstaged for your review. The skill preserves existing behavior while reducing complexity and file count.
+## Quality
 
 ### [code-review](skills/code-review/SKILL.md)
 
-Dispatches a code-reviewer subagent to evaluate completed work against requirements, keeping the reviewer focused on the diff and preserving your own context.
+Dispatches a code-reviewer subagent to evaluate all branch work against requirements: every commit since the merge base with the default branch, plus any staged or unstaged changes in your working tree. The reviewer gets a crafted context (git range, working-tree state, what you built, what it should do), never your session history. Returns categorized feedback (Critical, Important, Minor) plus a merge verdict.
 
-**What it does:**
+**Usage:** Invoke after completing a task, finishing a major feature, or before merging.
 
-1. Captures the base and head git SHAs for the changes under review
-2. Fills a review template with what you built, what it should do, and the git range
-3. Dispatches a code-reviewer subagent via the Task tool with that context only
-4. Returns categorized feedback (Critical, Important, Minor) plus a merge verdict
-5. You fix Critical/Important issues, note Minor for later, and push back on weak feedback
+Adapted from the superpowers project's `requesting-code-review` skill under MIT. See [ATTRIBUTIONS.md](skills/code-review/ATTRIBUTIONS.md).
 
-**Usage:** Invoke after completing a task, finishing a major feature, or before merging to main.
+### [get-it-right](skills/get-it-right/SKILL.md)
 
-**Notes:** Adapted from the superpowers project's `requesting-code-review` skill under MIT. See [skills/code-review/ATTRIBUTIONS.md](skills/code-review/ATTRIBUTIONS.md).
+Re-evaluates the current branch's work as if starting from scratch. Deep-reads every changed file, performs retrospective analysis (unnecessary complexity, fragmentation, what the simplest working version looks like), then auto-implements improvements without committing. Leaves all changes unstaged for your review with a brief testing playbook.
+
+**Usage:** `/get-it-right`
+
+## Workflow
 
 ### [pr](skills/pr/SKILL.md)
 
-Format, lint, test, commit, push, and create a pull request. The single "I'm done" command.
+The "I'm done" command. Runs format/lint and tests (skips if already passing with no file changes), commits auto-fixed formatting, pushes, extracts the issue number from the branch name (`fix/224-bug` becomes `Closes #224`), and creates a PR. Stops on any failure.
 
-**What it does:**
-
-1. Verifies you're not on main/master
-2. Runs format and lint (skips if already passing in this session)
-3. Runs tests (skips if already passing in this session)
-4. Commits any auto-fixed formatting changes
-5. Pushes to remote
-6. Extracts issue number from branch name (e.g., `fix/224-bug` → `#224`)
-7. Creates PR with summary, changes, testing notes, and "Closes #NNN"
-
-**Usage:** Type `/pr` in your agent when your feature branch is ready.
-
-**Notes:** If format/lint or tests fail, the skill stops and reports errors. If a PR already exists, it shows the URL and confirms the update.
+**Usage:** `/pr`
 
 ### [ship](skills/ship/SKILL.md)
 
-Commit, push, create/merge PR, sync local main, and delete the branch. The complete "I'm done with this branch" workflow.
+The complete branch lifecycle. Commits, pushes, creates or updates a PR, merges it, syncs local main, and deletes the branch. The skill detects your repo's allowed merge strategies (merge, squash, rebase) and caches the policy in `.git/agents/repo-policy.json` with a 30-day freshness window, retrying once on policy errors. For forked repos, PRs always target your fork, never upstream.
 
-**What it does:**
-
-1. Reviews uncommitted changes and prompts for confirmation if anything looks suspect
-2. Commits with a descriptive message based on the diff
-3. Pushes to origin
-4. Creates a PR if none exists, or updates the existing one
-5. Merges the PR
-6. Syncs local main with `git pull`
-7. Deletes the merged branch locally and remotely (if not auto-deleted)
-
-**Usage:** Type `/ship` in your agent when your branch is complete and ready to merge.
-
-**Notes:** For forked repos, PRs target your fork (origin), never upstream. Only works on feature branches, not main.
+**Usage:** `/ship`
 
 ### [convert-worktree](skills/convert-worktree/SKILL.md)
 
-Converts a git worktree into a regular local branch. Rebases onto the latest base branch, runs project cleanup, removes the worktree, and checks out the branch in the main workspace.
+Converts a git worktree into a regular local branch. Commits any uncommitted work as a WIP commit, runs project cleanup (e.g., `make dev-stop`) while still in the worktree so project-specific variables like DB names and ports resolve correctly, rebases onto the latest base branch (auto-resolving lockfile conflicts, aborting on code conflicts), then checks the main workspace for uncommitted changes before removing the worktree and checking out the branch. Never blocks on failures: rebase conflicts, cleanup errors, and lockfile conflicts all produce warnings, not errors.
 
-**What it does:**
+**Usage:** `/convert-worktree` (from inside a worktree)
 
-1. Verifies you're in a worktree (not the main workspace)
-2. Commits any uncommitted work as a WIP commit
-3. Runs project cleanup (e.g., `make dev-stop`) while worktree context is still available
-4. Rebases onto the latest base branch (auto-resolves lockfile conflicts, aborts on code conflicts)
-5. Removes the worktree and checks out the branch in your main workspace
-
-**Usage:** Type `/convert-worktree` in your agent while inside a worktree.
-
-**Notes:** This skill replaces ExitWorktree. It never blocks on failures, so rebase conflicts or cleanup failures result in warnings, not errors. After conversion, run `npm install` (or equivalent) if lockfiles were auto-resolved.
+## Utility
 
 ### [compress-markdown](skills/compress-markdown/SKILL.md)
 
-Compress markdown files into concise prose to save input tokens. Two modes: default (lossless verbosity reduction) and deep (codebase-verified lossy compression).
+Reduces markdown verbosity to save input tokens, particularly useful for CLAUDE.md files but works on any markdown. Default mode is lossless: drops filler words, uses short synonyms, converts sentences to fragments while preserving all code blocks, URLs, paths, and directive keywords character-for-character. Deep mode (pass `deep` as the second arg) verifies each section against the codebase first, removing stale content before compressing. A deterministic validator catches structural regressions.
 
-**What it does:**
-
-1. Backs up the original file to `<stem>.original.md`
-2. Rewrites prose to be concise: drops filler, uses short synonyms, converts sentences to fragments
-3. Preserves code blocks, inline code, URLs, paths, headings, frontmatter, and directive keywords (NEVER, MUST, CRITICAL, etc.) character-for-character
-4. Runs a deterministic validator (`validate.py`) to catch structural regressions, with a fix-and-retry loop
-5. In `--deep` mode, reads each section and verifies claims against the codebase first, removing stale content and updating partially correct references before compressing
-
-**Usage:** `/compress-markdown <filepath>` for lossless, `/compress-markdown <filepath> --deep` for lossy codebase-verified compression.
-
-**Notes:** Deep mode is only meaningful for files that reference a codebase (CLAUDE.md, architecture docs, onboarding guides). The validator checks headings, code blocks, inline code, URLs, paths, frontmatter, imperative keywords, and prints compression stats (word count, token estimate, reduction %).
+**Usage:** `/compress-markdown <filepath>`, `/compress-markdown <filepath> deep`
 
 ### [update-deps](skills/update-deps/SKILL.md)
 
-Updates project dependencies. Checks open bot PRs for CVE patches, applies safe minor/patch updates, and researches breaking changes for major bumps.
+Updates project dependencies with CVE-first prioritization. Checks for open Dependabot/Renovate PRs with security patches, applies safe minor/patch updates, and runs tests after each batch (rolling back on failure). With the `major` flag, spawns parallel research sub-agents that search for migration guides and changelogs, scan the codebase for affected code, and produce change plans, then applies each major bump sequentially with test validation.
 
-**What it does:**
+**Usage:** `/update-deps`, `/update-deps major`, `/update-deps frontend`, `/update-deps backend|infra major`
 
-1. Detects the project's package manager and dependency files
-2. Checks for open bot PRs (Dependabot, Renovate) with CVE patches and merges them first
-3. Applies safe minor and patch updates
-4. With the `major` flag, researches each major bump in parallel via sub-agents, then applies sequentially
-5. Runs tests after each update batch and rolls back on failure
-
-**Usage:** `/update-deps` for safe updates, `/update-deps major` for all updates including major bumps, `/update-deps frontend` to scope to frontend dependencies.
-
-**Notes:** Scope options are `frontend`, `backend`, `infra`, or `all` (default). Can combine scopes with `|` separator.
-
-## Ticket Systems
-
-Ticket-aware skills (`next-ticket`, `triage-architecture`, `triage-product`, `triage-bugs`) auto-detect your system from `git remote -v` and work with GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs available in your session.
-
-If auto-detect gets it wrong, correct it once and the detection is cached for the session. For persistent override, add `ticketSystem: <name>` to your project's CLAUDE.md.
+Scope options: `frontend`, `backend`, `infra`, or `all` (default). Combine with `|`.
 
 ## Releasing
 

@@ -3,9 +3,9 @@ name: compress-markdown
 model: sonnet
 description: >
   Compress markdown files into concise prose to save input tokens. Default mode reduces
-  verbosity without losing information. With --deep, verifies each section against the
+  verbosity without losing information. With deep, verifies each section against the
   codebase first, removing stale or incorrect content before compressing.
-  Trigger: /compress-markdown <filepath> [--deep]
+  Trigger: /compress-markdown <filepath> [deep]
 ---
 
 # Compress Markdown
@@ -14,7 +14,7 @@ description: >
 
 `/compress-markdown <filepath>`, reduce verbosity, preserve all content.
 
-`/compress-markdown <filepath> --deep`, verify against codebase first, then compress.
+`/compress-markdown <filepath> deep`, verify against codebase first, then compress.
 
 ## Modes
 
