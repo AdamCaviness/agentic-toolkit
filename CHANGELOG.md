@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.4.0...v0.4.1) (2026-04-24)
+
+
+### Bug Fixes
+
+* **ci:** retrigger release-please + refactor code-review skill ([#23](https://github.com/AdamCaviness/agentic-toolkit/issues/23)) ([7aa4b05](https://github.com/AdamCaviness/agentic-toolkit/commit/7aa4b058a6c1d64164b36014a25f017084ad32d3))
+
 ## [0.4.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.3.1...v0.4.0) (2026-04-24)
 
 
