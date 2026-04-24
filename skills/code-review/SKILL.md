@@ -23,10 +23,11 @@ Dispatch a code-reviewer subagent to catch issues before they cascade. The revie
 
 ## How to Request
 
-**1. Get git SHAs:**
+**1. Get git range:**
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+BASE_SHA=$(git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main)
 HEAD_SHA=$(git rev-parse HEAD)
+HAS_UNCOMMITTED=$([ -n "$(git status --porcelain)" ] && echo "yes" || echo "no")
 ```
 
 **2. Dispatch the code-reviewer subagent:**
@@ -36,8 +37,9 @@ Use the Task tool with `subagent_type: "general-purpose"` (or the code-reviewer 
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}`, what you just built
 - `{PLAN_OR_REQUIREMENTS}`, what it should do
-- `{BASE_SHA}`, starting commit
+- `{BASE_SHA}`, merge base with default branch
 - `{HEAD_SHA}`, ending commit
+- `{HAS_UNCOMMITTED}`, "yes" if working tree has staged or unstaged changes
 - `{DESCRIPTION}`, brief summary
 
 **3. Act on feedback:**
@@ -53,7 +55,7 @@ Use the Task tool with `subagent_type: "general-purpose"` (or the code-reviewer 
 
 You: Let me request code review before proceeding.
 
-BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
+BASE_SHA=$(git merge-base HEAD origin/main)
 HEAD_SHA=$(git rev-parse HEAD)
 
 [Dispatch code-reviewer subagent]

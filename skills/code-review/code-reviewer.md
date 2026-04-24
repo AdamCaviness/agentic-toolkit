@@ -21,11 +21,18 @@ You are reviewing code changes for production readiness.
 
 **Base:** {BASE_SHA}
 **Head:** {HEAD_SHA}
+**Has uncommitted work:** {HAS_UNCOMMITTED}
 
 ```bash
+# Committed branch changes
 git diff --stat {BASE_SHA}..{HEAD_SHA}
 git diff {BASE_SHA}..{HEAD_SHA}
+
+# Uncommitted work (staged + unstaged) — skip if HAS_UNCOMMITTED is "no"
+git diff HEAD
 ```
+
+Review committed and uncommitted changes together as a single body of work.
 
 ## Review Checklist
 
