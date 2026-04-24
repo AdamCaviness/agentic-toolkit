@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.3.1...v0.4.0) (2026-04-24)
+
+
+### Features
+
+* **next-ticket:** team-safe claiming + model-judgement detection ([#20](https://github.com/AdamCaviness/agentic-toolkit/issues/20)) ([ed70c3c](https://github.com/AdamCaviness/agentic-toolkit/commit/ed70c3c02cd99f2f1949f882e0caf78a331fb653))
+
+
+### Bug Fixes
+
+* **ci:** prevent docs-only commits from triggering releases ([#18](https://github.com/AdamCaviness/agentic-toolkit/issues/18)) ([b106c5b](https://github.com/AdamCaviness/agentic-toolkit/commit/b106c5b5552c72b028c6b90c47baa3716586575e))
+
 ## [0.3.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.3.0...v0.3.1) (2026-04-23)
 
 
