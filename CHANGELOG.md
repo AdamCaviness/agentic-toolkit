@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.4.1...v0.4.2) (2026-04-25)
+
+
+### Bug Fixes
+
+* **skill:** enforce next-ticket branch gate ([#25](https://github.com/AdamCaviness/agentic-toolkit/issues/25)) ([fdd6e2a](https://github.com/AdamCaviness/agentic-toolkit/commit/fdd6e2a68d7c709cb7e2cf1ac2e764af5a34e6a1))
+
 ## [0.4.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.4.0...v0.4.1) (2026-04-24)
 
 
