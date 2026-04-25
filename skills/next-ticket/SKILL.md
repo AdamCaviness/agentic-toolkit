@@ -150,6 +150,8 @@ Before branching or writing code, self-assign the selected ticket in the source 
 
 ## Step 5: Create Branch
 
+This is a hard gate. Do not write tests, edit files, or implement anything until branch creation succeeds and the current branch is verified.
+
 Determine the branch category from the ticket content:
 - Bug/defect/error/crash/race condition/fix = `fix/`
 - New feature/add/create/implement = `feat/`
@@ -158,6 +160,8 @@ Determine the branch category from the ticket content:
 - Everything else = `chore/`
 
 Ensure you're on the latest default branch (typically `main` or `master`), then create a new branch following the naming convention `<category>/<ticket-id>-<brief-desc>` (e.g., `fix/42-auth-token-refresh-race`). Keep the description part to 3-5 hyphenated words derived from the ticket title.
+
+After creating the branch, verify it with `git branch --show-current`. The current branch must exactly match the intended branch name. If branch creation or verification fails, stop and report the problem. Do not continue on the default branch or any unrelated branch.
 
 ## Step 6: Write Failing Tests (TDD)
 
