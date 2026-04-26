@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.6.2...v0.6.3) (2026-04-26)
+
+
+### Refactoring
+
+* **skills:** forbid concrete Claude-only leaks in public skills ([#53](https://github.com/AdamCaviness/agentic-toolkit/issues/53)) ([10d05c2](https://github.com/AdamCaviness/agentic-toolkit/commit/10d05c2ca146c0e078a746f29e97e7ce77aa2067)), closes [#35](https://github.com/AdamCaviness/agentic-toolkit/issues/35)
+
 ## [0.6.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.6.1...v0.6.2) (2026-04-26)
 
 

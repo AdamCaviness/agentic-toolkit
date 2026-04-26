@@ -1,7 +1,7 @@
 {
   "name": "agentic-toolkit",
   "description": "A collection of skills for agentic coding tools: next-ticket, get-it-right, code-review, pr, ship, convert-worktree, triage-bugs, triage-product, triage-architecture, update-deps, compress-markdown",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "author": {
     "name": "Adam Caviness"
   },
