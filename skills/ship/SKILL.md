@@ -21,13 +21,24 @@ Complete the current branch by committing, pushing, merging, and cleaning up.
 
 1. **Review uncommitted changes**: Run `git status` and `git diff` to see what's uncommitted. If any files or changes look suspect, prompt the user and wait for confirmation before committing.
 2. **Commit**: Stage and commit the confirmed changes with a descriptive message based on the diff.
-3. **Push**: Push the current branch to origin with `-u` flag if not already pushed.
-4. **Create PR** (if none exists): Create a PR using `gh pr create`. Use commit messages to generate the title and body. For forked repos, use `--repo` targeting the user's fork (origin), never upstream.
-5. **Resolve merge strategy**: Read cached repository policy from `$(git rev-parse --git-dir)/agents/repo-policy.json` if present and fresh. If missing, stale, invalid, or for a different repository, refresh it with `gh repo view --json nameWithOwner,mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed,deleteBranchOnMerge` and write the result back to the cache.
-6. **Merge PR**: Choose the first allowed strategy in this order: `--merge` when `mergeCommitAllowed` is true, else `--squash` when `squashMergeAllowed` is true, else `--rebase` when `rebaseMergeAllowed` is true. Merge with `gh pr merge <strategy>`. For forked repos, use `--repo` targeting the fork. If no strategy is allowed, stop and report the repository merge policy.
-7. **Sync default branch**: `git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"`
-8. **Clean up**: Delete the merged branch locally (`git branch -D`). Only delete the remote branch (`git push origin --delete`) if it still exists. Some repos auto-delete branches on merge.
-9. **Report**: Confirm done with the merged PR URL.
+3. **Pre-push gate** (build the publication inventory before any push):
+
+   ```bash
+   BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+   if [ -z "$BASE_BRANCH" ]; then
+     git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
+   fi
+   ```
+
+   - Inventory the publication content: `git diff --name-status "$BASE_BRANCH"...HEAD` lists every committed path the push will publish. Read this list.
+   - Screen the publication inventory for high-risk patterns. Stop and report if any path matches `.env`, `.env.*`, `*.pem`, `*.key`, `id_rsa*`, `*.p12`, `*.pfx`, `*credential*`, `*secret*`, or `*.sqlite*`. The user must remove the path, add it to `.gitignore`, or explicitly confirm before push continues.
+4. **Push**: Push the current branch to origin with `-u` flag if not already pushed.
+5. **Create PR** (if none exists): Create a PR using `gh pr create`. Use commit messages to generate the title and body. For forked repos, use `--repo` targeting the user's fork (origin), never upstream.
+6. **Resolve merge strategy**: Read cached repository policy from `$(git rev-parse --git-dir)/agents/repo-policy.json` if present and fresh. If missing, stale, invalid, or for a different repository, refresh it with `gh repo view --json nameWithOwner,mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed,deleteBranchOnMerge` and write the result back to the cache.
+7. **Merge PR**: Choose the first allowed strategy in this order: `--merge` when `mergeCommitAllowed` is true, else `--squash` when `squashMergeAllowed` is true, else `--rebase` when `rebaseMergeAllowed` is true. Merge with `gh pr merge <strategy>`. For forked repos, use `--repo` targeting the fork. If no strategy is allowed, stop and report the repository merge policy.
+8. **Sync default branch**: `git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"`
+9. **Clean up**: Delete the merged branch locally (`git branch -D`). Only delete the remote branch (`git push origin --delete`) if it still exists. Some repos auto-delete branches on merge.
+10. **Report**: Confirm done with the merged PR URL.
 
 ## Repository Policy Cache
 
