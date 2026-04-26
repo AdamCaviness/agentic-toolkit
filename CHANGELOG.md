@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.8.1...v0.8.2) (2026-04-26)
+
+
+### Bug Fixes
+
+* **update-deps:** surface reverted CVE updates in summary ([#65](https://github.com/AdamCaviness/agentic-toolkit/issues/65)) ([5306df9](https://github.com/AdamCaviness/agentic-toolkit/commit/5306df908de850eb4c4564790c3c8f3797b1cf21))
+
 ## [0.8.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.8.0...v0.8.1) (2026-04-26)
 
 
