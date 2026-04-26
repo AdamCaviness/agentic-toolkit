@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.5.0...v0.5.1) (2026-04-26)
+
+
+### Bug Fixes
+
+* **code-review:** include untracked paths in review scope ([#43](https://github.com/AdamCaviness/agentic-toolkit/issues/43)) ([211e7b0](https://github.com/AdamCaviness/agentic-toolkit/commit/211e7b07f26e76fcc6753fa02538bf5e3c98c1fe)), closes [#37](https://github.com/AdamCaviness/agentic-toolkit/issues/37)
+
 ## [0.5.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.4.3...v0.5.0) (2026-04-26)
 
 
