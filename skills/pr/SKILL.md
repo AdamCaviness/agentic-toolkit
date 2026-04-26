@@ -78,8 +78,6 @@ Single command to go from "I'm done" to "PR is open."
          <What was tested locally>
 
          Closes #<number>
-
-         Generated with [Claude Code](https://claude.com/claude-code)
          ```
    - Return PR URL to user
 

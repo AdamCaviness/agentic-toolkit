@@ -48,9 +48,9 @@ HIGH_RISK_PATHS=$(
 
 **2. Dispatch the code-reviewer subagent:**
 
-Use the Task tool with `subagent_type: "general-purpose"`, passing the filled reviewer prompt (see "Reviewer prompt template" below) as the prompt. The reviewer sees only that prompt, never your session history.
+Use the Task tool, passing the filled reviewer prompt (see "Reviewer prompt template" below) as the prompt. The reviewer sees only that prompt, never your session history.
 
-Do not substitute a specialized reviewer agent from another plugin (for example, `superpowers:code-reviewer`). Those agents carry their own system prompts that layer over the template, making output nondeterministic, and they make this skill silently depend on another plugin being installed. `general-purpose` takes the template as its full instructions, which is what the template is written for.
+Do not substitute a specialized reviewer agent from another plugin (for example, `superpowers:code-reviewer`). Those agents carry their own system prompts that layer over the template, making output nondeterministic, and they make this skill silently depend on another plugin being installed. The default unspecialized subagent takes the template as its full instructions, which is what the template is written for.
 
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}`, what you just built
@@ -284,7 +284,7 @@ You: Let me request code review before proceeding.
 BASE_SHA=$(git merge-base HEAD "origin/$BASE_BRANCH")
 HEAD_SHA=$(git rev-parse HEAD)
 
-[Dispatch general-purpose subagent with reviewer prompt]
+[Dispatch unspecialized subagent with reviewer prompt]
   WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
   PLAN_OR_REQUIREMENTS: Task 2 from docs/plans/deployment-plan.md
   BASE_SHA: a7981ec

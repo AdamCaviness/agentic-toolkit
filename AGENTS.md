@@ -27,6 +27,27 @@ Never hardcode `main` or `master` in skill commands, guards, diff ranges, or use
 
 Shell state does not persist between separate Bash tool invocations. Each skill must either re-resolve `BASE_BRANCH` at the top of every bash block that consumes it, or substitute the resolved literal branch name into the commands the agent runs (instead of letting `$BASE_BRANCH` expand in a fresh shell where it is unset). Do not assume a variable set in step N is still in scope in step N+1.
 
+## Capability glossary for public skills
+
+Public skills are distributed to Claude Code, Codex, and Gemini. Skill prose may use harness-specific tool names where they read naturally (`Task tool`, `WebSearch`, `Agent tool`); other harnesses generally infer the equivalent. This is a **glossary**, not a required vocabulary, that names recurring capabilities so future skills and adapter docs have a shared lexicon to reach for.
+
+| Capability | What it provides |
+| --- | --- |
+| `project.instructions` | The project's own contributor instructions, found in `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md` depending on harness. |
+| `ticket.read` | Read access to the project's ticket system (GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, etc.). |
+| `ticket.write` | Create, update, comment on, or close tickets in the project's ticket system. |
+| `subagent.dispatch` | Dispatch one isolated subagent with a fresh context, given a single prompt as its full instructions. |
+| `subagent.dispatch.parallel` | Dispatch multiple isolated subagents in parallel from one orchestrator turn. |
+| `web.research` | Fetch content from the public web (search engines, documentation, package registries, release notes). |
+| `verification.run` | Execute the project's verification commands (tests, linters, formatters, type checks) and return their output. |
+
+Two things *are* enforced in public skill bodies because they are concrete failure modes, not stylistic ones, and because untested abstraction would be a bigger regression risk than the current prose. The validator in `tests/test_capability_vocabulary.py` checks both:
+
+- The literal Claude API parameter shape `subagent_type` and its value `general-purpose` must not appear. They are meaningless on Codex and Gemini, where no such parameter exists.
+- Generated PR or commit output must not brand a single harness (no `Generated with [Claude Code]` trailer in PR body templates).
+
+Frontmatter keys (`model:`, `disable-model-invocation:`) are allowed to stay harness-specific.
+
 ## Commits and releases
 
 - Only `feat:` (minor) and `fix:` (patch) drive a release PR. Other conventional types are silently ignored by release-please for bump purposes. Use `feat(skill):` scopes to classify new skills.
