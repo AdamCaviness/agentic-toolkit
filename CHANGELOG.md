@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.5.1...v0.5.2) (2026-04-26)
+
+
+### Refactoring
+
+* **skills:** centralize branch lifecycle contract ([#27](https://github.com/AdamCaviness/agentic-toolkit/issues/27)) ([#45](https://github.com/AdamCaviness/agentic-toolkit/issues/45)) ([3c5e837](https://github.com/AdamCaviness/agentic-toolkit/commit/3c5e8371d3592f0376bbd0bd1c9273120f35d647))
+
 ## [0.5.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.5.0...v0.5.1) (2026-04-26)
 
 
