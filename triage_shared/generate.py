@@ -10,6 +10,7 @@ without writing. Returns exit 0 if they match, 1 if they diverge.
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -66,8 +67,6 @@ def _apply_substitutions(template, subs):
         if not isinstance(value, str):
             continue
         out = out.replace("{{" + key + "}}", value)
-
-    import re
 
     leftover = re.findall(r"\{\{[a-zA-Z0-9_]+\}\}", out)
     if leftover:
