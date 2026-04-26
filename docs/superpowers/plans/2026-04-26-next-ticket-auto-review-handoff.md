@@ -164,7 +164,6 @@ class NextTicketAutoReviewTest(unittest.TestCase):
     def test_step_9_5_lists_reviewer_placeholders(self):
         text = NEXT_TICKET_SKILL.read_text()
         for placeholder in [
-            "WHAT_WAS_IMPLEMENTED",
             "PLAN_OR_REQUIREMENTS",
             "DESCRIPTION",
             "HAS_UNCOMMITTED",
@@ -233,7 +232,7 @@ HIGH_RISK_PATHS=$(
 `HAS_UNCOMMITTED` is `no`. Step 9 just committed; the working tree is clean.
 
 2. **Build the narrative placeholders:**
-   - `WHAT_WAS_IMPLEMENTED` and `DESCRIPTION`: a one to two sentence summary of the change you just implemented.
+   - `DESCRIPTION`: a one to two sentence summary of the change you just implemented.
    - `PLAN_OR_REQUIREMENTS`: the ticket title plus the ticket body, verbatim, as fetched in Step 2.
 
 3. **Load and dispatch.** Read `skills/code-review/reviewer-prompt.md`, substitute every `{PLACEHOLDER}` with the values built above, and pass the resulting text as the prompt to the unspecialized reviewer subagent via the Task tool / equivalent. Do not name a specialized reviewer agent from another plugin; the unspecialized subagent takes the template as its full instructions, which is what the template is written for.

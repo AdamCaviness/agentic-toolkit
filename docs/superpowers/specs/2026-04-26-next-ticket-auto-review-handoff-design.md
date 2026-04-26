@@ -36,7 +36,7 @@ Step 9.5 body:
    - `HEAD_SHA = git rev-parse HEAD`
    - `HAS_UNCOMMITTED = no` (Step 9 just committed; working tree is clean)
    - `CHANGED_PATH_INVENTORY` and `HIGH_RISK_PATHS` per the same shell snippet `code-review/SKILL.md` already documents
-   - `WHAT_WAS_IMPLEMENTED` and `DESCRIPTION`: a one to two sentence implementor summary of the change
+   - `DESCRIPTION`: a one to two sentence implementor summary of the change
    - `PLAN_OR_REQUIREMENTS`: ticket title + ticket body, verbatim from the source system
 3. Load `skills/code-review/reviewer-prompt.md`, substitute, dispatch the unspecialized reviewer subagent with the resulting text as its prompt. The dispatch wording uses "Task tool / equivalent" per the AGENTS.md capability glossary; do not name a specialized reviewer agent from another plugin.
 4. Capture the reviewer's structured output. Parse out the severity counts (Critical, Important, Minor), the Assessment verdict line (Yes / No / With fixes), and the top issues in severity order, capped at five.
