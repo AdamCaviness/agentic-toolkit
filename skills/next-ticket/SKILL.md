@@ -216,7 +216,7 @@ Run the project's formatter (e.g., `make nice`, `npm run format`, `cargo fmt`, `
 
 Stage and commit all changes with a Conventional Commits subject referencing the ticket. Reuse the branch category resolved in Step 5 as the commit type: `fix/` becomes `fix:`, `feat/` becomes `feat:`, `refactor/` becomes `refactor:`, `docs/` becomes `docs:`, `chore/` becomes `chore:`. Only `feat:` and `fix:` drive a release-please bump, so the Step 5 category must reflect the actual work category, not a default. Use whatever closing syntax the platform recognizes for auto-closing tickets from commits (e.g., `Closes #42` for GitHub, `Resolves PROJ-42` for Jira).
 
-Do NOT push. Do NOT create a PR. Wait for the user.
+Do NOT push. Do NOT create a PR. Proceed to Step 9.5.
 
 ## Step 9.5: Run Code Review
 
@@ -231,6 +231,7 @@ if [ -z "$BASE_BRANCH" ]; then
 fi
 BASE_SHA=$(git merge-base HEAD "origin/$BASE_BRANCH" 2>/dev/null || git merge-base HEAD "$BASE_BRANCH")
 HEAD_SHA=$(git rev-parse HEAD)
+HAS_UNCOMMITTED=$([ -n "$(git status --porcelain)" ] && echo "yes" || echo "no")
 CHANGED_PATH_INVENTORY=$(
   {
     git diff --name-status "$BASE_SHA..$HEAD_SHA" | sed 's/^/committed\t/'
@@ -244,8 +245,6 @@ HIGH_RISK_PATHS=$(
     grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc|id_rsa|id_dsa|credentials|secrets?|token|key)(\.|/|$)|\.(pem|p12|pfx|key|crt|sqlite|db|dump|zip|tar|tgz|gz)$|(^|/)\.github/workflows/' || true
 )
 ```
-
-`HAS_UNCOMMITTED` is `no`. Step 9 just committed; the working tree is clean.
 
 2. **Build the narrative placeholders:**
    - `DESCRIPTION`: a one to two sentence summary of the change you just implemented.
@@ -291,5 +290,6 @@ The UI testing tip must be **specific and actionable**, not "test the feature" b
 - **No identity, no run.** If the per-system handle can't be resolved and the user won't supply one, stop. Running unfiltered on a shared repo recreates the collision this skill is meant to prevent.
 - **Validation (Step 4): refine, don't close.** If a ticket has remaining work, edit the ticket to reflect only what remains (update title and body), then move to the next candidate. Never close a ticket that isn't 100% resolved.
 - **Implementation (Steps 5-9): fully implement.** Once you pick a ticket, complete it entirely. No partial commits, no WIP commits, no handoffs. The scoring in Step 3 filters for simplicity and clarity precisely so that picked tickets can be fully implemented touch-free.
+- **Auto-review (Step 9.5): non-blocking.** The code-review subagent runs automatically before Step 10. If dispatch fails or the capability is unavailable, the review is recorded as skipped and the workflow continues; it never halts the run.
 - **If no suitable ticket exists** (all assigned to others, all blocked, none clear enough for AFK), tell the user and stop.
 - **Clean up temp files** when done.

@@ -29,6 +29,11 @@ class NextTicketAutoReviewTest(unittest.TestCase):
         ]:
             with self.subTest(placeholder=placeholder):
                 self.assertIn(placeholder, text)
+        self.assertNotIn(
+            "WHAT_WAS_IMPLEMENTED",
+            text,
+            "Phantom placeholder must not be reintroduced",
+        )
 
     def test_step_10_summary_includes_review_block(self):
         text = NEXT_TICKET_SKILL.read_text()
