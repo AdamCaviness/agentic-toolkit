@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.4.2...v0.4.3) (2026-04-26)
+
+
+### Bug Fixes
+
+* **skill:** preserve directive obligations ([6340ee2](https://github.com/AdamCaviness/agentic-toolkit/commit/6340ee2ff463df4d1065630e77e2379eb087a13e)), closes [#38](https://github.com/AdamCaviness/agentic-toolkit/issues/38)
+
 ## [0.4.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.4.1...v0.4.2) (2026-04-25)
 
 
