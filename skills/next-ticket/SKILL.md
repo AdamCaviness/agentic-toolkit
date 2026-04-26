@@ -21,14 +21,14 @@ Ticket bodies still define the requested behavior after eligibility and code val
 
 Determine which ticket system this project uses.
 
-1. **Cached config (always wins)**: Check `next-ticket-config.json` in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip straight to Step 1b — never re-detect when the cache has an answer.
-2. **Model-judgement detection**: Use your own judgement on whatever signals the repo happens to provide. Different teams hint at their tracker in different places and different formats — so there is no prescribed file or key to look for. Read whatever seems informative: the README, CLAUDE.md, CONTRIBUTING.md, issue templates, `docs/`, the git remotes, URLs anywhere in the repo, prose mentions of ticket-ID shapes (`PROJ-42`, `#42`, `AB#42`), commit message conventions, CI config references, etc. Lean on model intelligence; don't follow a rigid ladder.
+1. **Cached config (always wins)**: Check `next-ticket-config.json` in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip straight to Step 1b. Never re-detect when the cache has an answer.
+2. **Model-judgement detection**: Use your own judgement on whatever signals the repo happens to provide. Different teams hint at their tracker in different places and different formats, so there is no prescribed file or key to look for. Read whatever seems informative: the README, CLAUDE.md, CONTRIBUTING.md, issue templates, `docs/`, the git remotes, URLs anywhere in the repo, prose mentions of ticket-ID shapes (`PROJ-42`, `#42`, `AB#42`), commit message conventions, CI config references, etc. Lean on model intelligence; don't follow a rigid ladder.
 3. **Confirm with the user.** Tell them what you concluded and where the evidence came from, e.g., "Detected ticket system: Jira (acme.atlassian.net link in README.md). Correct?" If they confirm, cache it. If they correct, cache the correction.
 4. **Can't tell?** Ask plainly: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut"), then cache.
 
 Cache writes go to `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries; never overwrite unrelated keys.
 
-After run 1, the cached value makes detection effectively 100% reliable on subsequent runs — teams are not forced to adopt any particular file, key, or format.
+After run 1, the cached value makes detection effectively 100% reliable on subsequent runs. Teams are not forced to adopt any particular file, key, or format.
 
 ## Step 1b: Establish User Identity
 
@@ -53,11 +53,11 @@ The skill claims tickets by assigning them to the person running it, so it needs
 
 Resolve identity in this order:
 
-1. **Name**: Read `__user__.name`. If missing, discover it using whatever the session offers — `git config user.name` is usually enough. Only ask the user if discovery turns up nothing.
-2. **Per-system handle**: Read `__user__.usernames[<detectedSystem>]`. If missing, use your own judgement and whatever CLI, MCP, or API tooling is available in this session to discover the user's handle on the detected system. The right command varies by system and by what's installed — don't follow a prescribed recipe; pick the most direct path available. Only prompt the user as a last resort.
+1. **Name**: Read `__user__.name`. If missing, discover it using whatever the session offers, `git config user.name` is usually enough. Only ask the user if discovery turns up nothing.
+2. **Per-system handle**: Read `__user__.usernames[<detectedSystem>]`. If missing, use your own judgement and whatever CLI, MCP, or API tooling is available in this session to discover the user's handle on the detected system. The right command varies by system and by what's installed, so don't follow a prescribed recipe; pick the most direct path available. Only prompt the user as a last resort.
 3. **Persist**: Merge the resolved values back into `next-ticket-config.json`. Preserve all existing keys.
 
-If the per-system handle cannot be resolved — discovery fails and the user declines to supply one — stop with a clear message. Running without identity on a shared repo recreates the exact collision this skill is meant to prevent; there is no safe silent fallback.
+If the per-system handle cannot be resolved (discovery fails and the user declines to supply one), stop with a clear message. Running without identity on a shared repo recreates the exact collision this skill is meant to prevent; there is no safe silent fallback.
 
 ## Step 2: Fetch Open Tickets
 
@@ -148,7 +148,7 @@ Before branching, verify the selected ticket is still valid on the latest codeba
 
 Before branching or writing code, self-assign the selected ticket in the source system. This is the point where work becomes visible to teammates and where a last-second race check cuts the chance of two people picking the same ticket.
 
-1. **Re-read the assignee.** Fetch the selected ticket's current assignee from the source system — a fresh read, not cached data from Step 2. A brief randomised pause (0-500ms) before the read helps desynchronise two teammates running simultaneously.
+1. **Re-read the assignee.** Fetch the selected ticket's current assignee from the source system. This is a fresh read, not cached data from Step 2. A brief randomised pause (0-500ms) before the read helps desynchronise two teammates running simultaneously.
 2. **Foreign-owned now?** If the ticket has just been assigned to someone else, abandon this candidate, note it in one line, and loop back to Step 3 to pick the next.
 3. **Unassigned?** Self-assign using the handle stored under `__user__.usernames[<system>]`. Use whatever CLI, MCP, or API tooling fits the system (e.g., `gh issue edit <id> --add-assignee <handle>` for GitHub). Then read the ticket back once and confirm the assignee matches your handle. If the read-back shows someone else, treat it as a lost race and loop back to Step 3.
 4. **Already yours?** Skip the write. Proceed.
