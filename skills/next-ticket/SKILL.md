@@ -216,11 +216,49 @@ Run the project's formatter (e.g., `make nice`, `npm run format`, `cargo fmt`, `
 
 Stage and commit all changes with a Conventional Commits subject referencing the ticket. Reuse the branch category resolved in Step 5 as the commit type: `fix/` becomes `fix:`, `feat/` becomes `feat:`, `refactor/` becomes `refactor:`, `docs/` becomes `docs:`, `chore/` becomes `chore:`. Only `feat:` and `fix:` drive a release-please bump, so the Step 5 category must reflect the actual work category, not a default. Use whatever closing syntax the platform recognizes for auto-closing tickets from commits (e.g., `Closes #42` for GitHub, `Resolves PROJ-42` for Jira).
 
-Do NOT push. Do NOT create a PR. Wait for the user.
+Do NOT push. Do NOT create a PR. Proceed to Step 9.5.
+
+## Step 9.5: Run Code Review
+
+Before announcing completion, dispatch the code-reviewer subagent against the work just committed. The reviewer's findings are folded into the Step 10 summary so the user gets implementation status and review verdict in one shot.
+
+1. **Resolve the default branch and build review variables.** Re-resolve `BASE_BRANCH` per the AGENTS.md branch lifecycle contract; shell state does not persist between Bash invocations.
+
+```bash
+BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+if [ -z "$BASE_BRANCH" ]; then
+  git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
+fi
+BASE_SHA=$(git merge-base HEAD "origin/$BASE_BRANCH" 2>/dev/null || git merge-base HEAD "$BASE_BRANCH")
+HEAD_SHA=$(git rev-parse HEAD)
+HAS_UNCOMMITTED=$([ -n "$(git status --porcelain)" ] && echo "yes" || echo "no")
+CHANGED_PATH_INVENTORY=$(
+  {
+    git diff --name-status "$BASE_SHA..$HEAD_SHA" | sed 's/^/committed\t/'
+    git diff --cached --name-status | sed 's/^/staged\t/'
+    git diff --name-status | sed 's/^/unstaged\t/'
+    git ls-files --others --exclude-standard | sed 's/^/untracked\t/'
+  } | sort -u
+)
+HIGH_RISK_PATHS=$(
+  printf '%s\n' "$CHANGED_PATH_INVENTORY" |
+    grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc|id_rsa|id_dsa|credentials|secrets?|token|key)(\.|/|$)|\.(pem|p12|pfx|key|crt|sqlite|db|dump|zip|tar|tgz|gz)$|(^|/)\.github/workflows/' || true
+)
+```
+
+2. **Build the narrative placeholders:**
+   - `DESCRIPTION`: a one to two sentence summary of the change you just implemented.
+   - `PLAN_OR_REQUIREMENTS`: the ticket title plus the ticket body, verbatim, as fetched in Step 2.
+
+3. **Load and dispatch.** Read `skills/code-review/reviewer-prompt.md`, substitute every `{PLACEHOLDER}` with the values built above, and pass the resulting text as the prompt to the unspecialized reviewer subagent via the Task tool / equivalent. Do not name a specialized reviewer agent from another plugin; the unspecialized subagent takes the template as its full instructions, which is what the template is written for.
+
+4. **Capture findings.** Parse the reviewer's structured output for severity counts (Critical, Important, Minor), the Assessment verdict line (Yes / No / With fixes), and the top issues in severity order with their file:line references. Cap the captured issues at five.
+
+5. **Failure mode.** If the dispatch errors, the capability is unavailable, the reviewer-prompt file cannot be read, or any other failure prevents review, capture `Review: skipped (<reason>)` and proceed to Step 10. Do not retry. Do not block Step 10. The user can run `/code-review` manually if they care.
 
 ## Step 10: Wait for Review
 
-Print a brief summary:
+Print a brief summary that folds in the Step 9.5 review findings:
 
 ```
 Done. Ready for review.
@@ -229,8 +267,16 @@ Branch: <branch-name>
 Ticket: <ticket-id> - <ticket title>
 Files:  <list changed files>
 
+Review: Critical <N> | Important <N> | Minor <N> | Verdict: <Yes/No/With fixes>
+Top issues:
+  - <file>:<line> - <what's wrong>
+  - <file>:<line> - <what's wrong>
+  ...
+
 To test in the UI: <one sentence describing the specific UI action that exercises this change>
 ```
+
+If the reviewer found zero issues, replace the two Review lines with `Review: clean | Verdict: Yes`. If review failed or was skipped per Step 9.5's failure mode, replace them with `Review: skipped (<reason>)`. The `Top issues:` block is omitted when there are no captured issues.
 
 The UI testing tip must be **specific and actionable**, not "test the feature" but "log in, wait 15 minutes for the token to expire, then click any nav link, it should refresh silently instead of kicking you to login."
 
@@ -244,5 +290,6 @@ The UI testing tip must be **specific and actionable**, not "test the feature" b
 - **No identity, no run.** If the per-system handle can't be resolved and the user won't supply one, stop. Running unfiltered on a shared repo recreates the collision this skill is meant to prevent.
 - **Validation (Step 4): refine, don't close.** If a ticket has remaining work, edit the ticket to reflect only what remains (update title and body), then move to the next candidate. Never close a ticket that isn't 100% resolved.
 - **Implementation (Steps 5-9): fully implement.** Once you pick a ticket, complete it entirely. No partial commits, no WIP commits, no handoffs. The scoring in Step 3 filters for simplicity and clarity precisely so that picked tickets can be fully implemented touch-free.
+- **Auto-review (Step 9.5): non-blocking.** The code-review subagent runs automatically before Step 10. If dispatch fails or the capability is unavailable, the review is recorded as skipped and the workflow continues; it never halts the run.
 - **If no suitable ticket exists** (all assigned to others, all blocked, none clear enough for AFK), tell the user and stop.
 - **Clean up temp files** when done.
