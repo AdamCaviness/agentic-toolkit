@@ -8,6 +8,14 @@ Every `skills/<name>/` is public API. All three harnesses discover the same `SKI
 
 Never duplicate a skill into a harness-specific subtree. All three harnesses auto-discover `skills/<name>/SKILL.md`. The `model` frontmatter key is honored by Claude Code and ignored by Codex and Gemini.
 
+## Deployment context for this repo
+
+The skills in this repo are personal-machine tooling for an individual operator, not multi-user infrastructure. Threat models that assume shared hosts, shared `$TMPDIR`, untrusted local processes, network-exposed services, or supply-chain attackers reading per-user temp do not apply when triaging this codebase. Cached ticket bodies, project maps, and run state live in the operator's per-user temp (on macOS, `/var/folders/.../T/`, mode 700, owned by the operator) alongside `~/.ssh/`, `~/.aws/`, browser cookies, and keychain data the operating system already keeps private.
+
+When `triage-architecture`, `triage-bugs`, or any other skill audits this repo, ground every security or robustness concern in this context. Hardening proposed with the framing "in case the cache is read by another user", "if `$TMPDIR` is shared", "if a co-tenant on the host", or "to defend against a local attacker" is out of scope and should be downgraded or rejected, not filed. Real concerns in this context look like: secrets actually committed to the repo, dependency CVEs that affect runtime behavior, public-API correctness bugs, data loss in the operator's own workflow, or footguns that turn into real bugs on a single-user machine.
+
+This boundary is load-bearing for the triage skills' rejection-learning loop: when the operator closes a ticket as not-planned with reasoning grounded in this context, the triage skills cache that reasoning into `issues-closed.json` so future runs can recognize the same class of concern under a different title and skip refiling.
+
 ## Mechanical skills
 
 Skills whose lifecycle is almost entirely deterministic git, shell, and `gh` orchestration declare `disable-model-invocation: true` in frontmatter so harnesses skip expensive model reasoning for them. Currently honored by Claude Code, tolerated by Codex and Gemini. Apply to `pr`, `ship`, and `convert-worktree`. Add the key to any future skill whose body is a fixed command sequence rather than judgement-driven work.

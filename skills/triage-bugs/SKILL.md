@@ -59,7 +59,9 @@ Using the detected ticket system's CLI tools, MCP tools, or APIs, fetch tickets 
 
 If time-windowed refine returns zero results, tell the user and stop. Do not dispatch sub-agents.
 
-**Closed tickets (titles only):** Fetch recently closed tickets labeled `bug`, `architecture`, or `product` (titles, IDs, and labels only). Merge into a single deduplicated list. Write to `<cache>/issues-closed.json`.
+**Closed tickets (with rejection reasoning):** Fetch recently closed tickets labeled `bug`, `architecture`, or `product`. Include title, ID, labels, and the close-state metadata available in the ticket system. For GitHub Issues, that means `stateReason` (`completed` vs `not_planned`); for Jira, the `resolution` field; for other systems, the analogous "won't do" or "wontfix" marker. For tickets closed as not-planned, wontfix, or equivalent, also fetch the closing comment so the rejection reasoning is preserved with the ticket. Merge into a single deduplicated list. Write to `<cache>/issues-closed.json`.
+
+Sub-agents use this cache for two purposes: (a) avoid duplicating tickets already filed and resolved, and (b) learn from prior not-planned rejections about which classes of concerns this project deems inapplicable, so a refile under a slightly different title still gets caught.
 
 Normalize all fetched data into a consistent JSON shape regardless of the source platform.
 
@@ -171,7 +173,7 @@ Do NOT fetch ticket lists yourself. Tickets are cached on disk.
 
 - `{CACHE_DIR}/issues-open.json`, all open tickets with full detail. **Read-only context** for awareness and cross-references.
 - `{CACHE_DIR}/issues-edit-{CLUSTER_SLUG}.json`, tickets assigned to YOUR cluster. You may ONLY modify tickets in this file.
-- `{CACHE_DIR}/issues-closed.json`, closed tickets with titles and labels only. Check this before filing new tickets to avoid duplicating something already resolved.
+- `{CACHE_DIR}/issues-closed.json`, closed tickets with title, labels, close-state metadata, and the closing comment for tickets closed as not-planned/wontfix. Check this before filing a new ticket. A new ticket is a refile if (a) its title duplicates a closed ticket, or (b) its premise relies on a threat model, assumption, or framing that a not-planned ticket explicitly rejected. Read the rejection comment, do not just dedup by title.
 
 **Edit constraint:** You may ONLY execute write commands (edit, close, create) against tickets in your edit file. For tickets outside your edit file, you have read-only access via `issues-open.json`. If you discover something relevant to a ticket outside your cluster, write it to your cross-cluster notes file at `{CACHE_DIR}/cross-cluster-{CLUSTER_SLUG}.json`. Do NOT add comments to any ticket.
 
@@ -325,7 +327,7 @@ Hard cap: maximum 3 new tickets. One excellent report beats five weak ones.
 
 Before creating any ticket, scan existing tickets for overlap:
 1. Read ticket titles and descriptions in issues-open.json. Is this defect already covered?
-2. Check issues-closed.json titles. Was this already filed and resolved?
+2. Check issues-closed.json. Was this already filed? For tickets closed as `completed`, you have a direct title-level duplicate. For tickets closed as `not_planned` (or wontfix in non-GitHub systems), read the closing comment, if your candidate shares the rejected ticket's threat model, assumption, or framing, treat it as a refile and do not file it, even if the title differs.
 3. If already covered and your finding adds evidence: if the ticket is in your edit file, edit the description to add the proof. If it is outside your edit file, write it to your cross-cluster notes file. Do NOT add comments. Do NOT rewrite existing ticket descriptions, that's refine's job.
 4. If not covered: file a new ticket after passing the pre-filing gate.
 
