@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.6.0...v0.6.1) (2026-04-26)
+
+
+### Bug Fixes
+
+* **pr:** add publish state gate so user work cannot be skipped ([#49](https://github.com/AdamCaviness/agentic-toolkit/issues/49)) ([2bee0b0](https://github.com/AdamCaviness/agentic-toolkit/commit/2bee0b0afd72197f250653e80be77b8113d5b654)), closes [#36](https://github.com/AdamCaviness/agentic-toolkit/issues/36)
+
 ## [0.6.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.5.2...v0.6.0) (2026-04-26)
 
 
