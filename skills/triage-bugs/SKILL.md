@@ -62,6 +62,8 @@ If time-windowed refine returns zero results, tell the user and stop. Do not dis
 
 **Closed tickets (with rejection reasoning):** Fetch recently closed tickets labeled `bug`, `architecture`, or `product`. Include title, ID, labels, and the close-state metadata available in the ticket system. For GitHub Issues, that means `stateReason` (`completed` vs `not_planned`); for Jira, the `resolution` field; for other systems, the analogous "won't do" or "wontfix" marker. For tickets closed as not-planned, wontfix, or equivalent, also fetch the closing comment so the rejection reasoning is preserved with the ticket. Merge into a single deduplicated list. Write to `<cache>/issues-closed.json`.
 
+**Fallback when the labelled fetch is empty:** If the labelled fetch returns zero closed tickets, the project may not label closed tickets, or may use different label names. Fetch the most recent 50 closed tickets unfiltered and write those to `<cache>/issues-closed.json` instead, with the same close-state metadata and closing comments for not-planned/wontfix entries. Mark this case so the orchestrator status output prints `Fallback: project has no labelled closed tickets, using recent 50 closed tickets unfiltered.` so the operator knows the dedup pool is wider than usual.
+
 Sub-agents use this cache for two purposes: (a) avoid duplicating tickets already filed and resolved, and (b) learn from prior not-planned rejections about which classes of concerns this project deems inapplicable, so a refile under a slightly different title still gets caught.
 
 Normalize all fetched data into a consistent JSON shape regardless of the source platform.
