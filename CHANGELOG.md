@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.8.2...v0.9.0) (2026-04-26)
+
+
+### Features
+
+* **next-ticket:** auto-invoke code-review at completion ([#68](https://github.com/AdamCaviness/agentic-toolkit/issues/68)) ([cbfd1cb](https://github.com/AdamCaviness/agentic-toolkit/commit/cbfd1cb74d7814867c98a1602ea663c47b3c5cfc))
+
 ## [0.8.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.8.1...v0.8.2) (2026-04-26)
 
 
