@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.6.3...v0.6.4) (2026-04-26)
+
+
+### Refactoring
+
+* **triage:** extract shared orchestration source ([#30](https://github.com/AdamCaviness/agentic-toolkit/issues/30)) ([#56](https://github.com/AdamCaviness/agentic-toolkit/issues/56)) ([b5b40cf](https://github.com/AdamCaviness/agentic-toolkit/commit/b5b40cfe5b76cd053d1d5116fd9295f277dc873d))
+
 ## [0.6.3](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.6.2...v0.6.3) (2026-04-26)
 
 
