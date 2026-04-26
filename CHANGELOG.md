@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.4.3...v0.5.0) (2026-04-26)
+
+
+### Features
+
+* **skill:** add untrusted content boundary ([e4384a3](https://github.com/AdamCaviness/agentic-toolkit/commit/e4384a3f52350a028bff4d085d1a0ab196cba8f4)), closes [#28](https://github.com/AdamCaviness/agentic-toolkit/issues/28)
+
 ## [0.4.3](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.4.2...v0.4.3) (2026-04-26)
 
 
