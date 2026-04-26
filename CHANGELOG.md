@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.8.0...v0.8.1) (2026-04-26)
+
+
+### Bug Fixes
+
+* **ship:** screen high-risk paths before push ([#62](https://github.com/AdamCaviness/agentic-toolkit/issues/62)) ([7fdac5c](https://github.com/AdamCaviness/agentic-toolkit/commit/7fdac5c44f5481cda3fa6a683e29822f6a233797))
+
 ## [0.8.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.7.0...v0.8.0) (2026-04-26)
 
 
