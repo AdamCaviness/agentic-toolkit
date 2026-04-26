@@ -42,6 +42,9 @@ def _build_substitutions(skill_name, skill_data):
     cross_cluster_lines = "\n".join(
         f"   - `cross-cluster-{slug}.json`" for slug in slugs
     )
+    over_cap_lines = "\n".join(
+        f"   - `over-cap-{slug}.json`" for slug in slugs
+    )
     assignment_example = (
         f"  <id> \"Ticket title...\" -> {names[0]}\n"
         f"  <id> \"Ticket title...\" -> {names[1]}\n"
@@ -52,7 +55,9 @@ def _build_substitutions(skill_name, skill_data):
     subs["name"] = skill_name
     subs["issues_edit_files"] = issues_edit_lines
     subs["cross_cluster_files"] = cross_cluster_lines
+    subs["over_cap_files"] = over_cap_lines
     subs["cluster_assignment_example"] = assignment_example
+    subs["example_cluster_name"] = names[0]
     return subs
 
 

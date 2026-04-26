@@ -23,13 +23,12 @@ Usage: `/triage-bugs`, `/triage-bugs refine`, or `/triage-bugs refine 5h`
 
 Determine which ticket system this project uses. Check in this order:
 
-1. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use that value.
+1. **Cached config (always wins)**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip the rest of detection. Never re-detect when the cache has an answer.
 2. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
 3. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
+4. **Confirm with the user.** Tell them what you concluded and where the evidence came from, e.g., "Detected ticket system: GitHub Issues (github.com remote). Correct?" If they confirm, cache it. If they correct, cache the correction.
 
-Once determined, cache the value in `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries if it does.
-
-Confirm the detected system to the user (e.g., "Detected ticket system: GitHub Issues"). If the user corrects it, update the cached value and proceed with their answer.
+Cache writes go to `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries; never overwrite unrelated keys. The cache write happens **after** the user confirms or corrects, so the cached value reflects the operator's verdict, not the auto-detection guess.
 
 > **Tip**: If auto-detect consistently gets it wrong for a project (e.g., a GitHub-hosted repo that uses Jira), add `ticketSystem: jira` to the project's CLAUDE.md to skip detection.
 
@@ -62,6 +61,8 @@ Using the detected ticket system's CLI tools, MCP tools, or APIs, fetch tickets 
 If time-windowed refine returns zero results, tell the user and stop. Do not dispatch sub-agents.
 
 **Closed tickets (with rejection reasoning):** Fetch recently closed tickets labeled `bug`, `architecture`, or `product`. Include title, ID, labels, and the close-state metadata available in the ticket system. For GitHub Issues, that means `stateReason` (`completed` vs `not_planned`); for Jira, the `resolution` field; for other systems, the analogous "won't do" or "wontfix" marker. For tickets closed as not-planned, wontfix, or equivalent, also fetch the closing comment so the rejection reasoning is preserved with the ticket. Merge into a single deduplicated list. Write to `<cache>/issues-closed.json`.
+
+**Fallback when the labelled fetch is empty:** If the labelled fetch returns zero closed tickets, the project may not label closed tickets, or may use different label names. Fetch the most recent 50 closed tickets unfiltered and write those to `<cache>/issues-closed.json` instead, with the same close-state metadata and closing comments for not-planned/wontfix entries. Mark this case so the orchestrator status output prints `Fallback: project has no labelled closed tickets, using recent 50 closed tickets unfiltered.` so the operator knows the dedup pool is wider than usual.
 
 Sub-agents use this cache for two purposes: (a) avoid duplicating tickets already filed and resolved, and (b) learn from prior not-planned rejections about which classes of concerns this project deems inapplicable, so a refile under a slightly different title still gets caught.
 
@@ -206,6 +207,8 @@ A post-processor will read your notes after all cluster agents finish and weave 
 
 Start by reading the project map at `{CACHE_DIR}/project-map.md`. It tells you the tech stack, directory structure, key files, error handling patterns, async boundaries, database access patterns, auth chain, and external integrations. This replaces independent exploration. Do NOT run directory listings or search for entry points. The map has this.
 
+Then read the project's own contributor instruction files from the repo root, whichever exist: `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`. Read them verbatim, the orchestrator does not distill them for you. These files carry project-specific carve-outs (threat-model scope, deployment context, conventions) that change how you should judge findings. Treat them as authoritative for project conventions.
+
 Then read the actual files relevant to your cluster directly from the project. The map tells you what exists; you read the code that matters for your focus areas.
 
 Before assessing any file, check for recent activity:
@@ -334,6 +337,23 @@ Before creating any ticket, scan existing tickets for overlap:
 4. If not covered: file a new ticket after passing the pre-filing gate.
 
 If you notice an existing ticket has obviously wrong info (e.g., references a file that no longer exists, wrong label), fix it. But do NOT deeply scrutinize, rewrite descriptions, or re-evaluate severity, that's refine's job.
+
+### Over-Cap Findings
+
+When you have more than 3 confirmed defects (each cleared dedup, the certainty bar, and the pre-filing gate), file the strongest 3. Write the rest to `{CACHE_DIR}/over-cap-{CLUSTER_SLUG}.json` as a JSON array. This is distinct from the rejection ledger: the ledger holds candidates that failed the certainty bar; over-cap holds proven defects that lost a slot to the cap. The file must always be written, an empty array if you had no overflow, so the orchestrator can distinguish "no overflow" from "agent failed to record overflow". Each entry has this shape:
+
+\`\`\`json
+[
+  {
+    "title": "Candidate title that would have been filed",
+    "evidence": "path/to/file.ts:120 plus a one-line description",
+    "severity": "high | medium | low",
+    "why": "One line on why this would have been filed"
+  }
+]
+\`\`\`
+
+Do not move ledger-rejected candidates here. Do not move dedup-rejected candidates here. Only proven defects that fully cleared every gate.
 
 ### Pre-Filing Gate
 
@@ -519,6 +539,7 @@ Use findings to improve the target ticket description. Validate any request to c
 ## Rules
 
 - Process one ticket at a time, sequentially
+- **In refine mode, before editing each target ticket, fetch its current state.** Cluster agents may have closed the target while another cluster's note was still in flight. If the ticket is closed, skip the note and log the skip to stderr in the form `skip closed ticket <id>: <one-line finding summary>` so the operator can see what was dropped. Do not reopen, do not comment on the closed ticket, do not retarget the note. In create mode this check is unnecessary because cluster agents do not close tickets.
 - For each target ticket: read the current description, then edit it to incorporate the finding
 - Weave findings into the appropriate existing section of the description. Do not append a generic "Cross-Cluster Findings" section. Use editorial judgment to place the finding where it belongs contextually.
 - If a finding is a simple cross-reference ("Related to <id>"), add it inline near the relevant content in the description
@@ -533,10 +554,41 @@ Use findings to improve the target ticket description. Validate any request to c
 
 ---
 
+## Step 3.7: Surface Over-Cap Findings
+
+**Create mode only.** In refine mode, skip this step.
+
+Each cluster agent caps filed tickets at 3. Findings that cleared every gate but lost a slot to the cap go to a per-cluster JSON file so the operator sees the full deferred list.
+
+1. Read all over-cap files from the cache directory:
+   - `over-cap-data-state.json`
+   - `over-cap-security-auth.json`
+   - `over-cap-correctness.json`
+   - `over-cap-silent-failures.json`
+
+2. Merge entries into one list, tagging each with its source cluster.
+
+3. Print the merged list to the run summary, even if empty:
+
+```
+Over-Cap Findings (deferred by ticket cap):
+  [Data & State] severity:high "Candidate title", path/to/file:120, one-line reason
+  [Data & State] severity:medium "Candidate title", path/to/file:88, one-line reason
+  ...
+```
+
+If every file is an empty array or missing, print: "Over-Cap Findings: none, every cluster filed within the cap."
+
+These findings are not filed automatically. The operator can rerun the skill after addressing the filed tickets, or hand-file the strongest deferred items.
+
+---
+
 ## Step 4: Cleanup & Update State
 
-After all sub-agents, ledger collection, and post-processing complete:
+After all sub-agents, ledger collection,, post-processing, and over-cap reporting complete:
 
 **Delete the cache directory and verify it's gone.** If cleanup fails, do NOT proceed. Investigate and retry. Stale cache left behind will corrupt the next run.
 
 **Update the state file** at `<temp>/planner-state/<PROJECT_ID>.json`. Read the existing JSON, set `triage-bugs` to the current ISO timestamp (e.g., `2026-03-15T10:30:00`). Write back. Preserve any existing data for other triage skills.
+
+> **Tip for rejection learning:** When closing a ticket because it is not what we want (wrong threat model, out of scope, won't fix), use the platform's not-planned or wontfix close-state with a one-line reason in the closing comment. On GitHub, that is "Close as not planned" rather than the default "Close as completed". On Jira, set the resolution to "Won't Do". The next run reads that close-state plus comment and uses it to recognise the same class of concern under a different title and skip refiling. Closing as completed silently breaks this loop because the skill cannot tell rejection from a real fix.
