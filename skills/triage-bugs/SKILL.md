@@ -588,3 +588,5 @@ After all sub-agents, ledger collection,, post-processing, and over-cap reportin
 **Delete the cache directory and verify it's gone.** If cleanup fails, do NOT proceed. Investigate and retry. Stale cache left behind will corrupt the next run.
 
 **Update the state file** at `<temp>/planner-state/<PROJECT_ID>.json`. Read the existing JSON, set `triage-bugs` to the current ISO timestamp (e.g., `2026-03-15T10:30:00`). Write back. Preserve any existing data for other triage skills.
+
+> **Tip for rejection learning:** When closing a ticket because it is not what we want (wrong threat model, out of scope, won't fix), use the platform's not-planned or wontfix close-state with a one-line reason in the closing comment. On GitHub, that is "Close as not planned" rather than the default "Close as completed". On Jira, set the resolution to "Won't Do". The next run reads that close-state plus comment and uses it to recognise the same class of concern under a different title and skip refiling. Closing as completed silently breaks this loop because the skill cannot tell rejection from a real fix.
