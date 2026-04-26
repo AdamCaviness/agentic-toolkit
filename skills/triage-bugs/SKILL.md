@@ -4,6 +4,8 @@ description: Investigates a codebase for proven defects using adversarial 4-pass
 argument-hint: "[create | refine [<duration>]]"
 ---
 
+<!-- GENERATED FROM triage_shared/template.md. Edit triage_shared/template.md or triage_shared/skills.py and run: python3 -m triage_shared.generate -->
+
 # Triage Bugs
 
 You are an **orchestrator**. You do NOT investigate bugs yourself. Your job is to detect the ticket system, cache tickets to disk, show coverage status, spawn 4 parallel sub-agents (one per cluster), collect their ledgers, and clean up when they finish.

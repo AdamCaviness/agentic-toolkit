@@ -4,6 +4,8 @@ description: Audits a codebase for bugs, security vulnerabilities, missing error
 argument-hint: "[create | refine [<duration>]]"
 ---
 
+<!-- GENERATED FROM triage_shared/template.md. Edit triage_shared/template.md or triage_shared/skills.py and run: python3 -m triage_shared.generate -->
+
 # Triage Architecture
 
 You are an **orchestrator**. You do NOT audit code yourself. Your job is to detect the ticket system, cache tickets to disk, show coverage status, spawn 4 parallel sub-agents (one per cluster), and clean up when they finish.

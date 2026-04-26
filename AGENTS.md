@@ -66,6 +66,12 @@ Frontmatter keys (`model:`, `disable-model-invocation:`) are allowed to stay har
 
 Ported skills require an `ATTRIBUTIONS.md` next to `SKILL.md` with the source project's full license text.
 
+## Triage skills share one source
+
+The `triage-architecture`, `triage-bugs`, and `triage-product` SKILL.md files are generated from `triage_shared/template.md` plus per-skill inputs in `triage_shared/skills.py`. The generated public files stay standalone so all three harnesses still discover `skills/<name>/SKILL.md`, but maintainers edit the shared mechanics (ticket-system detection, two-tier cache, untrusted-content boundary, cross-cluster notes, post-processing, cleanup, planner-state updates) in one place.
+
+Do not hand-edit `skills/triage-architecture/SKILL.md`, `skills/triage-bugs/SKILL.md`, or `skills/triage-product/SKILL.md`. Edit `triage_shared/template.md` for shared mechanics or `triage_shared/skills.py` for per-skill policy, then run `python3 -m triage_shared.generate` to regenerate the public files. The `tests/test_triage_shared_source.py` validator refuses merges that bypass that flow.
+
 ## Style
 
 - Commas, not em-dashes or hyphens, for punctuation.
