@@ -198,6 +198,8 @@ A post-processor will read your notes after all cluster agents finish and weave 
 
 Start by reading the project map at `{CACHE_DIR}/project-map.md`. It tells you the tech stack, directory structure, key files, and architectural patterns. This replaces independent exploration. Do NOT run directory listings or search for entry points. The map has this.
 
+Then read the project's own contributor instruction files from the repo root, whichever exist: `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`. Read them verbatim, the orchestrator does not distill them for you. These files carry project-specific carve-outs (threat-model scope, deployment context, conventions) that change how you should judge findings. Treat them as authoritative for project conventions.
+
 Then read the actual files relevant to your cluster directly from the project. The map tells you what exists; you read the code that matters for your focus areas.
 
 Critical mindset: Don't assume features are missing. Read the code. When you find existing implementations, evaluate: Is it robust? Edge cases? Bypassable? Fails safely?

@@ -132,6 +132,40 @@ class TriageSharedSourceTest(unittest.TestCase):
                     "generated so a future maintainer knows where to edit",
                 )
 
+    def test_subagent_orient_step_reads_project_instruction_files(self):
+        """The sub-agent prompt's Orient step must direct sub-agents to read
+        CLAUDE.md, AGENTS.md, and GEMINI.md verbatim from the project root,
+        in addition to the project map. The map is orientation; the
+        convention files carry project-specific carve-outs (threat-model
+        scope, conventions) that distillation can drop. Sub-agents need both.
+        """
+        required_filenames = ["CLAUDE.md", "AGENTS.md", "GEMINI.md"]
+        # Capture the Orient section from the start of the heading to the
+        # next "## " heading. We assert on this scoped block, not the whole
+        # SKILL.md, so a stray mention of CLAUDE.md elsewhere does not satisfy
+        # the contract.
+        orient_pattern = r"## Orient\n.*?(?=\n## )"
+        for skill_name in TRIAGE_SKILLS:
+            text = (SKILLS_DIR / skill_name / "SKILL.md").read_text()
+            match = re.search(orient_pattern, text, re.DOTALL)
+            with self.subTest(skill=skill_name, stage="orient_present"):
+                self.assertIsNotNone(
+                    match,
+                    f"{skill_name}: Orient section not found by the "
+                    "shared-source regex; the generator may have renamed it",
+                )
+            orient_block = match.group(0)
+            for filename in required_filenames:
+                with self.subTest(skill=skill_name, filename=filename):
+                    self.assertIn(
+                        filename,
+                        orient_block,
+                        f"{skill_name}: Orient step must instruct sub-agents "
+                        f"to read {filename} from the project root so "
+                        "project-specific carve-outs reach sub-agents "
+                        "without lossy distillation",
+                    )
+
     def test_shared_blocks_are_byte_identical_across_triage_skills(self):
         texts = {
             name: (SKILLS_DIR / name / "SKILL.md").read_text()
