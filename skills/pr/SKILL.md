@@ -25,7 +25,7 @@ Single command to go from "I'm done" to "PR is open."
 2. **Inventory working tree and commit implementation work**:
    - Capture the working-tree state with `git status --porcelain` and the untracked path list with `git ls-files --others --exclude-standard`
    - Classify every reported path as staged, unstaged, or untracked. Run `git diff --cached` for staged content and `git diff` for unstaged content. Read each untracked file before staging it.
-   - If any paths are present, this is the implementation submission. Stage the intended paths and commit them with a descriptive message derived from the diff. Do not use a `wip:` placeholder. Do not run `git add -A` blindly; stage by explicit path so untracked files are added intentionally.
+   - If any paths are present, this is the implementation submission. Stage the intended paths and commit them with a Conventional Commits subject derived from the diff. Pick the type from the work itself: `feat:` for new functionality, `fix:` for bugfixes, `refactor:` for restructuring without behavior change, `docs:` for documentation, `style:` for formatting, `test:` for tests, `perf:` for performance, `build:` for build-system changes, `ci:` for CI configuration, `chore:` for everything else. Only `feat:` and `fix:` drive a release-please bump, so misclassifying functional work as `chore:` silently skips its release. Do not use a `wip:` placeholder. Do not run `git add -A` blindly; stage by explicit path so untracked files are added intentionally.
    - If a path should be excluded from the PR, the user must add it to `.gitignore` or stash it before `/pr` continues. The skill does not stash silently.
    - If the working tree is clean, skip the commit and continue. The branch must already have implementation commits ahead of `$BASE_BRANCH` (verified in step 6).
 
@@ -39,7 +39,7 @@ Single command to go from "I'm done" to "PR is open."
 
 5. **Stage and commit auto-fixed files**:
    - Check `git status` for changes from formatting
-   - If there are changes: stage them, commit with message "Auto-format and lint fixes". This is a separate commit from the implementation commit in step 2.
+   - If there are changes: stage them, commit with message `style: auto-format and lint fixes`. This is a separate commit from the implementation commit in step 2.
    - If no changes: skip
 
 6. **Pre-push gate** (build the publication inventory before any push):

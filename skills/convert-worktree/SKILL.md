@@ -61,7 +61,7 @@ if [ -n "$(git status --porcelain)" ]; then
   # Commit if there's anything in the index. Untracked-and-unstaged files
   # are deliberately not in scope here.
   if [ -n "$(git diff --cached --name-only)" ]; then
-    git commit -m "wip: tracked changes from worktree conversion"
+    git commit -m "chore(worktree): preserve tracked changes during conversion"
   fi
 
   # Stash any remaining untracked files. The stash ref is repo-level, so it

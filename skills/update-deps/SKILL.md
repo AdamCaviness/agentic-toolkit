@@ -146,7 +146,7 @@ Apply all safe (minor/patch, non-CVE) dependencies in a single batch per manifes
 3. If tests pass, commit all safe updates in one commit per manifest, listing the updated deps:
 
 ```
-Update minor/patch dependencies
+chore(deps): update minor/patch dependencies
 
 - axios 1.6.0 -> 1.7.2
 - dotenv 16.3.1 -> 16.4.1
@@ -369,7 +369,7 @@ Non-CVE major bumps that get reverted stay out of this file. They surface under 
 One atomic commit per dependency:
 
 ```
-Update express 4.18.2 -> 5.1.0 (CVE-2024-XXXXX)
+fix(deps): update express 4.18.2 to 5.1.0 (CVE-2024-XXXXX)
 
 Breaking changes addressed:
 - req.host -> req.hostname (proxy.ts, health.ts)
@@ -378,14 +378,14 @@ Breaking changes addressed:
 Migration guide: https://expressjs.com/en/guide/migrating-5.html
 ```
 
-For non-CVE major bumps, omit the CVE reference from the subject line.
+CVE-driven dep bumps use `fix(deps):` because they are functional fixes that should drive a release-please patch bump. For non-CVE major bumps, use `chore(deps):` and omit the CVE reference from the subject line.
 
 ### 7g. Repeat for the next change plan
 
 ## Step 8: Final Validation
 
 1. Run the full test suite to catch interaction effects between independently applied updates.
-2. Run the project's linter and formatter (check CLAUDE.md for commands). If auto-fixes are applied, commit them separately with message `Auto-format and lint fixes`.
+2. Run the project's linter and formatter (check CLAUDE.md for commands). If auto-fixes are applied, commit them separately with message `style: auto-format and lint fixes`.
 3. If the final test suite fails, identify which combination of updates caused the interaction and report it to the user.
 
 ## Step 9: Cleanup and Summary
