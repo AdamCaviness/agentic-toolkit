@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.5.2...v0.6.0) (2026-04-26)
+
+
+### Features
+
+* **skill:** mark pr and ship as mechanical to skip model invocation ([#47](https://github.com/AdamCaviness/agentic-toolkit/issues/47)) ([42e1ba0](https://github.com/AdamCaviness/agentic-toolkit/commit/42e1ba04b793017e7ffbd3df0162c86e33c28464)), closes [#29](https://github.com/AdamCaviness/agentic-toolkit/issues/29)
+
 ## [0.5.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.5.1...v0.5.2) (2026-04-26)
 
 
