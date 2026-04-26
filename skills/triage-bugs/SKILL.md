@@ -4,6 +4,8 @@ description: Investigates a codebase for proven defects using adversarial 4-pass
 argument-hint: "[create | refine [<duration>]]"
 ---
 
+<!-- GENERATED FROM triage_shared/template.md. Edit triage_shared/template.md or triage_shared/skills.py and run: python3 -m triage_shared.generate -->
+
 # Triage Bugs
 
 You are an **orchestrator**. You do NOT investigate bugs yourself. Your job is to detect the ticket system, cache tickets to disk, show coverage status, spawn 4 parallel sub-agents (one per cluster), collect their ledgers, and clean up when they finish.
@@ -222,9 +224,9 @@ Deep-read code for ALL focus areas in this cluster.
 
 Before you document anything, your confidence must rest on at least one of the following:
 
-- **A deterministic reproduction** — a sequence of inputs or steps that triggers the defect every time.
-- **A code-path proof** — an end-to-end trace showing the defect must occur under clearly stated conditions, with no plausible guard, validator, or handler that would prevent it.
-- **A failing test** — one you wrote or ran that isolates the defect.
+- **A deterministic reproduction**, a sequence of inputs or steps that triggers the defect every time.
+- **A code-path proof**, an end-to-end trace showing the defect must occur under clearly stated conditions, with no plausible guard, validator, or handler that would prevent it.
+- **A failing test**, one you wrote or ran that isolates the defect.
 
 "It looks wrong," "this could race," "this might fail under load," and "this seems off" do not clear the bar. If you can't produce one of the three above, add the candidate to your rejection ledger and move on. Weak reports poison the backlog.
 
@@ -232,13 +234,13 @@ Before you document anything, your confidence must rest on at least one of the f
 
 For each candidate defect, work in four passes. Do not skip ahead.
 
-**Pass 1 — Frame the claim.** Write down, in one sentence, the specific wrong behavior you think exists, the conditions under which it occurs, and the observable symptom. If you can't do this crisply, you don't understand it yet, keep reading code, don't start writing a report.
+**Pass 1, Frame the claim.** Write down, in one sentence, the specific wrong behavior you think exists, the conditions under which it occurs, and the observable symptom. If you can't do this crisply, you don't understand it yet, keep reading code, don't start writing a report.
 
-**Pass 2 — Trace the code.** Read the relevant paths end-to-end, not just the function you suspect. Follow inputs through validation, state transitions, async boundaries, persistence, authorization checks, caching layers, error handlers, and serialization/deserialization. Note every place the value could be mutated, guarded, normalized, or rescued.
+**Pass 2, Trace the code.** Read the relevant paths end-to-end, not just the function you suspect. Follow inputs through validation, state transitions, async boundaries, persistence, authorization checks, caching layers, error handlers, and serialization/deserialization. Note every place the value could be mutated, guarded, normalized, or rescued.
 
-**Pass 3 — Falsify.** Actively hunt for reasons your suspicion is wrong. Is there a validator upstream that makes the bad input unreachable? A try/catch that handles it? A default that masks it? A test that already pins the real behavior? If you find a rescue mechanism, the bug either doesn't exist or lives somewhere else, say so and move on. This pass is the one most investigators skip; skipping it is how false positives get filed.
+**Pass 3, Falsify.** Actively hunt for reasons your suspicion is wrong. Is there a validator upstream that makes the bad input unreachable? A try/catch that handles it? A default that masks it? A test that already pins the real behavior? If you find a rescue mechanism, the bug either doesn't exist or lives somewhere else, say so and move on. This pass is the one most investigators skip; skipping it is how false positives get filed.
 
-**Pass 4 — Prove.** Reproduce it, write a failing test, or produce a causal trace tight enough that a reviewer cannot plausibly object. If this pass fails, the candidate is not ready to report, add it to your rejection ledger.
+**Pass 4, Prove.** Reproduce it, write a failing test, or produce a causal trace tight enough that a reviewer cannot plausibly object. If this pass fails, the candidate is not ready to report, add it to your rejection ledger.
 
 ## Rejection Ledger
 
@@ -274,7 +276,7 @@ NOT about: Style, formatting, naming concerns, missing features, design preferen
 
 ### Cluster Definitions
 
-**Data & State** — Data integrity, data loss, state corruption, stuck workflows, unrecoverable states.
+**Data & State** - Data integrity, data loss, state corruption, stuck workflows, unrecoverable states.
 
 | Focus Area | What to Investigate |
 |---|---|
@@ -283,7 +285,7 @@ NOT about: Style, formatting, naming concerns, missing features, design preferen
 | **State corruption** | State machines that can reach impossible states, UI state that diverges from server state, caches that serve stale data after writes, workflows that get stuck with no recovery path |
 | **Stuck workflows** | Operations that hang without timeout, retry loops without backoff or limit, deadlocks, user flows that reach dead ends with no way back |
 
-**Security & Auth** — Authorization bypass, authentication defects, secrets exposure, injection vectors.
+**Security & Auth** - Authorization bypass, authentication defects, secrets exposure, injection vectors.
 
 | Focus Area | What to Investigate |
 |---|---|
@@ -292,7 +294,7 @@ NOT about: Style, formatting, naming concerns, missing features, design preferen
 | **Secrets** | Credentials in source, tokens logged or in URLs, API keys in client bundles, secrets in error messages |
 | **Injection** | SQL injection via string concatenation, XSS via unsanitized user content, command injection through user input, path traversal |
 
-**Correctness** — User-visible wrong results, crashes, runtime errors on supported paths.
+**Correctness** - User-visible wrong results, crashes, runtime errors on supported paths.
 
 | Focus Area | What to Investigate |
 |---|---|
@@ -301,7 +303,7 @@ NOT about: Style, formatting, naming concerns, missing features, design preferen
 | **Logic errors** | Inverted conditions, unreachable code that should be reachable, boolean expressions that always evaluate the same way, switch/match with missing cases that receive real input |
 | **Regression-prone paths** | Behavior that depends on implicit ordering, code that works by coincidence (e.g., relying on map iteration order), assumptions about input shape that aren't validated |
 
-**Silent Failures** — Swallowed errors, missing retries where correctness requires them, lost writes, severe performance defects.
+**Silent Failures** - Swallowed errors, missing retries where correctness requires them, lost writes, severe performance defects.
 
 | Focus Area | What to Investigate |
 |---|---|
@@ -473,13 +475,13 @@ Mode: create | refine
 Last run: <previous timestamp or "never">
 
 Confirmed (N):
-  #201 "Race in session refresh allows double-spend" — severity:high [Data & State]
-  #202 "Missing CSRF on /api/transfer" — severity:high [Security & Auth]
+  #201 "Race in session refresh allows double-spend", severity:high [Data & State]
+  #202 "Missing CSRF on /api/transfer", severity:high [Security & Auth]
   ...
 
 Investigated & Rejected (M):
-  "Possible null deref in parseConfig" — guarded by schema validation at api/middleware.ts:44 [Correctness]
-  "Stale cache after write" — intentional per TTL design in cache.ts [Data & State]
+  "Possible null deref in parseConfig", guarded by schema validation at api/middleware.ts:44 [Correctness]
+  "Stale cache after write", intentional per TTL design in cache.ts [Data & State]
   ...
 ```
 
