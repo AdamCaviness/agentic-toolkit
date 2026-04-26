@@ -218,9 +218,48 @@ Stage and commit all changes with a Conventional Commits subject referencing the
 
 Do NOT push. Do NOT create a PR. Wait for the user.
 
+## Step 9.5: Run Code Review
+
+Before announcing completion, dispatch the code-reviewer subagent against the work just committed. The reviewer's findings are folded into the Step 10 summary so the user gets implementation status and review verdict in one shot.
+
+1. **Resolve the default branch and build review variables.** Re-resolve `BASE_BRANCH` per the AGENTS.md branch lifecycle contract; shell state does not persist between Bash invocations.
+
+```bash
+BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+if [ -z "$BASE_BRANCH" ]; then
+  git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
+fi
+BASE_SHA=$(git merge-base HEAD "origin/$BASE_BRANCH" 2>/dev/null || git merge-base HEAD "$BASE_BRANCH")
+HEAD_SHA=$(git rev-parse HEAD)
+CHANGED_PATH_INVENTORY=$(
+  {
+    git diff --name-status "$BASE_SHA..$HEAD_SHA" | sed 's/^/committed\t/'
+    git diff --cached --name-status | sed 's/^/staged\t/'
+    git diff --name-status | sed 's/^/unstaged\t/'
+    git ls-files --others --exclude-standard | sed 's/^/untracked\t/'
+  } | sort -u
+)
+HIGH_RISK_PATHS=$(
+  printf '%s\n' "$CHANGED_PATH_INVENTORY" |
+    grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc|id_rsa|id_dsa|credentials|secrets?|token|key)(\.|/|$)|\.(pem|p12|pfx|key|crt|sqlite|db|dump|zip|tar|tgz|gz)$|(^|/)\.github/workflows/' || true
+)
+```
+
+`HAS_UNCOMMITTED` is `no`. Step 9 just committed; the working tree is clean.
+
+2. **Build the narrative placeholders:**
+   - `DESCRIPTION`: a one to two sentence summary of the change you just implemented.
+   - `PLAN_OR_REQUIREMENTS`: the ticket title plus the ticket body, verbatim, as fetched in Step 2.
+
+3. **Load and dispatch.** Read `skills/code-review/reviewer-prompt.md`, substitute every `{PLACEHOLDER}` with the values built above, and pass the resulting text as the prompt to the unspecialized reviewer subagent via the Task tool / equivalent. Do not name a specialized reviewer agent from another plugin; the unspecialized subagent takes the template as its full instructions, which is what the template is written for.
+
+4. **Capture findings.** Parse the reviewer's structured output for severity counts (Critical, Important, Minor), the Assessment verdict line (Yes / No / With fixes), and the top issues in severity order with their file:line references. Cap the captured issues at five.
+
+5. **Failure mode.** If the dispatch errors, the capability is unavailable, the reviewer-prompt file cannot be read, or any other failure prevents review, capture `Review: skipped (<reason>)` and proceed to Step 10. Do not retry. Do not block Step 10. The user can run `/code-review` manually if they care.
+
 ## Step 10: Wait for Review
 
-Print a brief summary:
+Print a brief summary that folds in the Step 9.5 review findings:
 
 ```
 Done. Ready for review.
@@ -229,8 +268,16 @@ Branch: <branch-name>
 Ticket: <ticket-id> - <ticket title>
 Files:  <list changed files>
 
+Review: Critical <N> | Important <N> | Minor <N> | Verdict: <Yes/No/With fixes>
+Top issues:
+  - <file>:<line> - <what's wrong>
+  - <file>:<line> - <what's wrong>
+  ...
+
 To test in the UI: <one sentence describing the specific UI action that exercises this change>
 ```
+
+If the reviewer found zero issues, replace the two Review lines with `Review: clean | Verdict: Yes`. If review failed or was skipped per Step 9.5's failure mode, replace them with `Review: skipped (<reason>)`. The `Top issues:` block is omitted when there are no captured issues.
 
 The UI testing tip must be **specific and actionable**, not "test the feature" but "log in, wait 15 minutes for the token to expire, then click any nav link, it should refresh silently instead of kicking you to login."
 
