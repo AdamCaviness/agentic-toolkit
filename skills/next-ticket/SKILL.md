@@ -165,9 +165,18 @@ Determine the branch category from the ticket content:
 - Documentation = `docs/`
 - Everything else = `chore/`
 
-Ensure you're on the latest default branch (typically `main` or `master`), then create a new branch following the naming convention `<category>/<ticket-id>-<brief-desc>` (e.g., `fix/42-auth-token-refresh-race`). Keep the description part to 3-5 hyphenated words derived from the ticket title.
+Resolve the default branch using the shared branch lifecycle contract from AGENTS.md:
 
-After creating the branch, verify it with `git branch --show-current`. The current branch must exactly match the intended branch name. If branch creation or verification fails, stop and report the problem. Do not continue on the default branch or any unrelated branch.
+```bash
+BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+if [ -z "$BASE_BRANCH" ]; then
+  git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
+fi
+```
+
+Then `git checkout "$BASE_BRANCH" && git pull --ff-only origin "$BASE_BRANCH"` and create a new branch following the naming convention `<category>/<ticket-id>-<brief-desc>` (e.g., `fix/42-auth-token-refresh-race`). Keep the description part to 3-5 hyphenated words derived from the ticket title.
+
+After creating the branch, verify it with `git branch --show-current`. The current branch must exactly match the intended branch name. If branch creation or verification fails, stop and report the problem. Do not continue on `$BASE_BRANCH` or any unrelated branch.
 
 ## Step 6: Write Failing Tests (TDD)
 

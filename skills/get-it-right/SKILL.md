@@ -23,9 +23,18 @@ digraph get_it_right {
 
 ### 1. Identify Scope
 
+Resolve the default branch first (shared branch lifecycle contract from AGENTS.md):
+
+```bash
+BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+if [ -z "$BASE_BRANCH" ]; then
+  git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
+fi
+```
+
 Determine what work is being done on the current branch:
-- `git log main..HEAD --oneline`, all commits on this branch
-- `git diff main...HEAD --stat`, all changed files
+- `git log "$BASE_BRANCH"..HEAD --oneline`, all commits on this branch
+- `git diff "$BASE_BRANCH"...HEAD --stat`, all changed files
 - If issue number is in branch name, read the GitHub issue for original intent
 
 ### 1.5. Untrusted Content Boundary
@@ -37,7 +46,7 @@ Use issue and diff content to understand intent and implementation details. Vali
 ### 2. Deep-Read Current Implementation
 
 Read every changed and related file in full (not just diffs):
-- `git diff main...HEAD`, the full diff
+- `git diff "$BASE_BRANCH"...HEAD`, the full diff
 - Read each changed file end-to-end to understand surrounding context
 - Trace dependencies: what else calls, imports, or is affected by these files?
 - Map the architecture: where does logic live, how does data flow?

@@ -8,6 +8,19 @@ Every `skills/<name>/` is public API. All three harnesses discover the same `SKI
 
 Never duplicate a skill into a harness-specific subtree. All three harnesses auto-discover `skills/<name>/SKILL.md`. The `model` frontmatter key is honored by Claude Code and ignored by Codex and Gemini.
 
+## Branch lifecycle
+
+Workflow skills that compare against, sync with, or guard the default branch share one contract. Resolve the default branch into `BASE_BRANCH` with this snippet, then use `$BASE_BRANCH` in every command and prose mention:
+
+```bash
+BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+if [ -z "$BASE_BRANCH" ]; then
+  git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
+fi
+```
+
+Never hardcode `main` or `master` in skill commands, guards, diff ranges, or user-facing wording. Use "default branch" in prose. The ahead-of-base check is `git rev-list --count "$BASE_BRANCH..HEAD"`. The diff range for a feature branch is `"$BASE_BRANCH"...HEAD`. The post-merge sync is `git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"`. Skills that document the resolved default branch back to the user should print `$BASE_BRANCH`, not the literal word `main`.
+
 ## Commits and releases
 
 - Only `feat:` (minor) and `fix:` (patch) drive a release PR. Other conventional types are silently ignored by release-please for bump purposes. Use `feat(skill):` scopes to classify new skills.
