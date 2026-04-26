@@ -34,6 +34,11 @@ class CodeReviewInventoryTest(unittest.TestCase):
             skill_text,
             "Reviewer template body must live in reviewer-prompt.md only, not in SKILL.md",
         )
+        self.assertNotIn(
+            "Review committed and uncommitted changes together as a single body of work.",
+            skill_text,
+            "Reviewer template body must live in reviewer-prompt.md only, not in SKILL.md",
+        )
 
     def test_skill_md_references_reviewer_prompt_file(self):
         skill_text = CODE_REVIEW_SKILL.read_text()
