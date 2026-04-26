@@ -50,11 +50,18 @@ SKILL_FETCH_PHRASES = [
 
 
 # Phrases that pin the dedup-check contract: sub-agents must read
-# rejection reasoning, not just title-match the closed cache.
+# rejection reasoning, not just title-match the closed cache. Each phrase
+# is load-bearing in a *different* location so a half-revert in any one
+# location is detected:
+# - "direct title-level duplicate" appears only in the Dedup Check step.
+# - "do not just dedup by title" appears only in the Cached Tickets blurb.
+# - "threat model" appears in both, plus AGENTS.md.
+# - "not_planned" appears in the Step 1 fetch and the Dedup Check step.
 SKILL_DEDUP_PHRASES = [
     "not_planned",
     "threat model",
     "do not just dedup by title",
+    "direct title-level duplicate",
 ]
 
 
