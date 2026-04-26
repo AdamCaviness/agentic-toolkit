@@ -347,6 +347,23 @@ Run the "before" tests plus the full project test suite. Fix remaining failures.
 
 If you are stuck after reasonable effort, report the issue to the user with full context (which file, which test, which breaking change, what you tried). Revert the dependency bump with a commit that notes the revert reason. Do not give up silently.
 
+If the reverted dep is CVE-required (`reason` was `cve` in its change plan), append a record to `<cache>/reverted-cve-updates.json`. The file is a JSON array; create it with `[]` on first write, then append. One object per reverted CVE-required dep:
+
+```json
+[
+  {
+    "package": "express",
+    "current_version": "4.18.2",
+    "target_version": "5.1.0",
+    "cve_id": "CVE-2024-XXXXX",
+    "revert_commit": "<sha of the revert commit>",
+    "reason": "test failure in proxy.test.ts:18 after 3 fix attempts"
+  }
+]
+```
+
+Non-CVE major bumps that get reverted stay out of this file. They surface under `Skipped (manual attention needed):` in Step 9.
+
 ### 7f. Commit
 
 One atomic commit per dependency:
@@ -373,9 +390,18 @@ For non-CVE major bumps, omit the CVE reference from the subject line.
 
 ## Step 9: Cleanup and Summary
 
-Delete the cache directory and verify it is gone. If cleanup fails, investigate and retry before proceeding.
+Before deleting the cache directory, read `<cache>/reverted-cve-updates.json` if it exists. Treat its contents as the structured list of CVE-required deps that were reverted in Step 7e. If the file does not exist, the list is empty. Do not infer reverted CVE deps by grepping the report or commit log; rely on this file.
 
-Print the final summary:
+Then delete the cache directory and verify it is gone. If cleanup fails, investigate and retry before proceeding.
+
+Render the final summary using the template below. The `CVE updates NOT applied` section appears only when the reverted-CVE list is non-empty, and it appears above all other sections. Non-CVE stuck deps stay in `Skipped (manual attention needed):` and never mix with the CVE-revert section.
+
+The closing headline is conditional on the same list:
+
+- If the reverted-CVE list is empty, print `All tests passing. Ready for review.`
+- If the reverted-CVE list has one or more entries, print `WARNING: <N> CVE update(s) NOT applied. See above.` instead. Never print the success line when any CVE was reverted.
+
+Final summary template:
 
 ```
 Dependency update complete.
@@ -383,6 +409,9 @@ Dependency update complete.
 Branch: chore/update-deps
 Scope: backend | all
 Mode: standard | major
+
+CVE updates NOT applied (security risk remains) (1):
+  express 4.18.2 -> 5.1.0 (CVE-2024-XXXXX) reverted in <sha>, test failure in proxy.test.ts:18 after 3 fix attempts
 
 Safe updates (1 commit):
   axios 1.6.0 -> 1.7.2, dotenv 16.3.1 -> 16.4.1, ... (8 deps)
@@ -398,7 +427,7 @@ Bot PRs that should auto-close:
   #87 (dependabot: express)
   #92 (dependabot: lodash)
 
-All tests passing. Ready for review.
+WARNING: 1 CVE update(s) NOT applied. See above.
 ```
 
 Never push, create PRs, or merge. The user reviews first.
