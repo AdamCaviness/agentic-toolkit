@@ -15,6 +15,7 @@ LIFECYCLE_REQUIRED_SKILLS = [
     "get-it-right",
     "next-ticket",
     "convert-worktree",
+    "code-review",
 ]
 
 DETECTION_SNIPPET_ELEMENTS = [
@@ -22,25 +23,30 @@ DETECTION_SNIPPET_ELEMENTS = [
     "BASE_BRANCH",
 ]
 
+COMMAND_POSITION_FORBIDDEN = [
+    r"git checkout main\b",
+    r"git pull origin main\b",
+    r"git pull --ff-only origin main\b",
+    r"git fetch origin main\b",
+    r"git merge-base HEAD origin/main\b",
+    r"git merge-base HEAD main\b",
+    r"git diff main\.\.\.HEAD",
+    r"git log main\.\.HEAD",
+]
+
 FORBIDDEN_PATTERNS = {
-    "ship": [
-        r"git checkout main\b",
-        r"git pull origin main\b",
+    "ship": COMMAND_POSITION_FORBIDDEN + [
         r"\bahead of main\b",
         r"\bIf on main\b",
     ],
-    "pr": [
-        r"git diff main\.\.\.HEAD",
-        r"git log main\.\.HEAD",
+    "pr": COMMAND_POSITION_FORBIDDEN + [
         r"on `main` or `master`",
         r"\bahead of main\b",
     ],
-    "get-it-right": [
-        r"git diff main\.\.\.HEAD",
-        r"git log main\.\.HEAD",
-    ],
-    "next-ticket": [],
-    "convert-worktree": [],
+    "get-it-right": COMMAND_POSITION_FORBIDDEN,
+    "next-ticket": COMMAND_POSITION_FORBIDDEN,
+    "convert-worktree": COMMAND_POSITION_FORBIDDEN,
+    "code-review": COMMAND_POSITION_FORBIDDEN,
 }
 
 
