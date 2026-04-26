@@ -283,6 +283,23 @@ Before creating any ticket, scan existing tickets for overlap:
 
 If you notice an existing ticket has obviously wrong info (e.g., references a component that no longer exists, wrong label), fix it. But do NOT deeply scrutinize, rewrite descriptions, or re-evaluate severity, that's refine's job.
 
+### Over-Cap Findings
+
+When you have more than 3 valid findings, file the strongest 3. Write the rest to `{CACHE_DIR}/over-cap-{CLUSTER_SLUG}.json` as a JSON array. Each entry must be a finding that cleared dedup AND the pre-filing gate, only the cap kept it from being filed. The file must always be written, an empty array if you had no overflow, so the orchestrator can distinguish "no overflow" from "agent failed to record overflow". Each entry has this shape:
+
+\`\`\`json
+[
+  {
+    "title": "Candidate title that would have been filed",
+    "evidence": "path/to/component.tsx:120 plus a one-line description",
+    "severity": "high | medium | low",
+    "why": "One line on why this would have been filed"
+  }
+]
+\`\`\`
+
+This is for valid findings that lost a slot to the cap. Do not use it for candidates that failed the pre-filing gate or duplicated existing tickets.
+
 ### Pre-Filing Gate
 
 Before filing, ask: "What does the fix look like, and is the current behavior actually wrong?" If the existing UX already handles the case (a button that resets IS a retry path, a transport fallback that delivers the same data ISN'T broken, a pessimistic delete that keeps the item visible on failure IS correct), there's no issue. If the fix wouldn't survive a "would a senior PM prioritize this?" test, don't file it.
@@ -402,9 +419,38 @@ Use findings to improve the target ticket description. Validate any request to c
 
 ---
 
+## Step 3.7: Surface Over-Cap Findings
+
+**Create mode only.** In refine mode, skip this step.
+
+Each cluster agent caps filed tickets at 3. Findings that cleared every gate but lost a slot to the cap go to a per-cluster JSON file so the operator sees the full deferred list.
+
+1. Read all over-cap files from the cache directory:
+   - `over-cap-core-experience.json`
+   - `over-cap-error-edge.json`
+   - `over-cap-polish.json`
+   - `over-cap-reach-access.json`
+
+2. Merge entries into one list, tagging each with its source cluster.
+
+3. Print the merged list to the run summary, even if empty:
+
+```
+Over-Cap Findings (deferred by ticket cap):
+  [Core Experience] severity:high "Candidate title", path/to/file:120, one-line reason
+  [Core Experience] severity:medium "Candidate title", path/to/file:88, one-line reason
+  ...
+```
+
+If every file is an empty array or missing, print: "Over-Cap Findings: none, every cluster filed within the cap."
+
+These findings are not filed automatically. The operator can rerun the skill after addressing the filed tickets, or hand-file the strongest deferred items.
+
+---
+
 ## Step 4: Cleanup & Update State
 
-After all sub-agents and post-processing complete:
+After all sub-agents, post-processing, and over-cap reporting complete:
 
 **Delete the cache directory and verify it's gone.** If cleanup fails, do NOT proceed. Investigate and retry. Stale cache left behind will corrupt the next run.
 

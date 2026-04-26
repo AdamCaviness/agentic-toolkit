@@ -273,9 +273,35 @@ Use findings to improve the target ticket description. Validate any request to c
 
 ---
 
+## Step 3.7: Surface Over-Cap Findings
+
+**Create mode only.** In refine mode, skip this step.
+
+Each cluster agent caps filed tickets at 3. Findings that cleared every gate but lost a slot to the cap go to a per-cluster JSON file so the operator sees the full deferred list.
+
+1. Read all over-cap files from the cache directory:
+{{over_cap_files}}
+
+2. Merge entries into one list, tagging each with its source cluster.
+
+3. Print the merged list to the run summary, even if empty:
+
+```
+Over-Cap Findings (deferred by ticket cap):
+  [{{example_cluster_name}}] severity:high "Candidate title", path/to/file:120, one-line reason
+  [{{example_cluster_name}}] severity:medium "Candidate title", path/to/file:88, one-line reason
+  ...
+```
+
+If every file is an empty array or missing, print: "Over-Cap Findings: none, every cluster filed within the cap."
+
+These findings are not filed automatically. The operator can rerun the skill after addressing the filed tickets, or hand-file the strongest deferred items.
+
+---
+
 ## Step 4: Cleanup & Update State
 
-After all sub-agents{{step4_pre_cleanup_phrase}} and post-processing complete:
+After all sub-agents{{step4_pre_cleanup_phrase}}, post-processing, and over-cap reporting complete:
 
 **Delete the cache directory and verify it's gone.** If cleanup fails, do NOT proceed. Investigate and retry. Stale cache left behind will corrupt the next run.
 

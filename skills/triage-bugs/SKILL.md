@@ -334,6 +334,23 @@ Before creating any ticket, scan existing tickets for overlap:
 
 If you notice an existing ticket has obviously wrong info (e.g., references a file that no longer exists, wrong label), fix it. But do NOT deeply scrutinize, rewrite descriptions, or re-evaluate severity, that's refine's job.
 
+### Over-Cap Findings
+
+When you have more than 3 confirmed defects (each cleared dedup, the certainty bar, and the pre-filing gate), file the strongest 3. Write the rest to `{CACHE_DIR}/over-cap-{CLUSTER_SLUG}.json` as a JSON array. This is distinct from the rejection ledger: the ledger holds candidates that failed the certainty bar; over-cap holds proven defects that lost a slot to the cap. The file must always be written, an empty array if you had no overflow, so the orchestrator can distinguish "no overflow" from "agent failed to record overflow". Each entry has this shape:
+
+\`\`\`json
+[
+  {
+    "title": "Candidate title that would have been filed",
+    "evidence": "path/to/file.ts:120 plus a one-line description",
+    "severity": "high | medium | low",
+    "why": "One line on why this would have been filed"
+  }
+]
+\`\`\`
+
+Do not move ledger-rejected candidates here. Do not move dedup-rejected candidates here. Only proven defects that fully cleared every gate.
+
 ### Pre-Filing Gate
 
 Before filing, ask: "Is this actually a bug, or am I pattern-matching on something that looks wrong but behaves correctly by design?"
@@ -533,9 +550,38 @@ Use findings to improve the target ticket description. Validate any request to c
 
 ---
 
+## Step 3.7: Surface Over-Cap Findings
+
+**Create mode only.** In refine mode, skip this step.
+
+Each cluster agent caps filed tickets at 3. Findings that cleared every gate but lost a slot to the cap go to a per-cluster JSON file so the operator sees the full deferred list.
+
+1. Read all over-cap files from the cache directory:
+   - `over-cap-data-state.json`
+   - `over-cap-security-auth.json`
+   - `over-cap-correctness.json`
+   - `over-cap-silent-failures.json`
+
+2. Merge entries into one list, tagging each with its source cluster.
+
+3. Print the merged list to the run summary, even if empty:
+
+```
+Over-Cap Findings (deferred by ticket cap):
+  [Data & State] severity:high "Candidate title", path/to/file:120, one-line reason
+  [Data & State] severity:medium "Candidate title", path/to/file:88, one-line reason
+  ...
+```
+
+If every file is an empty array or missing, print: "Over-Cap Findings: none, every cluster filed within the cap."
+
+These findings are not filed automatically. The operator can rerun the skill after addressing the filed tickets, or hand-file the strongest deferred items.
+
+---
+
 ## Step 4: Cleanup & Update State
 
-After all sub-agents, ledger collection, and post-processing complete:
+After all sub-agents, ledger collection,, post-processing, and over-cap reporting complete:
 
 **Delete the cache directory and verify it's gone.** If cleanup fails, do NOT proceed. Investigate and retry. Stale cache left behind will corrupt the next run.
 
