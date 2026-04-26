@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.7.0...v0.8.0) (2026-04-26)
+
+
+### Features
+
+* **get-it-right:** footprint guard before auto-implementation ([#60](https://github.com/AdamCaviness/agentic-toolkit/issues/60)) ([cc495b8](https://github.com/AdamCaviness/agentic-toolkit/commit/cc495b8e920ead57fa2c7f9e9e3eadbd12d032b4))
+
 ## [0.7.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.6.4...v0.7.0) (2026-04-26)
 
 
