@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.6.4...v0.7.0) (2026-04-26)
+
+
+### Features
+
+* **triage:** quality pass for shared template and skills ([#58](https://github.com/AdamCaviness/agentic-toolkit/issues/58)) ([113ba2c](https://github.com/AdamCaviness/agentic-toolkit/commit/113ba2c1d501f8233869fc536171b6aed68f45c8))
+
 ## [0.6.4](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.6.3...v0.6.4) (2026-04-26)
 
 
