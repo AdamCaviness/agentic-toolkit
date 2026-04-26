@@ -8,6 +8,10 @@ Every `skills/<name>/` is public API. All three harnesses discover the same `SKI
 
 Never duplicate a skill into a harness-specific subtree. All three harnesses auto-discover `skills/<name>/SKILL.md`. The `model` frontmatter key is honored by Claude Code and ignored by Codex and Gemini.
 
+## Mechanical skills
+
+Skills whose lifecycle is almost entirely deterministic git, shell, and `gh` orchestration declare `disable-model-invocation: true` in frontmatter so harnesses skip expensive model reasoning for them. Currently honored by Claude Code, tolerated by Codex and Gemini. Apply to `pr`, `ship`, and `convert-worktree`. Add the key to any future skill whose body is a fixed command sequence rather than judgement-driven work.
+
 ## Branch lifecycle
 
 Workflow skills that compare against, sync with, or guard the default branch share one contract. Resolve the default branch into `BASE_BRANCH` with this snippet, then use `$BASE_BRANCH` in every command and prose mention:

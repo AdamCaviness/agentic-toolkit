@@ -1,6 +1,7 @@
 ---
 name: ship
 description: Commit, push, create/merge PR, sync local default branch, delete branch. The standard "I'm done with this branch" workflow.
+disable-model-invocation: true
 ---
 
 # Ship
