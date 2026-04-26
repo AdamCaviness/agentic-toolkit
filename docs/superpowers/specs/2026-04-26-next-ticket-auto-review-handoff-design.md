@@ -12,7 +12,7 @@ Three file changes, one new file. No hooks, no `settings.toml`, no `.gemini/hook
 
 ### New: `skills/code-review/reviewer-prompt.md`
 
-Standalone file containing the reviewer subagent's prompt template, currently a fenced block at the bottom of `skills/code-review/SKILL.md`. Placeholders (`{WHAT_WAS_IMPLEMENTED}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{HAS_UNCOMMITTED}`, `{CHANGED_PATH_INVENTORY}`, `{HIGH_RISK_PATHS}`, `{DESCRIPTION}`) preserved character-for-character.
+Standalone file containing the reviewer subagent's prompt template, currently a fenced block at the bottom of `skills/code-review/SKILL.md`. Placeholders (`{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{HAS_UNCOMMITTED}`, `{CHANGED_PATH_INVENTORY}`, `{HIGH_RISK_PATHS}`, `{DESCRIPTION}`) preserved character-for-character.
 
 This becomes the single source of truth for the reviewer contract. Both `code-review` and `next-ticket` reference it; the template cannot drift because there is only one copy.
 
@@ -34,7 +34,7 @@ Step 9.5 body:
 2. Build placeholder values:
    - `BASE_SHA = git merge-base HEAD "origin/$BASE_BRANCH"` (fallback `git merge-base HEAD "$BASE_BRANCH"`)
    - `HEAD_SHA = git rev-parse HEAD`
-   - `HAS_UNCOMMITTED = no` (Step 9 just committed; working tree is clean)
+   - `HAS_UNCOMMITTED` is computed dynamically by the same shell snippet `code-review/SKILL.md` uses (`$([ -n "$(git status --porcelain)" ] && echo "yes" || echo "no")`). Step 9 just committed, so the value resolves to `no` under normal operation, but the dynamic check is preferred over a hardcoded `no` so the reviewer sees accurate working-tree state if anything modified files between Step 9 and Step 9.5.
    - `CHANGED_PATH_INVENTORY` and `HIGH_RISK_PATHS` per the same shell snippet `code-review/SKILL.md` already documents
    - `DESCRIPTION`: a one to two sentence implementor summary of the change
    - `PLAN_OR_REQUIREMENTS`: ticket title + ticket body, verbatim from the source system
