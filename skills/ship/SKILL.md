@@ -20,7 +20,7 @@ Complete the current branch by committing, pushing, merging, and cleaning up.
    ```
 
 1. **Review uncommitted changes**: Run `git status` and `git diff` to see what's uncommitted. If any files or changes look suspect, prompt the user and wait for confirmation before committing.
-2. **Commit**: Stage and commit the confirmed changes with a descriptive message based on the diff.
+2. **Commit**: Stage and commit the confirmed changes with a Conventional Commits subject based on the diff. Pick the type from the work itself: `feat:` for new functionality, `fix:` for bugfixes, `refactor:` for restructuring without behavior change, `docs:` for documentation, `style:` for formatting, `test:` for tests, `perf:` for performance, `build:` for build-system changes, `ci:` for CI configuration, `chore:` for everything else. Only `feat:` and `fix:` drive a release-please bump, so misclassifying functional work as `chore:` silently skips its release.
 3. **Pre-push gate** (build the publication inventory before any push):
 
    ```bash

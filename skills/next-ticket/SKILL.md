@@ -214,7 +214,7 @@ Run the project's formatter (e.g., `make nice`, `npm run format`, `cargo fmt`, `
 
 ## Step 9: Commit
 
-Stage and commit all changes with a descriptive message referencing the ticket. Use whatever closing syntax the platform recognizes for auto-closing tickets from commits (e.g., `Closes #42` for GitHub, `Resolves PROJ-42` for Jira).
+Stage and commit all changes with a Conventional Commits subject referencing the ticket. Reuse the branch category resolved in Step 5 as the commit type: `fix/` becomes `fix:`, `feat/` becomes `feat:`, `refactor/` becomes `refactor:`, `docs/` becomes `docs:`, `chore/` becomes `chore:`. Only `feat:` and `fix:` drive a release-please bump, so the Step 5 category must reflect the actual work category, not a default. Use whatever closing syntax the platform recognizes for auto-closing tickets from commits (e.g., `Closes #42` for GitHub, `Resolves PROJ-42` for Jira).
 
 Do NOT push. Do NOT create a PR. Wait for the user.
 
