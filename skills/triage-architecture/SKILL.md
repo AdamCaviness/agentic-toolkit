@@ -23,13 +23,12 @@ Usage: `/triage-architecture`, `/triage-architecture refine`, or `/triage-archit
 
 Determine which ticket system this project uses. Check in this order:
 
-1. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use that value.
+1. **Cached config (always wins)**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip the rest of detection. Never re-detect when the cache has an answer.
 2. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
 3. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
+4. **Confirm with the user.** Tell them what you concluded and where the evidence came from, e.g., "Detected ticket system: GitHub Issues (github.com remote). Correct?" If they confirm, cache it. If they correct, cache the correction.
 
-Once determined, cache the value in `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries if it does.
-
-Confirm the detected system to the user (e.g., "Detected ticket system: GitHub Issues"). If the user corrects it, update the cached value and proceed with their answer.
+Cache writes go to `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries; never overwrite unrelated keys. The cache write happens **after** the user confirms or corrects, so the cached value reflects the operator's verdict, not the auto-detection guess.
 
 > **Tip**: If auto-detect consistently gets it wrong for a project (e.g., a GitHub-hosted repo that uses Jira), add `ticketSystem: jira` to the project's CLAUDE.md to skip detection.
 
