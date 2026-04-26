@@ -1,6 +1,6 @@
 ---
 name: convert-worktree
-description: Convert a git worktree into a local branch. Rebase onto latest main, clean up project resources, remove worktree, checkout branch in main workspace. Use when finishing work in a worktree.
+description: Convert a git worktree into a local branch. Rebase onto latest default branch, clean up project resources, remove worktree, checkout branch in main workspace. Use when finishing work in a worktree.
 disable-model-invocation: true
 ---
 
@@ -34,10 +34,9 @@ fi
 WORKTREE_PATH=$(pwd)
 ```
 
-Detect the base branch dynamically:
+Resolve the default branch using the shared branch lifecycle contract from AGENTS.md:
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
-# Fall back to main, then master
 if [ -z "$BASE_BRANCH" ]; then
   git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
 fi
@@ -138,5 +137,5 @@ Branch <BRANCH> checked out in <MAIN_WORKTREE>
 - **Never push, create PRs, delete branches, or merge.** Those are separate user decisions.
 - **Cleanup before rebase.** Project cleanup needs worktree context (variables, paths). Rebase happens after.
 - **Always use `git add -A` for WIP commits.** New untracked files are common in worktrees. `.gitignore` handles exclusions.
-- **Detect the base branch dynamically.** Don't hardcode `main`. Check `git symbolic-ref refs/remotes/origin/HEAD`, fall back to `main`, then `master`.
-- If on main/master or not in a worktree, warn and stop.
+- **Detect the base branch dynamically.** Use the shared branch lifecycle contract from AGENTS.md: `git symbolic-ref refs/remotes/origin/HEAD`, fall back to `main`, then `master`. Never hardcode the default branch name.
+- If on the default branch or not in a worktree, warn and stop.

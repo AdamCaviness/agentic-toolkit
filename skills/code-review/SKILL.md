@@ -14,7 +14,7 @@ Dispatch a code-reviewer subagent to catch issues before they cascade. The revie
 **Mandatory:**
 - After each task in multi-task development
 - After completing a major feature
-- Before merge to main
+- Before merge to the default branch
 
 **Optional but valuable:**
 - When stuck (fresh perspective)
@@ -25,7 +25,11 @@ Dispatch a code-reviewer subagent to catch issues before they cascade. The revie
 
 **1. Get git range:**
 ```bash
-BASE_SHA=$(git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main)
+BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+if [ -z "$BASE_BRANCH" ]; then
+  git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
+fi
+BASE_SHA=$(git merge-base HEAD "origin/$BASE_BRANCH" 2>/dev/null || git merge-base HEAD "$BASE_BRANCH")
 HEAD_SHA=$(git rev-parse HEAD)
 HAS_UNCOMMITTED=$([ -n "$(git status --porcelain)" ] && echo "yes" || echo "no")
 CHANGED_PATH_INVENTORY=$(
@@ -277,7 +281,7 @@ If the project has a verification command, run it and include the outcome. Look 
 
 You: Let me request code review before proceeding.
 
-BASE_SHA=$(git merge-base HEAD origin/main)
+BASE_SHA=$(git merge-base HEAD "origin/$BASE_BRANCH")
 HEAD_SHA=$(git rev-parse HEAD)
 
 [Dispatch general-purpose subagent with reviewer prompt]

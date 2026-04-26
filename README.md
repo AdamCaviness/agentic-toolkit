@@ -11,7 +11,7 @@ A collection of skills for agentic coding tools, including [Claude Code](https:/
 | **Quality** | [code-review](#code-review) | `/code-review` | Dispatch a reviewer subagent to evaluate all branch work (committed + uncommitted) |
 | | [get-it-right](#get-it-right) | `/get-it-right` | Re-architect the current branch from scratch, leave unstaged for review |
 | **Workflow** | [pr](#pr) | `/pr` | Format, lint, test, commit, push, open PR |
-| | [ship](#ship) | `/ship` | Commit, push, merge PR, sync main, delete branch |
+| | [ship](#ship) | `/ship` | Commit, push, merge PR, sync default branch, delete branch |
 | | [convert-worktree](#convert-worktree) | `/convert-worktree` | Cleanly convert a worktree back into a local branch |
 | **Utility** | [compress-markdown](#compress-markdown) | `/compress-markdown` | Compress markdown to save tokens; `deep` validates against codebase first |
 | | [update-deps](#update-deps) | `/update-deps` | Check CVEs, apply minor/patch updates, `major` for breaking changes; scopeable |
@@ -138,7 +138,7 @@ The "I'm done" command. Runs format/lint and tests (skips if already passing wit
 
 ### [ship](skills/ship/SKILL.md)
 
-The complete branch lifecycle. Commits, pushes, creates or updates a PR, merges it, syncs local main, and deletes the branch. The skill detects your repo's allowed merge strategies (merge, squash, rebase) and caches the policy in `.git/agents/repo-policy.json` with a 30-day freshness window, retrying once on policy errors. For forked repos, PRs always target your fork, never upstream.
+The complete branch lifecycle. Commits, pushes, creates or updates a PR, merges it, syncs the local default branch, and deletes the branch. The skill detects your repo's allowed merge strategies (merge, squash, rebase) and caches the policy in `.git/agents/repo-policy.json` with a 30-day freshness window, retrying once on policy errors. For forked repos, PRs always target your fork, never upstream.
 
 **Usage:** `/ship`
 

@@ -9,8 +9,17 @@ Single command to go from "I'm done" to "PR is open."
 
 ## Workflow
 
-1. **Verify not on main**: Check current branch with `git branch --show-current`
-   - If on `main` or `master`, stop and tell user to create a feature branch first
+0. **Resolve default branch** (shared branch lifecycle contract from AGENTS.md):
+
+   ```bash
+   BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+   if [ -z "$BASE_BRANCH" ]; then
+     git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
+   fi
+   ```
+
+1. **Verify not on default branch**: Check current branch with `git branch --show-current`
+   - If equal to `$BASE_BRANCH`, stop and tell user to create a feature branch first
 
 2. **Format and lint** (check CLAUDE.md for the project's commands):
    - **Skip if** passing output is visible in this conversation and no files changed since. Cite the prior result.
@@ -40,7 +49,7 @@ Single command to go from "I'm done" to "PR is open."
    - Check if PR exists: `gh pr view --json number,url 2>/dev/null`
    - If PR exists: show URL, say "PR updated with latest changes"
    - If no PR exists:
-     - Analyze `git diff main...HEAD` and `git log main..HEAD --oneline` to understand scope
+     - Analyze `git diff "$BASE_BRANCH"...HEAD` and `git log "$BASE_BRANCH"..HEAD --oneline` to understand scope
      - Create PR with `gh pr create`:
        - Concise title (under 70 chars, conventional commit style)
        - Body:
@@ -62,8 +71,8 @@ Single command to go from "I'm done" to "PR is open."
 
 ## Error Handling
 
-- **On main branch**: Stop immediately, suggest creating feature branch
-- **No changes AND no commits ahead of main**: Inform user there's nothing to PR
+- **On default branch**: Stop immediately, suggest creating feature branch
+- **No changes AND no commits ahead of `$BASE_BRANCH`**: Inform user there's nothing to PR
 - **Format/lint fails**: Stop, show errors. Cannot push unlinted code.
 - **Tests fail**: Stop, show failures. Cannot push broken code.
 - **Push rejected (behind remote)**: Suggest `git pull --rebase origin <branch>`
