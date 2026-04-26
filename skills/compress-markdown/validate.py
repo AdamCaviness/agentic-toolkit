@@ -11,12 +11,23 @@ HEADING_REGEX = re.compile(r"^(#{1,6})\s+(.*)", re.MULTILINE)
 BULLET_REGEX = re.compile(r"^\s*[-*+]\s+", re.MULTILINE)
 INLINE_CODE_REGEX = re.compile(r"(?<!`)(`(?!`)(.+?)(?<!`)`)(?!`)")
 PATH_REGEX = re.compile(
-    r"(?<!\w)(?:\./|\.\./)[\\w\-/\\\.]+|(?<!\w)/[\w\-\.]+/[\w\-/\\\.]+|[A-Za-z]:\\[\w\-/\\\.]+|[\w\-\.]+/[\w\-/\\\.]+\.\w+")
+    r"(?<!\w)(?:\./|\.\./)[\\w\-/\\\.]+|(?<!\w)/[\w\-\.]+/[\w\-/\\\.]+|[A-Za-z]:\\[\w\-/\\\.]+|[\w\-\.]+/[\w\-/\\\.]+\.\w+"
+)
 FRONTMATTER_REGEX = re.compile(r"\A---\n(.*?\n)---\n", re.DOTALL)
 
 IMPERATIVE_KEYWORDS = re.compile(
     r"\b(NEVER|MUST|ALWAYS|CRITICAL|DO NOT|REQUIRED|IMPORTANT|FORBIDDEN|MANDATORY)\b",
-    re.IGNORECASE)
+    re.IGNORECASE,
+)
+DIRECTIVE_STOP_WORDS = {
+    "a",
+    "an",
+    "the",
+    "to",
+    "you",
+    "your",
+    "yours",
+}
 
 TOKENS_PER_WORD = 1.3
 
@@ -82,15 +93,77 @@ def count_bullets(text):
 
 def extract_imperative_sentences(text):
     """Extract sentences containing imperative keywords (NEVER, MUST, ALWAYS, etc.)."""
+    text = strip_inert_directive_text(text)
     sentences = re.split(r"(?<=[.!?\n])\s+", text)
     result = []
     for s in sentences:
         s = s.strip()
         if s and IMPERATIVE_KEYWORDS.search(s):
-            keywords = set(
-                m.group(0).upper() for m in IMPERATIVE_KEYWORDS.finditer(s))
+            keywords = set(m.group(0).upper() for m in IMPERATIVE_KEYWORDS.finditer(s))
             result.append((keywords, s))
     return result
+
+
+def strip_inert_directive_text(text):
+    text = FRONTMATTER_REGEX.sub("", text, count=1)
+    text = "\n".join(strip_code_block_lines(text.split("\n")))
+    return INLINE_CODE_REGEX.sub("", text)
+
+
+def strip_code_block_lines(lines):
+    result = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        m = FENCE_OPEN_REGEX.match(lines[i])
+        if not m:
+            result.append(lines[i])
+            i += 1
+            continue
+        fence_char = m.group(2)[0]
+        fence_len = len(m.group(2))
+        i += 1
+        while i < n:
+            close_m = FENCE_OPEN_REGEX.match(lines[i])
+            if (
+                close_m
+                and close_m.group(2)[0] == fence_char
+                and len(close_m.group(2)) >= fence_len
+                and close_m.group(3).strip() == ""
+            ):
+                i += 1
+                break
+            i += 1
+    return result
+
+
+def normalize_directive_tokens(sentence, keywords):
+    keyword_tokens = set()
+    for keyword in keywords:
+        keyword_tokens.update(re.findall(r"[a-z0-9]+", keyword.lower()))
+    tokens = []
+    for token in re.findall(r"[a-z0-9]+", sentence.lower()):
+        if token in keyword_tokens or token in DIRECTIVE_STOP_WORDS:
+            continue
+        if len(token) > 3 and token.endswith("s"):
+            token = token[:-1]
+        tokens.append(token)
+    return tokens
+
+
+def directive_is_preserved(original_keywords, original_sentence, compressed_directives):
+    original_tokens = set(
+        normalize_directive_tokens(original_sentence, original_keywords)
+    )
+    for compressed_keywords, compressed_sentence in compressed_directives:
+        if not original_keywords <= compressed_keywords:
+            continue
+        compressed_tokens = set(
+            normalize_directive_tokens(compressed_sentence, compressed_keywords)
+        )
+        if original_tokens <= compressed_tokens:
+            return True
+    return False
 
 
 def validate(original_path, compressed_path):
@@ -142,19 +215,17 @@ def validate(original_path, compressed_path):
         warnings.append(f"Bullet count changed significantly: {b1} -> {b2}")
 
     orig_imperatives = extract_imperative_sentences(orig)
-    comp_lower = comp.lower()
+    comp_imperatives = extract_imperative_sentences(comp)
     weakened_directives = []
     for keywords, sentence in orig_imperatives:
-        has_keyword = any(
-            kw.lower() in comp_lower for kw in keywords)
-        if not has_keyword:
-            weakened_directives.append(
-                f"{', '.join(keywords)} in: {sentence[:100]}")
+        if not directive_is_preserved(keywords, sentence, comp_imperatives):
+            weakened_directives.append(f"{', '.join(keywords)} in: {sentence[:100]}")
     if weakened_directives:
         errors.append(
             f"Directive keywords lost ({len(weakened_directives)} "
             f"sentence(s) had imperative force removed):\n"
-            + "\n".join(f"    - {d}" for d in weakened_directives))
+            + "\n".join(f"    - {d}" for d in weakened_directives)
+        )
 
     is_valid = len(errors) == 0
 
@@ -162,8 +233,7 @@ def validate(original_path, compressed_path):
     comp_words = len(comp.split())
     orig_tokens = int(orig_words * TOKENS_PER_WORD)
     comp_tokens = int(comp_words * TOKENS_PER_WORD)
-    reduction = (
-        100 * (orig_words - comp_words) / orig_words if orig_words > 0 else 0)
+    reduction = 100 * (orig_words - comp_words) / orig_words if orig_words > 0 else 0
 
     print(f"Valid: {is_valid}")
     if errors:
@@ -174,7 +244,7 @@ def validate(original_path, compressed_path):
         print("\nWarnings:")
         for w in warnings:
             print(f"  - {w}")
-    print(f"\nStats:")
+    print("\nStats:")
     print(f"  Words:  {orig_words} -> {comp_words}")
     print(f"  Tokens: ~{orig_tokens} -> ~{comp_tokens} (estimated)")
     print(f"  Reduction: {reduction:.1f}%")
