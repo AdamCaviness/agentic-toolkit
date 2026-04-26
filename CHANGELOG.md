@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.6.1...v0.6.2) (2026-04-26)
+
+
+### Bug Fixes
+
+* **convert-worktree:** split preservation from history ([#33](https://github.com/AdamCaviness/agentic-toolkit/issues/33)) ([#51](https://github.com/AdamCaviness/agentic-toolkit/issues/51)) ([4f7a75c](https://github.com/AdamCaviness/agentic-toolkit/commit/4f7a75c7c24e9bf26d449c75ea811c8e6e3faf7f))
+
 ## [0.6.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.6.0...v0.6.1) (2026-04-26)
 
 
