@@ -44,17 +44,36 @@ fi
 
 Announce: "Converting worktree `<WORKTREE_PATH>` (branch `<BRANCH>`) → main workspace at `<MAIN_WORKTREE>`"
 
-### 2. Commit uncommitted work
+### 2. Preserve uncommitted work
+
+Split preservation from history. Tracked modifications and content the user already staged are committed. Unstaged untracked files are stashed so they survive worktree removal without entering branch history (`.gitignore` is not a secret scanner, and a blanket `git add -A` can promote `.env` files, credentials, generated artifacts, or unrelated scratch into a commit that later workflows publish).
 
 ```bash
-# Check for any changes (staged, unstaged, or untracked)
+# Show what's there before touching anything
+git status --short
+
+STASHED_UNTRACKED=0
 if [ -n "$(git status --porcelain)" ]; then
-  git add -A
-  git commit -m "wip: uncommitted changes from worktree conversion"
+  # Stage tracked modifications and deletions. Anything the user already
+  # staged (including new files they explicitly `git add`ed) stays staged.
+  git add -u
+
+  # Commit if there's anything in the index. Untracked-and-unstaged files
+  # are deliberately not in scope here.
+  if [ -n "$(git diff --cached --name-only)" ]; then
+    git commit -m "wip: tracked changes from worktree conversion"
+  fi
+
+  # Stash any remaining untracked files. The stash ref is repo-level, so it
+  # survives worktree removal and is popped in the main workspace at step 5.
+  if [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    git stash push --include-untracked -m "convert-worktree:untracked:$BRANCH"
+    STASHED_UNTRACKED=1
+  fi
 fi
 ```
 
-`.gitignore` handles exclusions so `git add -A` is safe.
+Capture the untracked paths from `git status --short` for the final report so the user knows exactly what was preserved outside history.
 
 ### 3. Project cleanup
 
@@ -118,6 +137,14 @@ fi
 
 git worktree remove "$WORKTREE_PATH" --force
 git checkout "$BRANCH"
+
+# Restore untracked files from step 2. They reappear as untracked in the
+# main workspace, never entering branch history.
+if [ "$STASHED_UNTRACKED" = "1" ]; then
+  if ! git stash pop; then
+    echo "WARN: could not auto-pop untracked stash. Inspect with 'git stash list'."
+  fi
+fi
 ```
 
 ### 6. Report
@@ -128,6 +155,7 @@ Print a summary:
 Branch <BRANCH> checked out in <MAIN_WORKTREE>
   Rebase: <succeeded | skipped (already up-to-date) | failed (branch is un-rebased)>
   Cleanup: <ran make dev-stop | no cleanup target found | cleanup failed>
+  <If untracked files were stashed: list each path under "Untracked (popped from stash, review before committing):">
   <If lockfiles were auto-resolved: "Run npm install (or equivalent) to update lockfiles">
 ```
 
@@ -136,6 +164,6 @@ Branch <BRANCH> checked out in <MAIN_WORKTREE>
 - **Never block on failure.** Rebase failure, cleanup failure, and lockfile conflicts are all warnings. The conversion always completes.
 - **Never push, create PRs, delete branches, or merge.** Those are separate user decisions.
 - **Cleanup before rebase.** Project cleanup needs worktree context (variables, paths). Rebase happens after.
-- **Always use `git add -A` for WIP commits.** New untracked files are common in worktrees. `.gitignore` handles exclusions.
+- **Never auto-commit untracked files.** Tracked modifications and explicitly staged content go into the WIP commit; unstaged untracked files are stashed and re-popped in the main workspace. `.gitignore` is an exclusion list, not a secret scanner, so a blanket `git add -A` can leak `.env` files, credentials, or generated artifacts into history.
 - **Detect the base branch dynamically.** Use the shared branch lifecycle contract from AGENTS.md: `git symbolic-ref refs/remotes/origin/HEAD`, fall back to `main`, then `master`. Never hardcode the default branch name.
 - If on the default branch or not in a worktree, warn and stop.
