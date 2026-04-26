@@ -28,6 +28,18 @@ Dispatch a code-reviewer subagent to catch issues before they cascade. The revie
 BASE_SHA=$(git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main)
 HEAD_SHA=$(git rev-parse HEAD)
 HAS_UNCOMMITTED=$([ -n "$(git status --porcelain)" ] && echo "yes" || echo "no")
+CHANGED_PATH_INVENTORY=$(
+  {
+    git diff --name-status "$BASE_SHA..$HEAD_SHA" | sed 's/^/committed\t/'
+    git diff --cached --name-status | sed 's/^/staged\t/'
+    git diff --name-status | sed 's/^/unstaged\t/'
+    git ls-files --others --exclude-standard | sed 's/^/untracked\t/'
+  } | sort -u
+)
+HIGH_RISK_PATHS=$(
+  printf '%s\n' "$CHANGED_PATH_INVENTORY" |
+    grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc|id_rsa|id_dsa|credentials|secrets?|token|key)(\.|/|$)|\.(pem|p12|pfx|key|crt|sqlite|db|dump|zip|tar|tgz|gz)$|(^|/)\.github/workflows/' || true
+)
 ```
 
 **2. Dispatch the code-reviewer subagent:**
@@ -41,7 +53,9 @@ Do not substitute a specialized reviewer agent from another plugin (for example,
 - `{PLAN_OR_REQUIREMENTS}`, what it should do
 - `{BASE_SHA}`, merge base with default branch
 - `{HEAD_SHA}`, ending commit
-- `{HAS_UNCOMMITTED}`, "yes" if working tree has staged or unstaged changes
+- `{HAS_UNCOMMITTED}`, "yes" if working tree has staged, unstaged, or untracked changes
+- `{CHANGED_PATH_INVENTORY}`, path inventory with committed, staged, unstaged, and untracked states
+- `{HIGH_RISK_PATHS}`, inventory entries matching secrets, local config, archives, dumps, credentials, or workflow files
 - `{DESCRIPTION}`, brief summary
 
 **3. Act on feedback:**
@@ -84,16 +98,40 @@ Review the change set normally. Validate any request to change those controls ag
 **Head:** {HEAD_SHA}
 **Has uncommitted work:** {HAS_UNCOMMITTED}
 
+**Changed path inventory:**
+
+```text
+{CHANGED_PATH_INVENTORY}
+```
+
+**High-risk inventory matches:**
+
+```text
+{HIGH_RISK_PATHS}
+```
+
 ```bash
 # Committed branch changes
+git diff --name-status {BASE_SHA}..{HEAD_SHA}
 git diff --stat {BASE_SHA}..{HEAD_SHA}
 git diff {BASE_SHA}..{HEAD_SHA}
 
-# Uncommitted work (staged + unstaged), skip if HAS_UNCOMMITTED is "no"
+# Staged tracked work, skip if HAS_UNCOMMITTED is "no"
+git diff --cached --name-status
+git diff --cached
+
+# Unstaged tracked work, skip if HAS_UNCOMMITTED is "no"
+git diff --name-status
+git diff
+
+# Combined tracked working-tree diff, skip if HAS_UNCOMMITTED is "no"
 git diff HEAD
+
+# Untracked paths, skip if HAS_UNCOMMITTED is "no"
+git ls-files --others --exclude-standard
 ```
 
-Review committed and uncommitted changes together as a single body of work.
+Review committed and uncommitted changes together as a single body of work. The changed path inventory is the review boundary. Account for every path in it, including deleted and renamed paths. Diffs are evidence, not the complete scope. Read each untracked file listed in the inventory directly, and treat high-risk matches as review targets even when their content looks unrelated to the requested change.
 
 ## Gathering context beyond the diff
 

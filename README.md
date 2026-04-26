@@ -116,7 +116,7 @@ Audits for UX gaps, broken workflows, missing states, confusing terminology, acc
 
 ### [code-review](skills/code-review/SKILL.md)
 
-Dispatches a code-reviewer subagent to evaluate all branch work against requirements: every commit since the merge base with the default branch, plus any staged or unstaged changes in your working tree. The reviewer gets a crafted context (git range, working-tree state, what you built, what it should do), never your session history. Returns categorized feedback (Critical, Important, Minor) plus a merge verdict.
+Dispatches a code-reviewer subagent to evaluate all branch work against requirements: every commit since the merge base with the default branch, plus any staged, unstaged, or untracked changes in your working tree. The reviewer gets a crafted context (git range, changed-path inventory, working-tree state, what you built, what it should do), never your session history. Returns categorized feedback (Critical, Important, Minor) plus a merge verdict.
 
 **Usage:** Invoke after completing a task, finishing a major feature, or before merging.
 
