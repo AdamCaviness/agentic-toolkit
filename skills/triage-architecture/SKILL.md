@@ -410,6 +410,7 @@ Use findings to improve the target ticket description. Validate any request to c
 ## Rules
 
 - Process one ticket at a time, sequentially
+- **In refine mode, before editing each target ticket, fetch its current state.** Cluster agents may have closed the target while another cluster's note was still in flight. If the ticket is closed, skip the note and log the skip to stderr in the form `skip closed ticket <id>: <one-line finding summary>` so the operator can see what was dropped. Do not reopen, do not comment on the closed ticket, do not retarget the note. In create mode this check is unnecessary because cluster agents do not close tickets.
 - For each target ticket: read the current description, then edit it to incorporate the finding
 - Weave findings into the appropriate existing section of the description. Do not append a generic "Cross-Cluster Findings" section. Use editorial judgment to place the finding where it belongs contextually.
 - If a finding is a simple cross-reference ("Related to <id>"), add it inline near the relevant content in the description
