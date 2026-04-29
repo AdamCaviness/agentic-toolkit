@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.10.0...v0.11.0) (2026-04-29)
+
+
+### Features
+
+* **pr:** discover and fill project PR templates ([#73](https://github.com/AdamCaviness/agentic-toolkit/issues/73)) ([228587e](https://github.com/AdamCaviness/agentic-toolkit/commit/228587ed3a5cf92ded4bc9d2c739e3129bb8f771))
+
 ## [0.10.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.9.0...v0.10.0) (2026-04-29)
 
 
