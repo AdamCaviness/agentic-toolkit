@@ -64,9 +64,33 @@ Single command to go from "I'm done" to "PR is open."
    - If PR exists: show URL, say "PR updated with latest changes"
    - If no PR exists:
      - Analyze `git diff "$BASE_BRANCH"...HEAD` and `git log "$BASE_BRANCH"..HEAD --oneline` to understand scope
-     - Create PR with `gh pr create`:
-       - Concise title (under 70 chars, conventional commit style)
-       - Body:
+     - **Discover PR template** by checking these paths in order, using the first that exists:
+
+       ```bash
+       PR_TEMPLATE=""
+       for candidate in \
+         .github/pull_request_template.md \
+         .github/PULL_REQUEST_TEMPLATE.md \
+         pull_request_template.md \
+         PULL_REQUEST_TEMPLATE.md \
+         docs/pull_request_template.md \
+         docs/PULL_REQUEST_TEMPLATE.md; do
+         if [ -f "$candidate" ]; then
+           PR_TEMPLATE="$candidate"
+           break
+         fi
+       done
+       ```
+
+     - **Build PR body**:
+       - **If template found** (`PR_TEMPLATE` is non-empty): Read the template file. Use it as the skeleton for the PR body:
+         - Preserve its structure, headings, and static content (checkboxes, boilerplate, legal text) exactly as written
+         - Replace placeholders (HTML comments, blank lines after labels, explicit placeholder text like "Describe your changes") with substantive content derived from the diff, commit messages, and branch context
+         - Check or uncheck checkbox items (`- [ ]` / `- [x]`) based on what the branch actually contains (tests added, docs updated, breaking changes present, etc.)
+         - If a placeholder asks for information not derivable from the diff or commit history (e.g., Jira ticket URL, Figma link, deployment instructions), leave the original HTML comment in place so the author can fill it after opening the PR
+         - If the issue number from step 8 is present and the filled body does not already reference it, append `Closes #<number>` after the last section
+       - **If no template found** (or the template file is empty): Use the default body:
+
          ```
          ## Summary
          <3-5 bullet points on what and why>
@@ -79,6 +103,9 @@ Single command to go from "I'm done" to "PR is open."
 
          Closes #<number>
          ```
+
+     - Concise title (under 70 chars, conventional commit style)
+     - Create PR with `gh pr create` passing the title and built body
    - Return PR URL to user
 
 ## Error Handling
