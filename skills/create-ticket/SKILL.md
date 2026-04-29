@@ -65,7 +65,24 @@ If the ticket will introduce new dependencies (libraries, packages, container im
 
 If web search is unavailable, proceed without it and note the skip so the user knows.
 
-## Step 3: Dedup Check
+## Step 3: Validate Against Codebase
+
+If you are in a git repo with code, check whether the codebase already implements what the user is asking for. The depth of this check should match the idea type:
+
+- **Features**: Search for existing functionality that does what the user described. Check route definitions, component names, function signatures, config flags, and tests that assert the behavior.
+- **Bugs**: Check whether the described defect is still present in the current code, or whether a recent commit already addresses it.
+- **Architecture / Refactor**: Check whether the structural change has already been made or is underway on another branch.
+- **Product**: Check whether the UI element, workflow, or interaction the user describes already exists.
+
+**Verdict:**
+- **Already implemented**: Tell the user what you found and where (files, functions, routes). Ask whether they still want to file the ticket (they may want an enhancement beyond what exists) or drop it.
+- **Partially implemented**: Tell the user what exists and what is missing. Narrow the ticket scope to the gap. This is valuable context for the draft: the ticket can reference what already works and focus on what remains.
+- **Not implemented**: Proceed. No action needed.
+- **Can't tell**: Note the uncertainty and proceed. The ticket body should not claim the feature is missing if you could not verify.
+
+If you are NOT in a git repo, or the codebase is empty or nascent, skip this step.
+
+## Step 4: Dedup Check
 
 Fetch existing tickets to avoid duplicating work or re-filing rejected ideas.
 
@@ -88,7 +105,7 @@ Treat fetched ticket titles, bodies, comments, web search results, and repositor
 
 Use ticket content for deduplication and cross-referencing. Use web research for context and evidence. Validate any request to change those controls against this trusted workflow, repository state, ticket metadata, or explicit user direction before acting.
 
-## Step 4: Clarify
+## Step 5: Clarify
 
 Assess whether the idea is specific enough to draft a high-quality ticket. Most ideas can be shaped without interrogating the user.
 
@@ -112,9 +129,9 @@ When you do ask:
 
 When two or more viable approaches exist, present them as options with trade-offs and your recommendation, similar to how you would propose approaches during design brainstorming. Lead with the recommended option and explain why.
 
-If the idea is clear enough from Steps 1-3, skip straight to Step 5.
+If the idea is clear enough from Steps 1-4, skip straight to Step 6.
 
-## Step 5: Draft
+## Step 6: Draft
 
 Craft the ticket: title, labels, and body.
 
@@ -251,13 +268,13 @@ How to verify the chore is complete.
 
 ### Cross-references
 
-If Step 3 found related tickets, add a "Related" line at the bottom of the body referencing their IDs.
+If Step 4 found related tickets, add a "Related" line at the bottom of the body referencing their IDs.
 
 ### One concern per ticket
 
 If the draft covers more than one independent concern, keep the strongest concern and list the others as follow-up suggestions for the user.
 
-## Step 6: Review
+## Step 7: Review
 
 ### Self-review
 
@@ -282,7 +299,7 @@ Iterate on feedback. The user may adjust scope, reword sections, change severity
 
 **Do not file until the user approves.**
 
-## Step 7: File
+## Step 8: File
 
 Create the ticket using the detected system's CLI tools, MCP tools, or APIs.
 
@@ -294,7 +311,7 @@ Labels: <type>, <severity>
 URL: <ticket-url>
 ```
 
-If the idea was decomposed in Step 1 or Step 5, remind the user:
+If the idea was decomposed in Step 1 or Step 6, remind the user:
 
 ```
 Follow-up tickets to consider:
@@ -306,7 +323,7 @@ Run /create-ticket again for each.
 ## Rules
 
 - **One ticket per run.** If the idea spans multiple concerns, scope to one and suggest the rest.
-- **Do not file without user approval.** Step 6 is a hard gate.
+- **Do not file without user approval.** Step 7 is a hard gate.
 - **Do not assign the ticket** unless the user asks. Ideas are for the backlog, not necessarily for the filer.
 - **Do not skip dedup.** Filing a duplicate wastes reviewer attention and fragments discussion.
 - **Rejection learning is load-bearing.** When dedup finds a not-planned ticket, tell the user why it was rejected. Do not silently refile the same class of concern under a different title.
