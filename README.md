@@ -4,7 +4,8 @@ A collection of skills for agentic coding tools, including [Claude Code](https:/
 
 | | Skill | Command | What it does |
 |---|-------|---------|-------------|
-| **Tickets** | [next-ticket](#next-ticket) | `/next-ticket [id]` | Pick up a ticket (best open or specific), implement it with TDD, wait for review |
+| **Tickets** | [create-ticket](#create-ticket) | `/create-ticket [idea]` | Research an idea, craft a high-quality ticket, dedup, and file it |
+| | [next-ticket](#next-ticket) | `/next-ticket [id]` | Pick up a ticket (best open or specific), implement it with TDD, wait for review |
 | | [triage-architecture](#triage-architecture) | `/triage-architecture` | Audit code for structural/safety issues; file tickets or `refine` existing |
 | | [triage-bugs](#triage-bugs) | `/triage-bugs` | Prove real defects with 4-pass analysis; file or `refine` what clears the bar |
 | | [triage-product](#triage-product) | `/triage-product` | Audit UX for broken workflows/gaps; file tickets or `refine` existing |
@@ -86,6 +87,12 @@ Privileged workflow skills treat ticket bodies, comments, diffs, repository docs
 ### Closing tickets so rejection learning works
 
 The triage skills learn from the tickets you reject. When closing a ticket because it is not what we want (wrong threat model, out of scope, won't fix), use the platform's not-planned or wontfix close-state with a one-line reason in the closing comment. On GitHub, that is "Close as not planned" rather than the default "Close as completed". On Jira, set the resolution to "Won't Do". The next triage run reads that close-state plus comment and uses it to recognise the same class of concern under a different title and skip refiling. Closing as completed silently breaks this loop because the skill cannot tell rejection from a real fix.
+
+### [create-ticket](skills/create-ticket/SKILL.md)
+
+Turns a user-provided idea into a well-researched, well-structured ticket and files it. Explores project context when available (works equally well on greenfield projects with no code), searches the web for prior art and known pitfalls, deduplicates against the existing backlog (including rejection learning from not-planned tickets), and asks clarifying questions only when options are too nuanced to auto-resolve. Produces one ticket per run with type-appropriate body structure (feature, bug, architecture, product, or chore), presents a full draft for review, and files only after approval.
+
+**Usage:** `/create-ticket add dark mode support` or `/create-ticket` then describe the idea.
 
 ### [next-ticket](skills/next-ticket/SKILL.md)
 

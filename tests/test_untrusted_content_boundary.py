@@ -7,6 +7,7 @@ SKILLS_DIR = REPO_ROOT / "skills"
 
 
 BOUNDARY_REQUIRED_SKILLS = [
+    "create-ticket",
     "next-ticket",
     "code-review",
     "apply-review",
@@ -24,6 +25,10 @@ BOUNDARY_PHRASES = [
 ]
 
 PRESERVATION_PHRASES = {
+    "create-ticket": [
+        "use ticket content for deduplication and cross-referencing",
+        "use web research for context and evidence",
+    ],
     "next-ticket": [
         "ticket bodies still define the requested behavior",
     ],
