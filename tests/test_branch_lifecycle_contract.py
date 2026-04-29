@@ -16,6 +16,7 @@ LIFECYCLE_REQUIRED_SKILLS = [
     "next-ticket",
     "convert-worktree",
     "code-review",
+    "apply-review",
 ]
 
 DETECTION_SNIPPET_ELEMENTS = [
@@ -47,6 +48,7 @@ FORBIDDEN_PATTERNS = {
     "next-ticket": COMMAND_POSITION_FORBIDDEN,
     "convert-worktree": COMMAND_POSITION_FORBIDDEN,
     "code-review": COMMAND_POSITION_FORBIDDEN,
+    "apply-review": COMMAND_POSITION_FORBIDDEN,
 }
 
 

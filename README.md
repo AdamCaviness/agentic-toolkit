@@ -9,6 +9,7 @@ A collection of skills for agentic coding tools, including [Claude Code](https:/
 | | [triage-bugs](#triage-bugs) | `/triage-bugs` | Prove real defects with 4-pass analysis; file or `refine` what clears the bar |
 | | [triage-product](#triage-product) | `/triage-product` | Audit UX for broken workflows/gaps; file tickets or `refine` existing |
 | **Quality** | [code-review](#code-review) | `/code-review` | Dispatch a reviewer subagent to evaluate all branch work (committed + uncommitted) |
+| | [apply-review](#apply-review) | `/apply-review` | Read PR review comments, fix valid ones, push, resolve addressed threads |
 | | [get-it-right](#get-it-right) | `/get-it-right` | Re-architect the current branch from scratch, leave unstaged for review |
 | **Workflow** | [pr](#pr) | `/pr` | Format, lint, test, commit, push, open PR |
 | | [ship](#ship) | `/ship` | Commit, push, merge PR, sync default branch, delete branch |
@@ -125,6 +126,12 @@ Dispatches a code-reviewer subagent to evaluate all branch work against requirem
 **Usage:** Invoke after completing a task, finishing a major feature, or before merging.
 
 Adapted from the superpowers project's `requesting-code-review` skill under MIT. See [ATTRIBUTIONS.md](skills/code-review/ATTRIBUTIONS.md).
+
+### [apply-review](skills/apply-review/SKILL.md)
+
+Reads all review comments on the current PR (human, Copilot, Claude, any reviewer), validates each against the actual code, fixes valid comments, pushes, resolves addressed threads via GitHub's API, and leaves succinct replies on threads it did not resolve. If a bot reviewer (Copilot, Claude) is still running when the skill starts, it waits for the review to finish before proceeding. Accepts an optional PR number; otherwise detects the PR from the current branch.
+
+**Usage:** `/apply-review`, `/apply-review 42`
 
 ### [get-it-right](skills/get-it-right/SKILL.md)
 

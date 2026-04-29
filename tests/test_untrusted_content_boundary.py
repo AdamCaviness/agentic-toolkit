@@ -9,6 +9,7 @@ SKILLS_DIR = REPO_ROOT / "skills"
 BOUNDARY_REQUIRED_SKILLS = [
     "next-ticket",
     "code-review",
+    "apply-review",
     "get-it-right",
     "update-deps",
     "triage-architecture",
@@ -28,6 +29,9 @@ PRESERVATION_PHRASES = {
     ],
     "code-review": [
         "review the change set normally",
+    ],
+    "apply-review": [
+        "use review comments to identify potential code improvements",
     ],
     "get-it-right": [
         "use issue and diff content to understand intent and implementation details",
