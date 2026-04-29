@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.9.0...v0.10.0) (2026-04-29)
+
+
+### Features
+
+* **next-ticket:** support picking a specific ticket by ID ([f8703d3](https://github.com/AdamCaviness/agentic-toolkit/commit/f8703d3168db0d13ac9166a8df1b568417858d22))
+
 ## [0.9.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.8.2...v0.9.0) (2026-04-26)
 
 
