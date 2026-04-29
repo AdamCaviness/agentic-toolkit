@@ -4,7 +4,7 @@ A collection of skills for agentic coding tools, including [Claude Code](https:/
 
 | | Skill | Command | What it does |
 |---|-------|---------|-------------|
-| **Tickets** | [next-ticket](#next-ticket) | `/next-ticket` | Pick the best open ticket, implement it with TDD, wait for review |
+| **Tickets** | [next-ticket](#next-ticket) | `/next-ticket [id]` | Pick up a ticket (best open or specific), implement it with TDD, wait for review |
 | | [triage-architecture](#triage-architecture) | `/triage-architecture` | Audit code for structural/safety issues; file tickets or `refine` existing |
 | | [triage-bugs](#triage-bugs) | `/triage-bugs` | Prove real defects with 4-pass analysis; file or `refine` what clears the bar |
 | | [triage-product](#triage-product) | `/triage-product` | Audit UX for broken workflows/gaps; file tickets or `refine` existing |
@@ -89,9 +89,9 @@ The triage skills learn from the tickets you reject. When closing a ticket becau
 
 ### [next-ticket](skills/next-ticket/SKILL.md)
 
-Picks the highest-value open ticket from your issue tracker, implements it end-to-end with TDD, and waits for your review. Tickets are scored by severity, simplicity, blocking power, and value. Before branching, the skill validates the ticket against current code (checking for prior fixes or partial resolution) and claims it with a team-safe self-assignment protocol: re-reads the assignee field after a randomized pause to avoid collisions, self-assigns, and confirms the read-back matches before proceeding.
+Picks up a ticket from your issue tracker, implements it end-to-end with TDD, and waits for your review. With no argument, it fetches all eligible tickets, scores them by severity, simplicity, blocking power, and value, and picks the best candidate. With a ticket ID argument, it fetches that specific ticket directly and skips scoring. In both modes, the skill validates the ticket against current code (checking for prior fixes or partial resolution) and claims it with a team-safe self-assignment protocol: re-reads the assignee field after a randomized pause to avoid collisions, self-assigns, and confirms the read-back matches before proceeding.
 
-**Usage:** `/next-ticket`
+**Usage:** `/next-ticket` (auto-pick best ticket) or `/next-ticket 42` (pick up a specific ticket). Ticket IDs are resolved flexibly: bare numbers are interpreted per platform (e.g., `42` becomes `ABC-42` on Jira if the project key is known), and prefixed IDs like `#42` or `ABC-42` are used as-is.
 
 **Triage skills** share the same architecture: cache tickets to disk, build a project map, spawn 4 parallel sub-agents (one per concern cluster), and post-process cross-cluster findings. Each supports three modes:
 
