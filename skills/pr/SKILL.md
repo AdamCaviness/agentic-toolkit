@@ -1,6 +1,6 @@
 ---
 name: pr
-description: Format, lint, test, commit, push, and create a pull request. The single "I'm done" command.
+description: Format, lint, test, commit, push, and create a pull request. When the branch was created by /next-ticket, also links the PR back to the source ticket. The single "I'm done" command.
 disable-model-invocation: true
 ---
 
@@ -107,6 +107,19 @@ Single command to go from "I'm done" to "PR is open."
      - Concise title (under 70 chars, conventional commit style)
      - Create PR with `gh pr create` passing the title and built body
    - Return PR URL to user
+
+10. **Link PR to source ticket (opt-in)**:
+
+   This step fires only when a ticket-system cache exists, meaning `/next-ticket` was used to create this branch. It connects the PR back to the source ticket so the ticket has a permanent reference to the review.
+
+   - Read `next-ticket-config.json` from the system temp directory. Look up the current project root path. If no entry exists, skip this step silently — the branch was not created by `/next-ticket`.
+   - Extract the ticket ID from the branch name using the same `<category>/<ticket-id>-<desc>` pattern from step 8. For Jira-style IDs (e.g., `PNS-5`), use the full prefixed form. For numeric IDs, use the bare number.
+   - Post a comment on the source ticket with the PR URL. Use whatever CLI, MCP, or API tooling is available in the session:
+     - **Jira**: MCP tools or REST API to add a comment: "Pull request opened: <pr-url>".
+     - **GitHub Issues**: `gh issue comment <id> --body "PR: <pr-url>"` (supplements the auto-link from `Closes #N`).
+     - **GitLab**: `glab issue note <id> --message "PR: <pr-url>"`.
+     - **Other**: Use whatever is available.
+   - **Failure mode**: If the comment fails (tool missing, permissions denied, ticket not found), warn with a single line and continue. Never block PR completion for a linking failure.
 
 ## Error Handling
 
