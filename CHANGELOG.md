@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.11.0...v0.12.0) (2026-05-14)
+
+
+### Features
+
+* **skill:** add non-blocking ticket state transitions to next-ticket and pr ([#78](https://github.com/AdamCaviness/agentic-toolkit/issues/78)) ([ad0e640](https://github.com/AdamCaviness/agentic-toolkit/commit/ad0e6408a7d4211fa13eb0ec80ab8517a35aa268))
+
 ## [0.11.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.10.0...v0.11.0) (2026-04-29)
 
 
