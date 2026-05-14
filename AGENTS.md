@@ -16,9 +16,9 @@ When `triage-architecture`, `triage-bugs`, or any other skill audits this repo, 
 
 This boundary is load-bearing for the triage skills' rejection-learning loop: when the operator closes a ticket as not-planned with reasoning grounded in this context, the triage skills cache that reasoning into `issues-closed.json` so future runs can recognize the same class of concern under a different title and skip refiling.
 
-## Mechanical skills
+## User-only skills
 
-Skills whose lifecycle is almost entirely deterministic git, shell, and `gh` orchestration declare `disable-model-invocation: true` in frontmatter so harnesses skip expensive model reasoning for them. Currently honored by Claude Code, tolerated by Codex and Gemini. Apply to `pr`, `ship`, and `convert-worktree`. Add the key to any future skill whose body is a fixed command sequence rather than judgement-driven work.
+Skills that should only be triggered by the user (not autonomously by the model) declare `disable-model-invocation: true` in frontmatter. This prevents the model from invoking the skill on its own initiative; the user must type the slash command explicitly. It does not restrict what the model does during execution. Currently honored by Claude Code, tolerated by Codex and Gemini. Apply to skills with side effects or timing sensitivity where the user controls when they run: `pr`, `ship`, and `convert-worktree`. Add the key to any future skill the user should invoke deliberately rather than the model triggering automatically.
 
 ## Branch lifecycle
 

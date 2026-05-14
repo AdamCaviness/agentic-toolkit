@@ -108,6 +108,15 @@ Single command to go from "I'm done" to "PR is open."
      - Create PR with `gh pr create` passing the title and built body
    - Return PR URL to user
 
+10. **Transition ticket to In Review (non-blocking)**:
+    - Extract a ticket identifier from the branch name. The branch follows `<category>/<ticket-id>-<desc>`, where the ticket ID may be a bare number (`42`) or a prefixed key (`PROJ-42`). If no ticket ID is extractable, skip.
+    - Read `next-ticket-config.json` from the system temp directory. If the file does not exist or has no ticket-system entry for the current project root, skip.
+    - Reconstruct the full ticket identifier for the detected system if needed (e.g., for Jira, if only a bare number was extracted, prepend the project key from the config or repo signals).
+    - Read the project-root entry from the config. If it is a plain string (no `states` key yet) or has no `states.in_review` entry, discover the state. If it has a cached `states.in_review` entry, skip to applying.
+      - **Discover (first run only)**: Use whatever CLI, MCP, or API tooling fits the detected ticket system to discover what states or transitions exist. Every system exposes this differently, and teams customize state names extensively, so do not follow a hardcoded recipe. Use model judgment to identify which option represents "awaiting review" (teams call this anything: "In Review", "Review & Test", "Code Review", "QA", etc.). Confirm with the user: "Transition ticket to '<name>'? This choice will be cached for future runs." Migrate the project-root entry from a plain string to the object form (see `next-ticket` Step 4.6 for the schema) if needed, then write the result under `states.in_review`. Store enough system-specific detail to replay mechanically on future runs.
+      - **Apply**: Transition the ticket using the cached system-specific details.
+    - On any failure (no config file, no ticket system, no transitions available, API error, permission denied, user declines): log a one-line note and continue. This step never blocks the PR workflow.
+
 ## Error Handling
 
 - **On default branch**: Stop immediately, suggest creating feature branch
@@ -119,6 +128,7 @@ Single command to go from "I'm done" to "PR is open."
 - **Push rejected (behind remote)**: Suggest `git pull --rebase origin <branch>`
 - **`gh` not authenticated**: Detect with `gh auth status`, show clear error
 - **No issue number in branch**: Warn but continue. Don't block the PR.
+- **Ticket state transition fails**: Log the reason and continue. Never block the PR workflow.
 
 ## Usage
 

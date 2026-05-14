@@ -188,6 +188,40 @@ Before branching or writing code, self-assign the selected ticket in the source 
 4. **Already yours?** Skip the write. Proceed.
 5. **Assignment failed?** If the tool is missing, permissions are denied, or the write errors out, stop with a clear, specific message. Do not start work on a ticket you couldn't claim.
 
+## Step 4.6: Transition to In Progress (non-blocking)
+
+Move the ticket to an active-work state so the board reflects that implementation has started. This entire step is non-blocking: if anything fails, log a one-line note and continue to Step 5.
+
+1. **Check cache.** Read the project-root entry in `next-ticket-config.json`. If it has a `states.in_progress` key, skip to sub-step 4 (Apply).
+2. **Discover available states.** Use whatever CLI, MCP, or API tooling fits the detected ticket system to find the ticket's available statuses, transitions, or board columns. Every ticket system exposes this differently, and teams customize state names extensively, so do not follow a hardcoded recipe. Use model judgment to explore the system's API, CLI, or MCP surface, discover what states exist, and identify which one represents "actively being worked on." Examples of names teams use: "In Progress", "In Development", "Doing", "Active", "Started", "Working", etc., but the real name could be anything.
+3. **Confirm and cache.** On first discovery, confirm with the user: "Transition ticket to '<name>'? This choice will be cached for future runs." Migrate the project-root entry from a plain string to the object form shown below (if not already an object), then write the discovered state under `states.in_progress`. Store whatever system-specific detail (IDs, labels, parameters) the system needs to replay the transition mechanically on future runs without rediscovery.
+4. **Apply the transition** using the cached details and whatever tooling fits the system.
+5. **On any failure** (no project board, no statuses discoverable, API error, permission denied, user declines): log one line (e.g., "Could not transition to in-progress: <reason>") and continue to Step 5 (Create Branch).
+
+When a project-root entry gains `states`, it migrates from a plain string to an object. Both forms are valid; read the string form as `{"system": "<value>"}` with no states yet. The evolved shape:
+
+```json
+{
+  "__user__": {
+    "name": "Adam",
+    "usernames": {
+      "github": "adamcaviness",
+      "jira": "adam.caviness@company.com"
+    }
+  },
+  "/home/user/repo-a": {
+    "system": "github",
+    "states": {
+      "in_progress": { "...system-specific IDs and parameters..." },
+      "in_review": { "...system-specific IDs and parameters..." }
+    }
+  },
+  "/home/user/repo-b": "jira"
+}
+```
+
+The `states` values are opaque to other skills. Each entry stores whatever the ticket system needs (field IDs, transition IDs, option IDs, label names) so future runs can replay the transition without rediscovery. A project-root entry without `states` (plain string or object without the key) simply means no state transitions have been discovered yet.
+
 ## Step 5: Create Branch
 
 This is a hard gate. Do not write tests, edit files, or implement anything until branch creation succeeds and the current branch is verified.
@@ -321,6 +355,7 @@ The UI testing tip must be **specific and actionable**, not "test the feature" b
 - **Never pick a ticket assigned to someone else.** Unassigned and already-yours are both eligible; anything with another person on it is off-limits. In direct-pick mode, the user's explicit selection overrides this: warn that the ticket is assigned to someone else and ask for confirmation before proceeding.
 - **Never pick a ticket with unmet dependencies.** It can't be completed. In direct-pick mode, the user's explicit selection overrides this: warn about unmet dependencies and ask for confirmation before proceeding.
 - **Claim after validating, before branching.** Step 4.5 is the only claim point. Re-read the assignee at the top of it so the race window stays small, and don't claim during a Step 4 refine-and-skip pass.
+- **State transitions are non-blocking.** Step 4.6 transitions the ticket to an active state on the board. If the transition fails for any reason, the workflow continues. Never block implementation on a failed board update.
 - **No identity, no run.** If the per-system handle can't be resolved and the user won't supply one, stop. Running unfiltered on a shared repo recreates the collision this skill is meant to prevent.
 - **Validation (Step 4): refine, don't close.** If a ticket has remaining work and you choose to skip it (auto-pick only), edit the ticket to reflect only what remains (update title and body), then move to the next candidate. In direct-pick mode, always work on remaining items. Never close a ticket that isn't 100% resolved.
 - **Implementation (Steps 5-9): fully implement.** Once you pick a ticket, complete it entirely. No partial commits, no WIP commits, no handoffs. In auto-pick mode, the scoring in Step 3 filters for simplicity and clarity so that picked tickets can be fully implemented touch-free. In direct-pick mode, the user accepted this responsibility by choosing the ticket.
