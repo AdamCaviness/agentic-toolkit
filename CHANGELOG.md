@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.12.0...v0.13.0) (2026-06-05)
+
+
+### Features
+
+* next-ticket skill should use fewer tokens and run faster ([#81](https://github.com/AdamCaviness/agentic-toolkit/issues/81)) ([9676af0](https://github.com/AdamCaviness/agentic-toolkit/commit/9676af060f491fd7dc9e76e91e9ae0bd5c9bdcad))
+
 ## [0.12.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.11.0...v0.12.0) (2026-05-14)
 
 
