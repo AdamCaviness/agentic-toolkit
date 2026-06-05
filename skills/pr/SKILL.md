@@ -1,5 +1,7 @@
 ---
 name: pr
+model: sonnet
+effort: high
 description: Format, lint, test, commit, push, and create a pull request. The single "I'm done" command.
 disable-model-invocation: true
 ---
