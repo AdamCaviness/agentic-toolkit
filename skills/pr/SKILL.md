@@ -12,6 +12,8 @@ Single command to go from "I'm done" to "PR is open."
 
 0. **Resolve default branch** (shared branch lifecycle contract from AGENTS.md):
 
+   First check the cache (see PR Cache below). If `.git/agents/pr-cache.json` has a `baseBranch`, use it. Otherwise resolve it with the snippet and write it back to the cache:
+
    ```bash
    BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
    if [ -z "$BASE_BRANCH" ]; then
@@ -19,22 +21,23 @@ Single command to go from "I'm done" to "PR is open."
    fi
    ```
 
-1. **Verify not on default branch**: Check current branch with `git branch --show-current`
-   - If equal to `$BASE_BRANCH`, stop and tell user to create a feature branch first
+1. **Verify not on default branch**: if the current branch (from the step 2 preflight read) equals `$BASE_BRANCH`, stop and tell the user to create a feature branch first.
 
 2. **Inventory working tree and commit implementation work**:
-   - Capture the working-tree state with `git status --porcelain` and the untracked path list with `git ls-files --others --exclude-standard`
-   - Classify every reported path as staged, unstaged, or untracked. Run `git diff --cached` for staged content and `git diff` for unstaged content. Read each untracked file before staging it.
+   - Gather the read-only preflight in a single shell call rather than one command at a time: current branch (`git branch --show-current`, which also answers step 1), working-tree state (`git status --porcelain`), and the untracked path list (`git ls-files --others --exclude-standard`). Label each section so one call covers steps 1 and 2.
+   - Classify every reported path as staged, unstaged, or untracked. Run `git diff --cached` for staged content and `git diff` for unstaged content. For untracked files, do not read each one in full. Skip binary files entirely (never read binary content). For text files, use judgment about signal value: low-signal generated files (lockfiles, golden or snapshot fixtures, vendored or generated code, large data fixtures) get a light skim or no content read, then stage by path; genuine source files get read normally. You may `git add -N` the intended text paths to view them inside a single `git diff` instead of reading each separately, but still stage content explicitly by path.
    - If any paths are present, this is the implementation submission. Stage the intended paths and commit them with a Conventional Commits subject derived from the diff. Pick the type from the work itself: `feat:` for new functionality, `fix:` for bugfixes, `refactor:` for restructuring without behavior change, `docs:` for documentation, `style:` for formatting, `test:` for tests, `perf:` for performance, `build:` for build-system changes, `ci:` for CI configuration, `chore:` for everything else. Only `feat:` and `fix:` drive a release-please bump, so misclassifying functional work as `chore:` silently skips its release. Do not use a `wip:` placeholder. Do not run `git add -A` blindly; stage by explicit path so untracked files are added intentionally.
    - If a path should be excluded from the PR, the user must add it to `.gitignore` or stash it before `/pr` continues. The skill does not stash silently.
    - If the working tree is clean, skip the commit and continue. The branch must already have implementation commits ahead of `$BASE_BRANCH` (verified in step 6).
 
 3. **Format and lint** (check CLAUDE.md for the project's commands):
    - **Skip if** passing output is visible in this conversation and no files changed since. Cite the prior result.
+   - On success, report only the exit status and a one-line summary. Do not echo full passing output.
    - If it fails, report errors and stop
 
 4. **Run tests** (check CLAUDE.md for the project's test command):
    - **Skip if** passing output is visible in this conversation and no files changed since. Cite the prior result.
+   - On success, report only the pass count and a one-line summary. Do not echo full passing output.
    - If tests fail, report failures and stop
 
 5. **Stage and commit auto-fixed files**:
@@ -42,7 +45,7 @@ Single command to go from "I'm done" to "PR is open."
    - If there are changes: stage them, commit with message `style: auto-format and lint fixes`. This is a separate commit from the implementation commit in step 2.
    - If no changes: skip
 
-6. **Pre-push gate** (build the publication inventory before any push):
+6. **Pre-push gate** (build the publication inventory before any push). Run the three read-only checks below in a single shell call with labeled sections:
    - Verify the branch has commits ahead of base: `git rev-list --count "$BASE_BRANCH..HEAD"`. If zero, stop and report "nothing to publish". This is the only valid no-op exit.
    - Verify the working tree is clean: `git status --porcelain` must be empty. If anything remains, stop and report which paths are still uncommitted. The skill never pushes a branch while staged, unstaged, or untracked work remains.
    - Inventory the publication content: `git diff --name-status "$BASE_BRANCH"...HEAD` lists every committed path the push will publish. Read this list.
@@ -63,8 +66,8 @@ Single command to go from "I'm done" to "PR is open."
    - Check if PR exists: `gh pr view --json number,url 2>/dev/null`
    - If PR exists: show URL, say "PR updated with latest changes"
    - If no PR exists:
-     - Analyze `git diff "$BASE_BRANCH"...HEAD` and `git log "$BASE_BRANCH"..HEAD --oneline` to understand scope
-     - **Discover PR template** by checking these paths in order, using the first that exists:
+     - Understand scope from commit messages and file-level stats, not a re-read of the full content diff: `git log "$BASE_BRANCH"..HEAD` (messages) plus `git diff --stat "$BASE_BRANCH"...HEAD` (changed paths). If the diff content was already captured earlier in this conversation and no commits were added since, reuse it. Read full hunks only for commits whose messages do not explain the change.
+     - **Resolve PR template**: if `.git/agents/pr-cache.json` has a `prTemplatePath` and that file still exists, use it. Otherwise discover it by checking these paths in order, using the first that exists, then write the result to the cache:
 
        ```bash
        PR_TEMPLATE=""
@@ -129,6 +132,23 @@ Single command to go from "I'm done" to "PR is open."
 - **`gh` not authenticated**: Detect with `gh auth status`, show clear error
 - **No issue number in branch**: Warn but continue. Don't block the PR.
 - **Ticket state transition fails**: Log the reason and continue. Never block the PR workflow.
+
+## PR Cache
+
+- Cache stable, structural repo facts in `$(git rev-parse --git-dir)/agents/pr-cache.json`. Always resolve the path with `git rev-parse --git-dir` so worktrees are handled, and create the `agents/` directory if it is absent. The cache is local, uncommitted, and disposable.
+- Cache shape:
+
+  ```json
+  {
+    "schemaVersion": 1,
+    "baseBranch": "main",
+    "prTemplatePath": ".github/pull_request_template.md"
+  }
+  ```
+
+- These entries are structural configuration, not drifting policy, so there is no TTL and no time-based invalidation. Read them and trust them.
+- Repair only on failure: if a cached value stops working (the `prTemplatePath` file no longer exists, or `baseBranch` fails to resolve or yields an empty diff range), re-derive that one entry and overwrite it. Do not invalidate the whole cache.
+- Do not cache the format, lint, or test commands. Read those from the project instructions each run.
 
 ## Usage
 
