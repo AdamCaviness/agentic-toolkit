@@ -1,6 +1,6 @@
 ---
 name: next-ticket
-description: Use when looking for the next ticket to work on. Detects the project's ticket system (GitHub Issues, Jira, GitLab Issues, Azure Boards, etc.), fetches open tickets that are unassigned or assigned to you, scores by severity/simplicity/value/blocking-power/dependencies, picks the best candidate, claims it by self-assigning (team-safe), branches, implements, tests, formats, and waits for review with a UI testing tip. Accepts an optional ticket ID argument (e.g., `/next-ticket 42`, `/next-ticket PROJ-42`) to skip evaluation and pick up a specific ticket directly.
+description: Use when looking for the next ticket to work on. Detects the project's ticket system (GitHub Issues, Jira, GitLab Issues, Azure Boards, etc.), fetches actionable open tickets that are unassigned or assigned to you, scores by severity/simplicity/value/blocking-power/dependencies, picks the best candidate, claims it by self-assigning (team-safe), branches, implements, tests, formats, and waits for review with a UI testing tip. Accepts an optional ticket ID argument (e.g., `/next-ticket 42`, `/next-ticket PROJ-42`) to skip evaluation and pick up a specific ticket directly.
 ---
 
 # Next Ticket
@@ -79,22 +79,24 @@ Fetch only the specified ticket's full data (title, body, labels, assignees, com
 
 ### Auto-pick mode (no argument)
 
-Using whatever CLI tools, MCP tools, or APIs are available in the current session, fetch open tickets that are **either unassigned or assigned to the current user's per-system handle** from Step 1b. Prefer the system's native server-side filter; fall back to fetching all open tickets and filtering locally against the stored handle.
+Auto-pick fetches in two phases so the model never pulls full bodies for tickets it won't act on. Tickets that are in-flight (In Progress, In Review) or terminal (Done, Closed, Resolved) can never be "the next ticket to start," so they are excluded at the query level rather than fetched and filtered afterward.
+
+**Resolve the actionable-state filter (cached).** Read the project-root entry in `next-ticket-config.json`. If it has a `states.candidate` entry, use it as the server-side filter and skip to Phase A. Otherwise discover it: use whatever CLI, MCP, or API tooling fits the detected system to list the workflow states, statuses, or board columns, and use model judgment to identify which represent "available to start" (teams name these anything: "To Do", "Backlog", "Refinement", "Tech Refine", "Ready", "Open") versus in-flight or terminal ("In Progress", "In Review", "Done", "Closed"). Confirm with the user: "Treat these as available-to-start states: <names>? Cached for future runs." Migrate the project-root entry to the object form (see the Step 4.6 schema) if needed, then write the system-specific filter detail under `states.candidate`. A system with no workflow states beyond open/closed (e.g., plain GitHub Issues with no project board) has nothing to exclude: cache `states.candidate` as the plain open filter so future runs skip rediscovery. This entry is durable: no TTL, repair only if the filter errors or returns nothing.
+
+**Phase A: lightweight list.** Using whatever CLI, MCP, or API tooling fits the system, fetch only the lightweight fields (`id`, `title`, `labels`, `assignees`, `created_at`, `state`) for tickets that are **(unassigned or assigned to the current user's per-system handle from Step 1b) AND in an actionable state** per `states.candidate`. Do not fetch bodies or comments in this phase. Prefer the system's native server-side filter; fall back to fetching the lightweight open list and filtering locally against the stored handle and actionable states.
 
 **Common tools by platform:**
-- GitHub Issues: `gh issue list`. Note: `gh issue list --search` combines terms with AND, not OR, so "unassigned OR assigned to me" needs two queries (`no:assignee` and `assignee:@me`) merged by ID.
-- Jira: `jira` CLI, Atlassian MCP tools, or REST API via `curl`. JQL expresses the filter directly: `assignee = currentUser() OR assignee is EMPTY`.
-- GitLab Issues: `glab issue list`. `--assignee=@me` plus an unassigned query, merged by ID.
-- Azure Boards: `az boards work-item list` with a WIQL filter using `@Me` and `[System.AssignedTo] = ''`.
+- GitHub Issues: `gh issue list`. `gh issue list --search` combines terms with AND, not OR, so "unassigned OR assigned to me" needs two queries (`no:assignee` and `assignee:@me`) merged by ID. Pass `--json number,title,labels,assignees,createdAt` to keep the list lightweight; workflow state, if any, lives in a project board or labels.
+- Jira: `jira` CLI, Atlassian MCP tools, or REST API via `curl`. JQL expresses everything server-side: `(assignee = currentUser() OR assignee is EMPTY) AND statusCategory = "To Do"` (or the discovered actionable statuses). Request summary-level fields only, not the description.
+- GitLab Issues: `glab issue list`. `--assignee=@me` plus an unassigned query, merged by ID, restricted to the actionable board labels.
+- Azure Boards: `az boards work-item list` with a WIQL filter using `@Me`, `[System.AssignedTo] = ''`, and `[System.State]` restricted to the actionable states.
 - Other: Use whatever is available. If no tool is found, tell the user what to install and stop.
 
-Also fetch recently closed/resolved tickets (titles and IDs only) to understand what's already been done.
-
-If zero open tickets, tell the user and stop.
+If zero actionable tickets, tell the user and stop.
 
 ### Normalized shape
 
-Normalize the fetched data (both modes) into this shape (write to a temp file):
+Normalize the fetched data into this shape and write it to a temp file. In direct-pick mode the single ticket is fully populated. In auto-pick mode, Phase A rows carry only the lightweight fields; `body` and `comments` are filled in only for tickets actually drilled into during Step 3 (the shortlist and the final selection). Never serialize bodies or comments for tickets whose content was never fetched.
 
 ```json
 [
@@ -114,7 +116,11 @@ Normalize the fetched data (both modes) into this shape (write to a temp file):
 
 > **Direct-pick mode:** Skip scoring and ranking. Proceed directly to Announce Selection below with the fetched ticket as the selected candidate.
 
-Read every ticket's title, full body, labels, and comments. Build a mental scorecard for each ticket using these factors:
+Scoring runs on the lightweight Phase A list first, then drills into full content only for a shortlist:
+
+1. **Pre-rank (lightweight).** Using only the Phase A fields (title, labels, assignees, created_at), eliminate any ticket assigned to someone other than you, then pre-rank the rest on the signals available without a body: severity (from labels), age, and a title-level read of likely simplicity and value.
+2. **Drill the shortlist (full content).** Fetch full body and comments (Phase B) for the top candidates only: a generous shortlist of up to ~8, or **all of them when the actionable pool is smaller** (small backlogs are read in full, exactly as before). Merge the fetched body and comments back into the temp file.
+3. **Score the shortlist.** Build a mental scorecard for each shortlisted ticket using these factors:
 
 ### Scoring Factors
 
@@ -134,6 +140,7 @@ Read every ticket's title, full body, labels, and comments. Build a mental score
 1. **Eliminate** tickets that have unmet dependencies on other open tickets, or are assigned to someone other than you.
 2. **Rank** remaining tickets. Severity and simplicity dominate. Blocking power breaks ties.
 3. **Pick the top candidate.** If two tickets are very close, prefer the simpler one (higher confidence of correct AFK implementation).
+4. **Empty shortlist?** If every shortlisted ticket is eliminated (unmet dependencies, or resolved on inspection), drill the next batch of pre-ranked candidates (Phase B for the next ~8) and repeat. If the entire actionable pool is exhausted with no eligible ticket, tell the user and stop.
 
 ### Announce Selection
 
@@ -161,7 +168,7 @@ Selected: <ticket-id> - "<ticket title>"
 Before branching, verify the selected ticket is still valid on the latest codebase.
 
 1. **Locate the relevant code.** Use the ticket body, referenced files, error messages, and stack traces to find the code in question. If the ticket references files or functions that no longer exist, the ticket may be stale.
-2. **Check for prior fixes.** Search git log for commits referencing the ticket ID. Look for evidence of prior work on this ticket.
+2. **Check for prior fixes.** Search git log for commits referencing the ticket ID. If that is inconclusive, do a scoped lookup of recently closed or resolved tickets related to this one (by ID reference or near-duplicate title) using the system's CLI, MCP, or API tooling; fetch only what's needed to judge prior resolution, not the full closed list. Look for evidence of prior work on this ticket.
 3. **Reproduce the problem.** Attempt to confirm the ticket is still valid:
    - **Bugs**: Read the relevant code paths. Is the described bug still present in the logic?
    - **Features**: Is the requested functionality already implemented?
@@ -212,6 +219,7 @@ When a project-root entry gains `states`, it migrates from a plain string to an 
   "/home/user/repo-a": {
     "system": "github",
     "states": {
+      "candidate": { "...filter for actionable, available-to-start states..." },
       "in_progress": { "...system-specific IDs and parameters..." },
       "in_review": { "...system-specific IDs and parameters..." }
     }
@@ -265,7 +273,7 @@ After creating the branch, verify it with `git branch --show-current`. The curre
 
 1. **Implement**: Write the minimum code to make the failing tests pass. Follow existing code patterns and conventions. Respect CLAUDE.md rules.
 2. **Run your new tests.** Iterate until they pass.
-3. **Run the full test suite** to ensure nothing else broke. Use the project's test runner (e.g., `make test`, `npm test`, `pytest`, `go test ./...`, `cargo test`).
+3. **Run the full test suite** to ensure nothing else broke. Use the project's test runner (e.g., `make test`, `npm test`, `pytest`, `go test ./...`, `cargo test`). On success, report only the pass count and a one-line summary; do not echo full passing output. On failure, show the failing output.
 4. **Keep it focused**: Only change what the ticket requires. Don't refactor unrelated code, add unrequested features, or "improve" surrounding code.
 
 If a pre-existing test fails:
@@ -278,7 +286,7 @@ If the ticket is unclear or the fix direction is ambiguous, make the most reason
 
 ## Step 8: Format
 
-Run the project's formatter (e.g., `make nice`, `npm run format`, `cargo fmt`, `go fmt ./...`, `black .`). If it modifies files, that's expected. If it fails, investigate and fix.
+Run the project's formatter (e.g., `make nice`, `npm run format`, `cargo fmt`, `go fmt ./...`, `black .`). On success, report a one-line status, noting how many files were reformatted if any; do not echo full formatter output. Reformatted files are expected. If it fails, investigate and fix.
 
 ## Step 9: Commit
 
