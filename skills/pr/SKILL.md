@@ -12,7 +12,7 @@ Single command to go from "I'm done" to "PR is open."
 
 0. **Resolve default branch** (shared branch lifecycle contract from AGENTS.md):
 
-   First check the cache (see PR Cache below). If `.git/agents/pr-cache.json` has a `baseBranch`, use it. Otherwise resolve it with the snippet and write it back to the cache:
+   First check the PR cache (see the PR Cache section below for its worktree-safe path). If it has a `baseBranch`, use it. Otherwise resolve it with the snippet and write it back to the cache:
 
    ```bash
    BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
@@ -45,7 +45,15 @@ Single command to go from "I'm done" to "PR is open."
    - If there are changes: stage them, commit with message `style: auto-format and lint fixes`. This is a separate commit from the implementation commit in step 2.
    - If no changes: skip
 
-6. **Pre-push gate** (build the publication inventory before any push). Run the three read-only checks below in a single shell call with labeled sections:
+6. **Pre-push gate** (build the publication inventory before any push). Run the read-only checks below in a single shell call with labeled sections, re-resolving `BASE_BRANCH` at the top of that call since shell state does not persist between Bash invocations:
+
+   ```bash
+   BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+   if [ -z "$BASE_BRANCH" ]; then
+     git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
+   fi
+   ```
+
    - Verify the branch has commits ahead of base: `git rev-list --count "$BASE_BRANCH..HEAD"`. If zero, stop and report "nothing to publish". This is the only valid no-op exit.
    - Verify the working tree is clean: `git status --porcelain` must be empty. If anything remains, stop and report which paths are still uncommitted. The skill never pushes a branch while staged, unstaged, or untracked work remains.
    - Inventory the publication content: `git diff --name-status "$BASE_BRANCH"...HEAD` lists every committed path the push will publish. Read this list.
@@ -67,7 +75,7 @@ Single command to go from "I'm done" to "PR is open."
    - If PR exists: show URL, say "PR updated with latest changes"
    - If no PR exists:
      - Understand scope from commit messages and file-level stats, not a re-read of the full content diff: `git log "$BASE_BRANCH"..HEAD` (messages) plus `git diff --stat "$BASE_BRANCH"...HEAD` (changed paths). If the diff content was already captured earlier in this conversation and no commits were added since, reuse it. Read full hunks only for commits whose messages do not explain the change.
-     - **Resolve PR template**: if `.git/agents/pr-cache.json` has a `prTemplatePath` and that file still exists, use it. Otherwise discover it by checking these paths in order, using the first that exists, then write the result to the cache:
+     - **Resolve PR template**: if the PR cache (see the PR Cache section below) has a `prTemplatePath` and that file still exists, use it. Otherwise discover it by checking these paths in order, using the first that exists, then write the result to the cache:
 
        ```bash
        PR_TEMPLATE=""
