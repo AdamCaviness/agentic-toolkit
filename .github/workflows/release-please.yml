@@ -1,0 +1,51 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      - name: Merge release PR and re-trigger workflow
+        if: steps.release.outputs.prs_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PR_JSON: ${{ steps.release.outputs.pr }}
+          REPO: ${{ github.repository }}
+        run: |
+          pr_number=$(jq -r '.number' <<< "$RELEASE_PR_JSON")
+          gh pr merge "$pr_number" --squash --repo "$REPO"
+
+          # Confirm main reflects the squash commit before dispatching, so
+          # the dispatched run sees the bumped manifest and not stale main.
+          for _ in 1 2 3 4 5; do
+            merged_sha=$(gh api "repos/$REPO/pulls/$pr_number" --jq '.merge_commit_sha')
+            main_sha=$(gh api "repos/$REPO/commits/main" --jq '.sha')
+            [ "$merged_sha" = "$main_sha" ] && break
+            sleep 2
+          done
+
+          # Pushes made by GITHUB_TOKEN don't retrigger workflows, so the
+          # merge above won't fire release-please again on its own.
+          # workflow_dispatch is the documented exception, so use it to cut
+          # the tag and publish the release for the version just merged.
+          # The `prs_created == 'true'` gate on this step prevents loops:
+          # the dispatched run only re-enters this step if new releasable
+          # commits accumulated since the tag, which is normal cadence.
+          gh workflow run release-please.yml --repo "$REPO" --ref main

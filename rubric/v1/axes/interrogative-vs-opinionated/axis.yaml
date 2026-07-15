@@ -1,0 +1,30 @@
+id: interrogative-vs-opinionated
+title: Interrogative vs Opinionated
+poles:
+  negative: interrogative
+  positive: opinionated
+description: >
+  How the approach reaches decisions. Negative means it elicits, asks questions,
+  and defers to the user. Positive means it prescribes a strong default path.
+indicators:
+  - id: io1
+    question: "Does it run a questioning or brainstorming phase before writing code?"
+    kind: classified
+    weight: 3
+    answers: { "yes": -1.0, partial: -0.5, "no": 0.5 }
+  - id: io2
+    question: "Does it enforce a fixed prescribed pipeline the user is expected to follow?"
+    kind: classified
+    weight: 3
+    answers: { strict: 1.0, guided: 0.3, loose: -0.5 }
+  - id: io3
+    question: "Density of directive vocabulary (must, always, never, required, enforce) in instructions."
+    kind: measured
+    weight: 2
+    signal:
+      type: vocabulary
+      terms: ["must", "always", "never", "required", "enforce", "mandatory"]
+      bands:
+        - { max_count: 3, value: -1.0 }
+        - { max_count: 15, value: 0.3 }
+        - { max_count: null, value: 1.0 }
