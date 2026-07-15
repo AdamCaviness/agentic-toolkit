@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentic-atlas"
+version = "0.2.0"
+description = "An open, versioned rubric for profiling agentic development approaches on signed bipolar axes."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Adam Caviness" }]
+keywords = ["agentic", "claude-code", "rubric", "evaluation", "agentic-development"]
+dependencies = [
+  "pyyaml>=6.0",
+  "jsonschema>=4.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+agentic-atlas = "agentic_atlas.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agentic_atlas"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,29 @@
+rubric_version: 1.2.0
+title: Agentic Atlas Rubric
+description: >
+  Curated rubric of 13 axes. Sign conventions and weights are a proposal and are
+  expected to change before this version is treated as stable. Any change that can
+  move a score requires a MAJOR bump. See docs/versioning.md.
+
+# Every axis is a signed position on the same range, -scale..+scale. A single
+# shared scale is what makes positions comparable across axes, so it is a rubric
+# wide constant, not a per-axis knob. It is a display multiplier on the normalized
+# weighted mean and does not change any relative position.
+scale: 10
+
+# Active axes, in display order (grouped: context, style, process, architecture,
+# footprint). Each id maps to axes/<id>/axis.yaml.
+axes:
+  - greenfield-vs-brownfield
+  - small-scope-vs-large-scope
+  - prototype-vs-production
+  - solo-vs-team
+  - generalist-vs-specialist
+  - fresh-vs-mature
+  - interrogative-vs-opinionated
+  - autonomous-vs-human-in-loop
+  - spec-light-vs-spec-driven
+  - test-optional-vs-test-first
+  - single-agent-vs-multi-agent
+  - prescriptive-vs-composable
+  - lightweight-vs-heavyweight
