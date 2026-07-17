@@ -17,6 +17,7 @@ A collection of skills for agentic coding tools, including [Claude Code](https:/
 | | [convert-worktree](#convert-worktree) | `/convert-worktree` | Cleanly convert a worktree back into a local branch |
 | **Utility** | [compress-markdown](#compress-markdown) | `/compress-markdown` | Compress markdown to save tokens; `deep` validates against codebase first |
 | | [update-deps](#update-deps) | `/update-deps` | Check CVEs, apply minor/patch updates, `major` for breaking changes; scopeable |
+| | [agentic-atlas](#agentic-atlas) | `/agentic-atlas <path-or-url>` | Profile an agentic approach on 13 signed axes; answers the engine's interpretive questions, no API key |
 
 ---
 
@@ -232,6 +233,20 @@ Updates project dependencies with CVE-first prioritization. Checks for open Depe
 **Usage:** `/update-deps`, `/update-deps major`, `/update-deps frontend`, `/update-deps backend|infra major`
 
 Scope options: `frontend`, `backend`, `infra`, or `all` (default). Combine with `|`.
+
+### [agentic-atlas](skills/agentic-atlas/SKILL.md)
+
+Profiles an agentic development approach, framework, or skill collection and locates it on 13 signed, bipolar axes (Greenfield ↔ Brownfield, Autonomous ↔ Human-in-loop, Spec-light ↔ Spec-driven, and ten more). It is not a ranking and has no aggregate score: each axis is an independent position on a shared `-10..+10` scale, and both poles are legitimate.
+
+- Drives the vendored [agentic-atlas](https://github.com/AdamCaviness/agentic-atlas) engine (`vendor/agentic-atlas`, git subtree), which is deterministic and needs no API key
+- The engine computes the **measured** indicators (vocabulary density, path presence, git stats, GitHub stars); your coding agent answers the **classified** interpretive questions from the target repository, so the full profile needs no API key and no model calls
+- Every answer is validated: the value must be one of the allowed options and the cited quote must appear verbatim in the target, which stops fabricated citations
+- Accepts a local path or a git URL from any host (GitHub, GitLab, Bitbucket, self-hosted); a URL is cloned to a temp dir and cleaned up afterward. `--save` writes the answers and profile JSON under `profiles/<target-name>/`
+- Every profile stamps the rubric version, engine version, target SHA, and answer source
+
+Requires Python 3.11+ (the engine's virtual environment is created on first run and cached). Refresh the vendored engine with the command in [vendor/README.md](vendor/README.md).
+
+**Usage:** `/agentic-atlas ~/code/some-framework`, `/agentic-atlas https://github.com/org/repo`, `/agentic-atlas ~/code/some-framework --save`
 
 ---
 

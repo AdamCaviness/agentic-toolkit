@@ -4,6 +4,9 @@ CLAUDE.md
 # Local settings (never commit personal config)
 .claude/settings.local.json
 
+# Project-level dev symlinks from scripts/dev-link.sh (local dogfooding only)
+.claude/skills/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -25,3 +28,11 @@ npm-debug.log*
 
 # Memory (auto-generated, user-specific)
 .claude/projects/
+
+# Vendored agentic-atlas engine: build artifacts created on first skill run
+vendor/agentic-atlas/.venv/
+vendor/agentic-atlas/.pytest_cache/
+vendor/agentic-atlas/.ruff_cache/
+vendor/agentic-atlas/build/
+vendor/agentic-atlas/dist/
+vendor/agentic-atlas/*.egg-info/

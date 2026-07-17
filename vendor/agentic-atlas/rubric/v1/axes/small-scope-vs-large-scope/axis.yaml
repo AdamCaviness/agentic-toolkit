@@ -1,0 +1,30 @@
+id: small-scope-vs-large-scope
+title: Small-scope vs Large-scope
+poles:
+  negative: small_scope
+  positive: large_scope
+description: >
+  How much of the delivery lifecycle the approach covers. Negative means a single
+  focused task. Positive means the whole lifecycle from idea to release.
+indicators:
+  - id: sl1
+    question: "How many lifecycle phases does it cover (idea, spec, plan, implement, test, review, release)?"
+    kind: classified
+    weight: 3
+    answers: { one: -1.0, few: -0.3, most: 0.6, full_lifecycle: 1.0 }
+  - id: sl2
+    question: "Is it invoked as a single command or skill, or as a multi-stage pipeline?"
+    kind: classified
+    weight: 2
+    answers: { single: -1.0, mixed: 0.0, multi_stage: 1.0 }
+  - id: sl3
+    question: "Density of lifecycle vocabulary across docs and commands."
+    kind: measured
+    weight: 2
+    signal:
+      type: vocabulary
+      terms: ["requirements", "architecture", "deployment", "release", "retrospective", "epic", "milestone"]
+      bands:
+        - { max_count: 1, value: -1.0 }
+        - { max_count: 8, value: 0.3 }
+        - { max_count: null, value: 1.0 }
