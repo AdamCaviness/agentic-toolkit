@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.14.1...v0.15.0) (2026-07-17)
+
+
+### Features
+
+* **agentic-atlas:** HTML profile view + honest empty-target handling ([#87](https://github.com/AdamCaviness/agentic-toolkit/issues/87)) ([2ce02e2](https://github.com/AdamCaviness/agentic-toolkit/commit/2ce02e2c01340c14d68a962a1d35f843de80c25a))
+
 ## [0.14.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.14.0...v0.14.1) (2026-07-17)
 
 
