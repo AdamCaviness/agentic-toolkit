@@ -1,0 +1,30 @@
+id: spec-light-vs-spec-driven
+title: Spec-light vs Spec-driven
+poles:
+  negative: spec_light
+  positive: spec_driven
+description: >
+  How much written specification precedes code. Negative means it jumps to
+  implementation. Positive means it produces and follows a spec or plan first.
+indicators:
+  - id: sd1
+    question: "Is a written spec, PRD, or plan required before implementation?"
+    kind: classified
+    weight: 3
+    answers: { none: -1.0, encouraged: 0.3, required: 1.0 }
+  - id: sd2
+    question: "Are spec or plan artifacts produced and persisted (not just discussed)?"
+    kind: classified
+    weight: 2
+    answers: { "no": -1.0, some: 0.3, "yes": 1.0 }
+  - id: sd3
+    question: "Density of specification vocabulary across docs and commands."
+    kind: measured
+    weight: 2
+    signal:
+      type: vocabulary
+      terms: ["prd", "specification", "requirements", "acceptance criteria", "design doc", "plan", "spec"]
+      bands:
+        - { max_count: 1, value: -1.0 }
+        - { max_count: 8, value: 0.3 }
+        - { max_count: null, value: 1.0 }

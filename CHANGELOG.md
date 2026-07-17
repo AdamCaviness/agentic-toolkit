@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.13.0...v0.14.0) (2026-07-17)
+
+
+### Features
+
+* **skill:** add agentic-atlas skill to profile agentic approaches ([#84](https://github.com/AdamCaviness/agentic-toolkit/issues/84)) ([9d65b13](https://github.com/AdamCaviness/agentic-toolkit/commit/9d65b1358184cb230efc823cace92c6603a911d3))
+
 ## [0.13.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.12.0...v0.13.0) (2026-06-05)
 
 
