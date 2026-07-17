@@ -74,6 +74,27 @@ def test_ignore_junk_files(tmp_path):
     assert not any(p.endswith(".DS_Store") for p in paths)
 
 
+def test_ignore_vendored_and_build_dirs(tmp_path):
+    # Vendored third-party trees and build artifacts are not the project's own content,
+    # so they must not enter the corpus or the matched-path list. A project's methodology
+    # signal must reflect what it authored, not code it merely bundles.
+    (tmp_path / "README.md").write_text("real content here")
+    for d in ["vendor", "vendored", "third_party", "third-party", "node_modules"]:
+        sub = tmp_path / d / "pkg"
+        sub.mkdir(parents=True)
+        (sub / "doc.md").write_text("vendored spec plan test agent content")
+    target = Target.from_path(tmp_path)
+    paths = target.relative_paths()
+    assert "README.md" in paths
+    assert not any(
+        p.split("/", 1)[0] in {"vendor", "vendored", "third_party", "third-party", "node_modules"}
+        for p in paths
+    )
+    corpus = target.text_corpus(lower=False)
+    assert "real content here" in corpus
+    assert "vendored spec plan test agent content" not in corpus
+
+
 def _git(root, *args, when=None):
     env = None
     if when is not None:

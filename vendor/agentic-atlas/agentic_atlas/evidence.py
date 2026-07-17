@@ -87,7 +87,14 @@ def _count_terms(corpus: str, terms: list[str]) -> int:
 # File extensions that make up an approach's readable surface.
 _TEXT_SUFFIXES = {".md", ".markdown", ".txt", ".yaml", ".yml", ".json", ".toml"}
 _MAX_FILE_BYTES = 512_000
-_IGNORE_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build"}
+# Directories that never hold the approach's own authored content: VCS internals, build
+# artifacts and virtualenvs, and vendored third-party dependencies. A project's methodology
+# signal must not be diluted by code it merely bundles, so vendored trees are excluded the
+# same way ``node_modules`` already is.
+_IGNORE_DIRS = {
+    ".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build",
+    "vendor", "vendored", "third_party", "third-party",
+}
 # OS and editor cruft that should never count as target content or a matched path.
 _IGNORE_FILES = {".DS_Store", "Thumbs.db"}
 
