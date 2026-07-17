@@ -11,10 +11,13 @@ directly from the repository with no model. Signal types supported today:
   remote (stars, forks, watchers, open issues), banded to a value.
 
 ``git_stats`` and ``github_api`` can fail to resolve (no git history, no origin
-remote, no network). When that happens the indicator is marked unresolved and
-counted against coverage rather than crashing the profile. ``github_api`` is
-point-in-time and not pinned by the target SHA, so the fetched value is recorded
-verbatim as evidence, which is the honesty signal for a mutable host fact.
+remote, no network). ``vocabulary`` and ``path_presence`` likewise stay unresolved
+when the target has no readable text corpus or no files at all: an unreadable target
+must not read as a confident position at the absent pole. When an indicator does not
+resolve it is marked unresolved and counted against coverage rather than crashing the
+profile. ``github_api`` is point-in-time and not pinned by the target SHA, so the
+fetched value is recorded verbatim as evidence, which is the honesty signal for a
+mutable host fact.
 
 Adding a signal type means extending ``resolve_measured`` and the schema, and is a
 rubric-affecting change only if an existing rubric starts using it.
@@ -145,6 +148,11 @@ class Target:
                 return None
             return len({line.strip() for line in out.splitlines() if line.strip()})
         if metric == "tag_count":
+            # `git tag --list` succeeds with empty output on a repo with no commits,
+            # which would read as a real "0 tags" (fresh) signal. Require a commit first
+            # so a history-less target leaves this unresolved like the other git metrics.
+            if self.git_sha() is None:
+                return None
             out = self._run_git("tag", "--list")
             if out is None:
                 return None
@@ -225,6 +233,12 @@ def _unresolved_measured(indicator: Indicator, reason: str) -> IndicatorResult:
 
 def _resolve_vocabulary(indicator: Indicator, target: Target, signal: dict) -> IndicatorResult:
     corpus = target.text_corpus()
+    if not corpus.strip():
+        # Nothing readable to count. A zero here would mean "read the repo and this
+        # vocabulary is genuinely absent", but there is no repo text at all, so banding
+        # it would slam the axis to the absent pole at a confident-looking value.
+        # Leave it unresolved so an unreadable target stays off the score.
+        return _unresolved_measured(indicator, "no readable text corpus in target")
     count = _count_terms(corpus, signal["terms"])
     value = _band_value(count, signal["bands"])
     return IndicatorResult(
@@ -250,6 +264,10 @@ def _band_value(count: int, bands: list[dict]) -> float:
 
 def _resolve_path_presence(indicator: Indicator, target: Target, signal: dict) -> IndicatorResult:
     paths = target.relative_paths()
+    if not paths:
+        # No files to look at. "absent" among real files is a signal; "absent" from an
+        # empty target is not, so it stays unresolved rather than reading as the absent pole.
+        return _unresolved_measured(indicator, "target has no files")
     matched = [p for p in paths if any(_matches(p, g) for g in signal["globs"])]
     present = bool(matched)
     value = float(signal["present"]) if present else float(signal["absent"])

@@ -1,7 +1,7 @@
 """Command line interface for the Agentic Atlas engine.
 
     agentic-atlas validate <rubric>
-    agentic-atlas profile <target> [--rubric DIR] [--answers FILE] [--format text|md|json]
+    agentic-atlas profile <target> [--rubric DIR] [--answers FILE] [--format text|md|json|html]
     agentic-atlas questions <target> [--rubric DIR]
 
 The engine is deterministic and needs no API key. A bare ``profile`` run resolves the
@@ -23,7 +23,7 @@ from . import docs
 from .classify import classified_questions
 from .evidence import Target
 from .profiler import profile_target
-from .report import render_markdown, render_text
+from .report import render_html, render_markdown, render_text
 from .spec import load_rubric
 
 _DEFAULT_RUBRIC = Path(__file__).resolve().parent.parent / "rubric" / "v1"
@@ -93,6 +93,8 @@ def _cmd_profile(args: argparse.Namespace) -> int:
         print(json.dumps(profile.to_dict(), indent=2))
     elif args.format == "md":
         print(render_markdown(profile))
+    elif args.format == "html":
+        print(render_html(profile))
     else:
         # Color only for an interactive terminal, and never when NO_COLOR is set
         # (https://no-color.org). Piped or redirected output stays plain ASCII.
@@ -123,7 +125,7 @@ def build_parser() -> argparse.ArgumentParser:
         "validate and score, or '-' to read them from stdin; without it the profile "
         "is measured-only",
     )
-    pr.add_argument("--format", choices=["text", "md", "json"], default="text")
+    pr.add_argument("--format", choices=["text", "md", "json", "html"], default="text")
     pr.set_defaults(func=_cmd_profile)
 
     q = sub.add_parser(
