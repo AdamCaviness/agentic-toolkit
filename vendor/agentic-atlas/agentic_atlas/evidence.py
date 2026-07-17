@@ -5,15 +5,17 @@ directly from the repository with no model. Signal types supported today:
 
 - ``vocabulary``    term density across the text corpus, banded by count.
 - ``path_presence`` glob matches to a present/absent value.
+- ``path_count``    the number of files matching any glob, banded to a value, so
+  many matching files reads differently from a handful.
 - ``git_stats``     a fact read from the target's git history (commit count,
   contributors, age, tags), banded to a value.
 - ``github_api``    a point-in-time fact from the GitHub host API for the origin
   remote (stars, forks, watchers, open issues), banded to a value.
 
 ``git_stats`` and ``github_api`` can fail to resolve (no git history, no origin
-remote, no network). ``vocabulary`` and ``path_presence`` likewise stay unresolved
-when the target has no readable text corpus or no files at all: an unreadable target
-must not read as a confident position at the absent pole. When an indicator does not
+remote, no network). ``vocabulary``, ``path_presence``, and ``path_count`` likewise
+stay unresolved when the target has no readable text corpus or no files at all: an
+unreadable target must not read as a confident position at the absent pole. When an indicator does not
 resolve it is marked unresolved and counted against coverage rather than crashing the
 profile. ``github_api`` is point-in-time and not pinned by the target SHA, so the
 fetched value is recorded verbatim as evidence, which is the honesty signal for a
@@ -215,6 +217,8 @@ def resolve_measured(indicator: Indicator, target: Target) -> IndicatorResult:
         return _resolve_vocabulary(indicator, target, signal)
     if stype == "path_presence":
         return _resolve_path_presence(indicator, target, signal)
+    if stype == "path_count":
+        return _resolve_path_count(indicator, target, signal)
     if stype == "git_stats":
         return _resolve_git_stats(indicator, target, signal)
     if stype == "github_api":
@@ -280,6 +284,27 @@ def _resolve_path_presence(indicator: Indicator, target: Target, signal: dict) -
         resolved=True,
         answer="present" if present else "absent",
         evidence=evidence,
+        source="engine",
+    )
+
+
+def _resolve_path_count(indicator: Indicator, target: Target, signal: dict) -> IndicatorResult:
+    paths = target.relative_paths()
+    if not paths:
+        # No files to count. A zero here would read as "counted the files and none
+        # matched", but there are no files at all, so it stays unresolved rather than
+        # banding an empty target to the low pole. Same guard as path_presence.
+        return _unresolved_measured(indicator, "target has no files")
+    count = sum(1 for p in paths if any(_matches(p, g) for g in signal["globs"]))
+    value = _band_value(count, signal["bands"])
+    return IndicatorResult(
+        indicator_id=indicator.id,
+        kind=IndicatorKind.MEASURED,
+        weight=indicator.weight,
+        value=value,
+        resolved=True,
+        answer=str(count),
+        evidence=f"{count} files matched {signal['globs']}",
         source="engine",
     )
 

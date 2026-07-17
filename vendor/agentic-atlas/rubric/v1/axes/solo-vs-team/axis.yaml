@@ -28,3 +28,19 @@ indicators:
         - { max_count: 1, value: -0.8 }
         - { max_count: 8, value: 0.24 }
         - { max_count: null, value: 0.8 }
+  - id: st4
+    question: "Presence of team and CI infrastructure (workflows, code owners, PR templates)."
+    kind: measured
+    weight: 2
+    signal:
+      type: path_count
+      globs:
+        - "**/.github/workflows/**"
+        - "**/CODEOWNERS"
+        - "**/.github/CODEOWNERS"
+        - "**/PULL_REQUEST_TEMPLATE*"
+        - "**/.github/PULL_REQUEST_TEMPLATE*"
+      bands:
+        - { max_count: 0, value: -0.5 }
+        - { max_count: 2, value: 0.2 }
+        - { max_count: null, value: 0.6 }

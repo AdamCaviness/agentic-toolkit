@@ -27,7 +27,7 @@ _EXPECTED_AXES = [
 
 def test_shipped_rubric_validates_and_parses():
     r = load_rubric(_RUBRIC, validate=True)
-    assert r.rubric_version == "1.3.0"
+    assert r.rubric_version == "1.4.0"
     assert {a.id for a in r.axes} == set(_EXPECTED_AXES)
 
 

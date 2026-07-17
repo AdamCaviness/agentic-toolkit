@@ -259,6 +259,25 @@ def _path_indicator(globs):
     )
 
 
+_COUNT_BANDS = [
+    {"max_count": 0, "value": -0.6},
+    {"max_count": 3, "value": -0.2},
+    {"max_count": 15, "value": 0.3},
+    {"max_count": 60, "value": 0.6},
+    {"max_count": None, "value": 0.8},
+]
+
+
+def _path_count_indicator(globs, bands):
+    return Indicator(
+        id="pc",
+        question="q",
+        kind=IndicatorKind.MEASURED,
+        weight=1.0,
+        signal={"type": "path_count", "globs": globs, "bands": bands},
+    )
+
+
 def test_vocabulary_unresolved_on_empty_corpus(tmp_path):
     target = Target.from_path(tmp_path)  # a dir with no readable text at all
     result = resolve_measured(_vocab_indicator(["legacy", "migration"], _ZERO_BANDS), target)
@@ -297,3 +316,52 @@ def test_tag_count_unresolved_without_commits(tmp_path):
     _git(tmp_path, "init", "-q")  # a repo with no commits yet
     target = Target.from_path(tmp_path)
     assert target.git_metric("tag_count") is None
+
+
+def test_path_count_bands_to_the_right_value(tmp_path):
+    # Five matching files land in the third band (3 < 5 <= 15) at value 0.3, so a
+    # count-based signal discriminates a handful from a single presence bit.
+    (tmp_path / "skills").mkdir()
+    for i in range(5):
+        (tmp_path / "skills" / f"s{i}.md").write_text("x")
+    target = Target.from_path(tmp_path)
+    result = resolve_measured(_path_count_indicator(["**/skills/**"], _COUNT_BANDS), target)
+    assert result.resolved is True
+    assert result.value == 0.3
+    assert result.answer == "5"
+    assert result.source == "engine"
+
+
+def test_path_count_bands_many_files_to_top(tmp_path):
+    # A large module surface reads high; 90 files clears the top threshold to 0.8.
+    (tmp_path / "skills").mkdir()
+    for i in range(90):
+        (tmp_path / "skills" / f"s{i}.md").write_text("x")
+    target = Target.from_path(tmp_path)
+    result = resolve_measured(_path_count_indicator(["**/skills/**"], _COUNT_BANDS), target)
+    assert result.resolved is True
+    assert result.value == 0.8
+    assert result.answer == "90"
+
+
+def test_path_count_unresolved_when_no_files(tmp_path):
+    target = Target.from_path(tmp_path)
+    result = resolve_measured(_path_count_indicator(["**/skills/**"], _COUNT_BANDS), target)
+    assert result.resolved is False
+    assert result.value is None
+    assert result.kind is IndicatorKind.MEASURED
+
+
+def test_path_count_counts_across_nested_dirs(tmp_path):
+    # A glob counts every match wherever it sits in the tree, and files outside the
+    # glob do not inflate the count.
+    for rel in ["skills/a.md", "pkg/skills/b.md", "deep/nested/skills/c.md"]:
+        p = tmp_path / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("x")
+    (tmp_path / "README.md").write_text("not a skill")
+    target = Target.from_path(tmp_path)
+    result = resolve_measured(_path_count_indicator(["**/skills/**"], _COUNT_BANDS), target)
+    assert result.resolved is True
+    assert result.answer == "3"
+    assert result.value == -0.2  # 3 files lands in the second band
