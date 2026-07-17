@@ -219,19 +219,44 @@ Rewrite the answers file with the corrections and re-run the `profile ... --form
 command. If an answer still does not resolve after this one retry, leave it out and let that
 indicator stay unresolved; do not loop.
 
-### Step 8: Print the profile
+### Step 8: Render, open, and summarize the profile
 
-Render a human-readable report and print it:
+Render the visual HTML report to a per-user cache directory, print its path, and open it.
+The HTML must never be written inside any repo: the skill is read-only and runs from
+arbitrary checkouts, so it goes to a per-user cache. Do this in one shell block so the
+variables resolve together. Substitute the resolved target path, the answers file,
+`TARGET_NAME`, and the target SHA (first 12 characters of `target_sha` from the Step 6 JSON,
+or `local` when it is null):
+
+```bash
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/agentic-atlas"
+mkdir -p "$CACHE_DIR"
+OUT="$CACHE_DIR/<TARGET_NAME>-<sha12-or-local>.html"
+bash "$SKILL_DIR/atlas.sh" profile "<abs-target-path>" --answers <answers-file> --format html > "$OUT"
+printf 'profile: %s\n' "$OUT"
+# best-effort open in the default viewer; never fatal if no opener exists
+command -v open >/dev/null 2>&1 && open "$OUT" \
+  || { command -v xdg-open >/dev/null 2>&1 && xdg-open "$OUT"; } \
+  || true
+```
+
+The HTML is a self-contained, deterministic view, fully regenerable from `profile.json`, so
+it stays in the per-user cache and is never committed (see Step 9). If you are running in a
+harness that can display HTML inline, you may additionally surface it that way (in Claude
+Code, publish it as an Artifact).
+
+Then also print the terminal report as a text fallback:
 
 ```
 bash "$SKILL_DIR/atlas.sh" profile "<abs-target-path>" --answers <answers-file> --format text
 ```
 
-Then add a short summary of your own:
+Finally add a short summary of your own:
 
 - `TARGET_NAME`, and the stamped `rubric`, `engine`, and target SHA (from the JSON).
-- How many of the 13 axes now show a position versus `needs interpretation`, and for each
-  still needing interpretation, one line on why (which classified answers are missing or
+- How many of the 13 axes show a confident position, how many are provisional (a faded bar,
+  thin evidence below half coverage), and how many could not be read at all; for each
+  provisional or unread axis, one line on why (which classified answers are missing or
   unresolved).
 - A one-line reminder that there is no aggregate score by design; each axis is an
   independent position.
@@ -253,7 +278,9 @@ Write into `$REPO_ROOT/profiles/<TARGET_NAME>/`:
 - `profile.json`: the output of `profile ... --format json` from the final run.
 
 These are the reviewable, reproducible artifacts: committed next to a profile, the answers
-file reproduces the classified positions without re-running any model.
+file reproduces the classified positions without re-running any model. Do not save the HTML
+here: it is a regenerable per-user cache view (Step 8), and `profile.json` reproduces it
+byte-for-byte at any time, so committing it would only add derived, drift-prone output.
 
 Finally, if you cloned a git URL in Step 2, remove the temp clone directory (`rm -rf
 "$TMP_CLONE"`, which also removes the empty parent). Leave the engine venv in place; it is
