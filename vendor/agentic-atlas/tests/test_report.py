@@ -2,7 +2,7 @@
 opinionated first-run pointer to the skill."""
 
 from agentic_atlas.models import AxisResult, IndicatorKind, IndicatorResult, Poles, Profile
-from agentic_atlas.report import render_text
+from agentic_atlas.report import render_html, render_text
 
 
 def _ind(kind: IndicatorKind, resolved: bool, weight: float = 1.0) -> IndicatorResult:
@@ -99,3 +99,90 @@ def test_no_skill_hint_when_everything_resolved():
     )
     out = render_text(_profile([ax]))
     assert "/agentic-atlas skill" not in out
+
+
+# --- render_html --------------------------------------------------------------------------
+
+
+def test_html_is_byte_identical_for_same_profile():
+    # Determinism: a pure function of the Profile, no timestamps or random ids.
+    ax = _axis("Solid", score=-5.5, coverage=0.8, indicators=[_ind(IndicatorKind.MEASURED, True)])
+    profile = _profile([ax])
+    assert render_html(profile) == render_html(profile)
+
+
+def test_html_draws_a_solid_bar_above_floor():
+    ax = _axis("Solid", score=-5.5, coverage=0.8, indicators=[_ind(IndicatorKind.MEASURED, True)])
+    out = render_html(_profile([ax]))
+    assert 'class="fill neg"' in out  # a real bar, drawn solid
+    assert 'class="fill neg prov"' not in out  # not faded
+    assert "low evidence" not in out  # the provisional tag is absent
+    assert "nothing could be read" not in out
+
+
+def test_html_always_draws_a_faded_bar_below_floor():
+    # Unlike the terminal renderer, HTML never hides a scored axis: below the floor it
+    # fades and tags the bar rather than dropping it.
+    ax = _axis(
+        "Thin",
+        score=10.0,
+        coverage=0.29,
+        indicators=[_ind(IndicatorKind.MEASURED, True), _ind(IndicatorKind.CLASSIFIED, False)],
+    )
+    out = render_html(_profile([ax]))
+    assert "fill pos prov" in out  # a bar is still drawn, faded
+    assert "low evidence" in out
+    assert "nothing could be read" not in out
+    assert "+10.0" in out  # the number is shown, just marked provisional
+
+
+def test_html_null_state_when_nothing_resolved():
+    # score None (nothing resolved) is the only no-bar case, and it says so plainly.
+    ax = _axis(
+        "Empty",
+        score=None,
+        coverage=0.0,
+        indicators=[_ind(IndicatorKind.MEASURED, False), _ind(IndicatorKind.CLASSIFIED, False)],
+    )
+    out = render_html(_profile([ax]))
+    assert "nothing could be read" in out
+    assert 'class="fill' not in out  # no bar drawn at all
+
+
+def test_html_uses_plain_labels_not_engine_jargon():
+    ax = _axis(
+        "Split",
+        score=-5.5,
+        coverage=0.8,
+        indicators=[_ind(IndicatorKind.MEASURED, True), _ind(IndicatorKind.CLASSIFIED, True)],
+    )
+    out = render_html(_profile([ax]))
+    assert ">detected</span>" in out  # measured, in plain words
+    assert ">judged</span>" in out  # classified, in plain words
+    assert "% evidence" in out  # coverage, in plain words
+    # the engine's kind vocabulary never surfaces as a visible label
+    assert ">measured<" not in out
+    assert ">classified<" not in out
+
+
+def test_html_escapes_untrusted_evidence():
+    evil = IndicatorResult(
+        indicator_id="x",
+        kind=IndicatorKind.MEASURED,
+        weight=1.0,
+        value=1.0,
+        resolved=True,
+        answer="a",
+        evidence="<script>alert('xss')</script>",
+        source="engine",
+    )
+    ax = _axis("Esc", score=5.0, coverage=0.8, indicators=[evil])
+    out = render_html(_profile([ax]))
+    assert "<script>alert" not in out  # never emitted raw
+    assert "&lt;script&gt;" in out  # escaped instead
+
+
+def test_html_states_there_is_no_aggregate_score():
+    ax = _axis("Solid", score=-5.5, coverage=0.8, indicators=[_ind(IndicatorKind.MEASURED, True)])
+    out = render_html(_profile([ax]))
+    assert "no overall grade" in out  # the no-aggregate invariant, stated to the reader
