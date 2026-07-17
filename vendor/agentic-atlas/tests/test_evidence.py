@@ -228,3 +228,72 @@ def test_github_api_unresolved_without_remote(tmp_path, monkeypatch):
     result = resolve_measured(_github_indicator("stars", _STAR_BANDS), target)
     assert result.resolved is False
     assert called is False  # no slug means we never hit the network
+
+
+# --- unreadable-target guards -------------------------------------------------------------
+# An empty or unreadable target must not read as a confident position at the absent pole.
+# vocabulary/path_presence stay unresolved when there is nothing to read, and tag_count
+# stays unresolved on a repo with no commits, so an empty target lands in the null state
+# rather than being slammed to the negative pole at low coverage.
+
+_ZERO_BANDS = [{"max_count": 0, "value": -1.0}, {"max_count": None, "value": 1.0}]
+
+
+def _vocab_indicator(terms, bands):
+    return Indicator(
+        id="v",
+        question="q",
+        kind=IndicatorKind.MEASURED,
+        weight=1.0,
+        signal={"type": "vocabulary", "terms": terms, "bands": bands},
+    )
+
+
+def _path_indicator(globs):
+    return Indicator(
+        id="p",
+        question="q",
+        kind=IndicatorKind.MEASURED,
+        weight=1.0,
+        signal={"type": "path_presence", "globs": globs, "present": 1.0, "absent": -1.0},
+    )
+
+
+def test_vocabulary_unresolved_on_empty_corpus(tmp_path):
+    target = Target.from_path(tmp_path)  # a dir with no readable text at all
+    result = resolve_measured(_vocab_indicator(["legacy", "migration"], _ZERO_BANDS), target)
+    assert result.resolved is False
+    assert result.value is None
+
+
+def test_vocabulary_resolves_on_real_corpus_with_zero_hits(tmp_path):
+    # Genuine absence in a readable corpus is a real signal and must still resolve, so the
+    # guard only fires when there is nothing to read, not merely nothing matched.
+    (tmp_path / "README.md").write_text("project prose without any of the target words")
+    target = Target.from_path(tmp_path)
+    result = resolve_measured(_vocab_indicator(["legacy", "migration"], _ZERO_BANDS), target)
+    assert result.resolved is True
+    assert result.value == -1.0
+    assert result.answer == "0"
+
+
+def test_path_presence_unresolved_when_no_files(tmp_path):
+    target = Target.from_path(tmp_path)
+    result = resolve_measured(_path_indicator(["**/skills/**"]), target)
+    assert result.resolved is False
+    assert result.value is None
+
+
+def test_path_presence_absent_is_a_signal_when_files_exist(tmp_path):
+    (tmp_path / "README.md").write_text("x")
+    target = Target.from_path(tmp_path)
+    result = resolve_measured(_path_indicator(["**/skills/**"]), target)
+    assert result.resolved is True
+    assert result.value == -1.0
+    assert result.answer == "absent"
+
+
+def test_tag_count_unresolved_without_commits(tmp_path):
+    _git(tmp_path, "init", "-q")  # a repo with no commits yet
+    target = Target.from_path(tmp_path)
+    assert target.git_metric("tag_count") is None
