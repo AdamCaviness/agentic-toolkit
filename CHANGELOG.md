@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.15.2...v0.16.0) (2026-07-17)
+
+
+### Features
+
+* **agentic-atlas:** default to current directory with an applicability gate ([#93](https://github.com/AdamCaviness/agentic-toolkit/issues/93)) ([5e19a0f](https://github.com/AdamCaviness/agentic-toolkit/commit/5e19a0fc2133b56257fb05fcf1f669b2ce28049d))
+
 ## [0.15.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.15.1...v0.15.2) (2026-07-17)
 
 
