@@ -19,5 +19,5 @@ axis_position = 10 * sum(weight * measurement) / sum(weight)
 |---|---|---|---|---|
 | pc1 | Is it a fixed pipeline you follow, or modular parts you compose? | classified | 3 | fixed_pipeline -1, mixed +0, composable +1 |
 | pc2 | Are steps mandatory and ordered, or optional and reorderable? | classified | 2 | mandatory_ordered -1, mixed +0, optional_reorderable +1 |
-| pc3 | Presence of many independent skill or module files. | measured | 2 | present +1, absent -1 |
+| pc3 | Presence of many independent skill or module files. | measured | 2 | present +0.6, absent -0.6 |
 <!-- END GENERATED -->

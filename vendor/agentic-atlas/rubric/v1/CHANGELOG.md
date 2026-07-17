@@ -4,6 +4,18 @@ All changes to the measurement standard are recorded here. Version bump rules ar
 
 Status: this rubric is an initial work in progress and nothing has settled. The `v1/` directory and these version numbers exist to afford versioning once the standard stabilizes, they are not strict release boundaries yet, and no profiles have been published. Entries below record what changed and whether it moves scores; the strict "any score move is a MAJOR bump" discipline takes full effect once the rubric settles and profiles are published, not during this phase.
 
+## 1.3.0
+
+Recalibrated indicator values across all 13 axes to stop pole saturation. A four-way profile (agentic-toolkit, superpowers, BMAD-METHOD, gsd-plugin) clamped 28% of axis positions to ±10; measured indicators resolved to exactly ±1.0 89% of the time, and axes carry only 2-3 indicators, so a single maxed measured signal plus one strong classified answer pinned an axis. This is a value-only recalibration: indicator ids, questions, kinds, weights, terms, globs, metrics, and band thresholds (`max_count`) are unchanged.
+
+- Measured `vocabulary`, `git_stats`, and `github_api` band values scaled by 0.8, so a maxed measured proxy contributes at most ±0.8 and can no longer alone pin an axis.
+- Measured `path_presence` softened to present +0.6 / absent -0.6: a single glob hit is suggestive, not a full pole vote.
+- Classified answer values on the three chronic saturators (small-scope-vs-large-scope, generalist-vs-specialist, spec-light-vs-spec-driven) scaled by 0.8, so their strongest option stops being a guaranteed +1.
+
+Result: saturation drops from 28% to 0% across the four profiled frameworks while axis direction and cross-tool spread are preserved. This moves scores; once the rubric settles this class of change is a MAJOR bump, recorded here during the WIP phase.
+
+Known non-discriminating indicators remain for a follow-up: `path_presence` globs that match the whole category (for example prescriptive-vs-composable `pc3`, present for every skills-based tool) act as a constant bias rather than a signal, and solo-vs-team's indicators do not separate the profiled tools. The fix is a count-based path signal and redesigned indicators, not a value change.
+
 ## 1.2.0
 
 Two changes to how axes are scored and displayed.

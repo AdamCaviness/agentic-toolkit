@@ -19,9 +19,9 @@ indicators:
       type: git_stats
       metric: age_days
       bands:
-        - { max_count: 180, value: -1.0 }
-        - { max_count: 730, value: 0.3 }
-        - { max_count: null, value: 1.0 }
+        - { max_count: 180, value: -0.8 }
+        - { max_count: 730, value: 0.24 }
+        - { max_count: null, value: 0.8 }
   - id: fm2
     question: "How many commits has the repository accumulated?"
     kind: measured
@@ -30,9 +30,9 @@ indicators:
       type: git_stats
       metric: commit_count
       bands:
-        - { max_count: 100, value: -1.0 }
-        - { max_count: 1000, value: 0.3 }
-        - { max_count: null, value: 1.0 }
+        - { max_count: 100, value: -0.8 }
+        - { max_count: 1000, value: 0.24 }
+        - { max_count: null, value: 0.8 }
   - id: fm3
     question: "How many distinct contributors have committed?"
     kind: measured
@@ -41,9 +41,9 @@ indicators:
       type: git_stats
       metric: contributor_count
       bands:
-        - { max_count: 2, value: -1.0 }
-        - { max_count: 10, value: 0.2 }
-        - { max_count: null, value: 1.0 }
+        - { max_count: 2, value: -0.8 }
+        - { max_count: 10, value: 0.16 }
+        - { max_count: null, value: 0.8 }
   - id: fm4
     question: "How many release tags exist, as a proxy for an established release cadence?"
     kind: measured
@@ -52,9 +52,9 @@ indicators:
       type: git_stats
       metric: tag_count
       bands:
-        - { max_count: 0, value: -1.0 }
-        - { max_count: 5, value: 0.2 }
-        - { max_count: null, value: 1.0 }
+        - { max_count: 0, value: -0.8 }
+        - { max_count: 5, value: 0.16 }
+        - { max_count: null, value: 0.8 }
   - id: fm5
     question: "How much adoption does the host show, by star count?"
     kind: measured
@@ -63,9 +63,9 @@ indicators:
       type: github_api
       metric: stars
       bands:
-        - { max_count: 100, value: -0.8 }
-        - { max_count: 2000, value: 0.2 }
-        - { max_count: null, value: 1.0 }
+        - { max_count: 100, value: -0.64 }
+        - { max_count: 2000, value: 0.16 }
+        - { max_count: null, value: 0.8 }
   - id: fm6
     question: "How does the project describe its own stability in its docs?"
     kind: classified

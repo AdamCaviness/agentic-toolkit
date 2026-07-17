@@ -17,7 +17,7 @@ axis_position = 10 * sum(weight * measurement) / sum(weight)
 
 | id | question | kind | weight | maps to |
 |---|---|---|---|---|
-| gs1 | Is it framed for any domain, or specifically for software engineering? | classified | 3 | any_domain -1, mostly_software +0.5, software_only +1 |
-| gs2 | Does it explicitly claim applicability beyond code (business, writing, wellness)? | classified | 1 | yes_broad -1, some +0, no +1 |
+| gs1 | Is it framed for any domain, or specifically for software engineering? | classified | 3 | any_domain -0.8, mostly_software +0.4, software_only +0.8 |
+| gs2 | Does it explicitly claim applicability beyond code (business, writing, wellness)? | classified | 1 | yes_broad -0.8, some +0, no +0.8 |
 | gs3 | Density of software-specific vocabulary across docs and commands. | measured | 2 | 7 terms, banded by count |
 <!-- END GENERATED -->

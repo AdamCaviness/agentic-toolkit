@@ -17,7 +17,7 @@ axis_position = 10 * sum(weight * measurement) / sum(weight)
 
 | id | question | kind | weight | maps to |
 |---|---|---|---|---|
-| sd1 | Is a written spec, PRD, or plan required before implementation? | classified | 3 | none -1, encouraged +0.3, required +1 |
-| sd2 | Are spec or plan artifacts produced and persisted (not just discussed)? | classified | 2 | no -1, some +0.3, yes +1 |
+| sd1 | Is a written spec, PRD, or plan required before implementation? | classified | 3 | none -0.8, encouraged +0.24, required +0.8 |
+| sd2 | Are spec or plan artifacts produced and persisted (not just discussed)? | classified | 2 | no -0.8, some +0.24, yes +0.8 |
 | sd3 | Density of specification vocabulary across docs and commands. | measured | 2 | 7 terms, banded by count |
 <!-- END GENERATED -->

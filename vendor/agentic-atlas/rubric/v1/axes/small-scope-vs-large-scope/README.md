@@ -17,7 +17,7 @@ axis_position = 10 * sum(weight * measurement) / sum(weight)
 
 | id | question | kind | weight | maps to |
 |---|---|---|---|---|
-| sl1 | How many lifecycle phases does it cover (idea, spec, plan, implement, test, review, release)? | classified | 3 | one -1, few -0.3, most +0.6, full_lifecycle +1 |
-| sl2 | Is it invoked as a single command or skill, or as a multi-stage pipeline? | classified | 2 | single -1, mixed +0, multi_stage +1 |
+| sl1 | How many lifecycle phases does it cover (idea, spec, plan, implement, test, review, release)? | classified | 3 | one -0.8, few -0.24, most +0.48, full_lifecycle +0.8 |
+| sl2 | Is it invoked as a single command or skill, or as a multi-stage pipeline? | classified | 2 | single -0.8, mixed +0, multi_stage +0.8 |
 | sl3 | Density of lifecycle vocabulary across docs and commands. | measured | 2 | 7 terms, banded by count |
 <!-- END GENERATED -->

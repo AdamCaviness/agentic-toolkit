@@ -23,5 +23,5 @@ axis_position = 10 * sum(weight * measurement) / sum(weight)
 | gb2 | Does it ship explicit steps or agents for ingesting and mapping an existing codebase? | classified | 3 | yes +1, partial +0.5, no -0.5 |
 | gb3 | Density of brownfield vocabulary across docs and commands. | measured | 2 | 6 terms, banded by count |
 | gb4 | Is the default unit of work whole-project generation or a targeted small diff? | classified | 2 | whole_project -1, mixed +0, small_diff +1 |
-| gb5 | Does onboarding assume a brand new repo, or point at an existing one? | measured | 1 | present +1, absent -1 |
+| gb5 | Does onboarding assume a brand new repo, or point at an existing one? | measured | 1 | present +0.6, absent -0.6 |
 <!-- END GENERATED -->
