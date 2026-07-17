@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.14.0...v0.14.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* **create-ticket:** scan lightweight fields in dedup check, not full bodies ([#83](https://github.com/AdamCaviness/agentic-toolkit/issues/83)) ([f0bbd27](https://github.com/AdamCaviness/agentic-toolkit/commit/f0bbd276962a47f771cc3113b2e1c73c23693357))
+
 ## [0.14.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.13.0...v0.14.0) (2026-07-17)
 
 
