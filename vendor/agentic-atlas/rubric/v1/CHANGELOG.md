@@ -4,6 +4,16 @@ All changes to the measurement standard are recorded here. Version bump rules ar
 
 Status: this rubric is an initial work in progress and nothing has settled. The `v1/` directory and these version numbers exist to afford versioning once the standard stabilizes, they are not strict release boundaries yet, and no profiles have been published. Entries below record what changed and whether it moves scores; the strict "any score move is a MAJOR bump" discipline takes full effect once the rubric settles and profiles are published, not during this phase.
 
+## 1.4.0
+
+Added a `path_count` measured signal and used it to fix two non-discriminating indicators found while profiling four frameworks under 1.3.0.
+
+- **New `path_count` signal.** Bands the number of files matching a set of globs, so a large modular collection reads differently from a small one, the resolution binary `path_presence` lacks. Additive: `path_presence` stays for genuinely binary cases. It reuses the shared band shape and glob matcher and unresolves on an empty target, like the other measured signals.
+- **prescriptive-vs-composable `pc3`** moved from binary `path_presence` to `path_count` over the same globs. Under 1.3.0, BMAD-METHOD and gsd-plugin tied at +1.7 because the binary signal was present for both; by module count they now separate (BMAD +0.9 from 11 matching files, gsd +2.3 from 106).
+- **solo-vs-team** gained a measured `path_count` indicator (`st4`) for team and CI infrastructure (workflows, code owners, PR templates), breaking the exact four-way tie at +4.0. Its classified indicators still answer alike across the sampled tools, which are all individual skill libraries with light review workflow, so the axis stays clustered; a classified redesign and a strongly team-oriented sample tool are the next step.
+
+Measured-only change, so committed answer sets re-score without re-answering. Saturation stays at 0%. Bumps rubric_version to 1.4.0.
+
 ## 1.3.0
 
 Recalibrated indicator values across all 13 axes to stop pole saturation. A four-way profile (agentic-toolkit, superpowers, BMAD-METHOD, gsd-plugin) clamped 28% of axis positions to ±10; measured indicators resolved to exactly ±1.0 89% of the time, and axes carry only 2-3 indicators, so a single maxed measured signal plus one strong classified answer pinned an axis. This is a value-only recalibration: indicator ids, questions, kinds, weights, terms, globs, metrics, and band thresholds (`max_count`) are unchanged.

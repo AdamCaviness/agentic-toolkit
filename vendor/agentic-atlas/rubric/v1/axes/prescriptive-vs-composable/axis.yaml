@@ -22,7 +22,11 @@ indicators:
     kind: measured
     weight: 2
     signal:
-      type: path_presence
+      type: path_count
       globs: ["**/skills/**", "**/modules/**", "**/commands/**"]
-      present: 0.6
-      absent: -0.6
+      bands:
+        - { max_count: 0, value: -0.6 }
+        - { max_count: 3, value: -0.2 }
+        - { max_count: 15, value: 0.3 }
+        - { max_count: 60, value: 0.6 }
+        - { max_count: null, value: 0.8 }

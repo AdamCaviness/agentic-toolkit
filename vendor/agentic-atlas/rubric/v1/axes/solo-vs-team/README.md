@@ -9,7 +9,7 @@ Whether an approach assumes one developer or many changes its coordination overh
 
 Poles: `solo` (negative) to `team` (positive). Scale ±10.
 
-Position is a weighted mean of 3 indicator measurements:
+Position is a weighted mean of 4 indicator measurements:
 
 ```
 axis_position = 10 * sum(weight * measurement) / sum(weight)
@@ -20,4 +20,5 @@ axis_position = 10 * sum(weight * measurement) / sum(weight)
 | st1 | Does it provide team-safe collaboration (claiming or assigning work, avoiding conflicts between contributors)? | classified | 3 | none -1, partial +0.2, strong +1 |
 | st2 | Are there defined handoffs between people or human reviewers? | classified | 2 | none -1, some +0.3, many +1 |
 | st3 | Density of team-collaboration vocabulary across docs and commands. | measured | 2 | 7 terms, banded by count |
+| st4 | Presence of team and CI infrastructure (workflows, code owners, PR templates). | measured | 2 |  |
 <!-- END GENERATED -->

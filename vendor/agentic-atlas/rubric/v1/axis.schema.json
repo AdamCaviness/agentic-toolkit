@@ -97,6 +97,16 @@
         },
         {
           "type": "object",
+          "required": ["type", "globs", "bands"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "path_count" },
+            "globs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+            "bands": { "$ref": "#/$defs/bands" }
+          }
+        },
+        {
+          "type": "object",
           "required": ["type", "metric", "bands"],
           "additionalProperties": false,
           "description": "A deterministic fact read from the target's git history, banded to a value.",
