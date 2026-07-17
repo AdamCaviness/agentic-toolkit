@@ -20,9 +20,9 @@ indicators:
       type: vocabulary
       terms: ["subagent", "persona", "orchestrate", "delegate", "specialist agent", "sub-agent"]
       bands:
-        - { max_count: 0, value: -1.0 }
-        - { max_count: 5, value: 0.3 }
-        - { max_count: null, value: 1.0 }
+        - { max_count: 0, value: -0.8 }
+        - { max_count: 5, value: 0.24 }
+        - { max_count: null, value: 0.8 }
   - id: ma3
     question: "Presence of agent or persona definition files."
     kind: measured
@@ -30,5 +30,5 @@ indicators:
     signal:
       type: path_presence
       globs: ["**/agents/**", "**/*agent*.md", "**/personas/**", "**/agent.md"]
-      present: 1.0
-      absent: -1.0
+      present: 0.6
+      absent: -0.6

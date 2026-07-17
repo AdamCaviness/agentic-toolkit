@@ -25,6 +25,6 @@ indicators:
       type: vocabulary
       terms: ["approve", "confirm", "review", "checkpoint", "wait for", "your approval"]
       bands:
-        - { max_count: 2, value: 1.0 }
+        - { max_count: 2, value: 0.8 }
         - { max_count: 10, value: 0.0 }
-        - { max_count: null, value: -1.0 }
+        - { max_count: null, value: -0.8 }

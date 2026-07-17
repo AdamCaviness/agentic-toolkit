@@ -11,12 +11,12 @@ indicators:
     question: "Is a written spec, PRD, or plan required before implementation?"
     kind: classified
     weight: 3
-    answers: { none: -1.0, encouraged: 0.3, required: 1.0 }
+    answers: { none: -0.8, encouraged: 0.24, required: 0.8 }
   - id: sd2
     question: "Are spec or plan artifacts produced and persisted (not just discussed)?"
     kind: classified
     weight: 2
-    answers: { "no": -1.0, some: 0.3, "yes": 1.0 }
+    answers: { "no": -0.8, some: 0.24, "yes": 0.8 }
   - id: sd3
     question: "Density of specification vocabulary across docs and commands."
     kind: measured
@@ -25,6 +25,6 @@ indicators:
       type: vocabulary
       terms: ["prd", "specification", "requirements", "acceptance criteria", "design doc", "plan", "spec"]
       bands:
-        - { max_count: 1, value: -1.0 }
-        - { max_count: 8, value: 0.3 }
-        - { max_count: null, value: 1.0 }
+        - { max_count: 1, value: -0.8 }
+        - { max_count: 8, value: 0.24 }
+        - { max_count: null, value: 0.8 }

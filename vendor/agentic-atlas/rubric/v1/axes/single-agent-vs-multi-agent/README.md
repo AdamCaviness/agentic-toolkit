@@ -19,5 +19,5 @@ axis_position = 10 * sum(weight * measurement) / sum(weight)
 |---|---|---|---|---|
 | ma1 | Does it orchestrate multiple specialized subagents or personas? | classified | 3 | single -1, some +0.3, many +1 |
 | ma2 | Density of multi-agent vocabulary across docs and commands. | measured | 2 | 6 terms, banded by count |
-| ma3 | Presence of agent or persona definition files. | measured | 1 | present +1, absent -1 |
+| ma3 | Presence of agent or persona definition files. | measured | 1 | present +0.6, absent -0.6 |
 <!-- END GENERATED -->

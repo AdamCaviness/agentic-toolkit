@@ -25,6 +25,6 @@ indicators:
       type: vocabulary
       terms: ["phase", "gate", "ceremony", "role", "artifact", "template", "workflow", "epic"]
       bands:
-        - { max_count: 3, value: -1.0 }
-        - { max_count: 15, value: 0.3 }
-        - { max_count: null, value: 1.0 }
+        - { max_count: 3, value: -0.8 }
+        - { max_count: 15, value: 0.24 }
+        - { max_count: null, value: 0.8 }

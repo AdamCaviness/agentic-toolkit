@@ -26,9 +26,9 @@ indicators:
       type: vocabulary
       terms: ["legacy", "migration", "migrate", "refactor", "existing codebase", "brownfield"]
       bands:
-        - { max_count: 0, value: -1.0 }
-        - { max_count: 5, value: 0.3 }
-        - { max_count: null, value: 1.0 }
+        - { max_count: 0, value: -0.8 }
+        - { max_count: 5, value: 0.24 }
+        - { max_count: null, value: 0.8 }
   - id: gb4
     question: "Is the default unit of work whole-project generation or a targeted small diff?"
     kind: classified
@@ -41,5 +41,5 @@ indicators:
     signal:
       type: path_presence
       globs: ["**/brownfield*", "**/*existing*", "**/*legacy*"]
-      present: 1.0
-      absent: -1.0
+      present: 0.6
+      absent: -0.6

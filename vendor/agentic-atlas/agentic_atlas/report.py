@@ -118,8 +118,12 @@ def _axis_lines(ax: AxisResult, color: bool = False) -> list[str]:
     if ax.score is None or ax.coverage < _COVERAGE_FLOOR:
         # Not enough resolved weight to claim a position. Say so, and draw no bar.
         return [f"{title}  {_paint('needs interpretation', _DIM, on=color)}  {detail}"]
-    side = _NEG if ax.score < 0 else _POS
-    score_txt = _paint(f"{ax.score:+.1f}", side, _BOLD, on=color)
+    if ax.score == 0:
+        # Exactly neutral reads as neutral, not a faint positive: no forced sign, no pole hue.
+        score_txt = _paint("0.0", _DIM, _BOLD, on=color)
+    else:
+        side = _NEG if ax.score < 0 else _POS
+        score_txt = _paint(f"{ax.score:+.1f}", side, _BOLD, on=color)
     # Scale is a rubric-wide constant stated once in the header, so the per-axis line
     # just shows the signed value.
     header = f"{title}  {score_txt}  {detail}"
@@ -228,6 +232,7 @@ _HTML_CSS = """
   .score{font-family:var(--mono);font-weight:700;font-size:1.05rem;white-space:nowrap}
   .score.neg{color:var(--neg)}.score.pos{color:var(--pos)}
   .score.none{color:var(--faint);font-weight:500;font-style:italic;font-size:.9rem}
+  .score.zero{color:var(--faint)}
   .prov-tag{font-family:var(--sans);font-weight:500;font-size:.66rem;text-transform:uppercase;letter-spacing:.04em;
             color:var(--cov-low);border:1px solid var(--cov-low);border-radius:4px;padding:1px 5px;margin-left:8px;vertical-align:1px}
   .bar-row{display:grid;grid-template-columns:8.5rem 1fr 8.5rem;align-items:center;gap:12px;margin:14px 0 6px}
@@ -308,23 +313,28 @@ def _html_axis(ax: AxisResult) -> str:
             '<span class="ni">no evidence found</span></div>'
         )
     else:
-        side = "neg" if ax.score < 0 else "pos"
         # Below the floor the axis still has a number but rests on thin evidence. Unlike the
         # terminal renderer, which hides it, HTML can fade it: always draw a bar, but a
         # provisional one, so a sliver of evidence is never mistaken for a confident verdict.
         provisional = ax.coverage < _COVERAGE_FLOOR
-        width = abs(ax.score) / ax.scale * 50
         tag = (
             '<span class="prov-tag" title="thin evidence, under 50%">low evidence</span>'
             if provisional
             else ""
         )
-        score_html = f'<span class="score {side}">{ax.score:+.1f}</span>{tag}'
-        fill_cls = f"fill {side}" + (" prov" if provisional else "")
-        bar = (
-            f'<div class="track"><div class="{fill_cls}" style="width:{width:g}%"></div>'
-            '<div class="center"></div></div>'
-        )
+        if ax.score == 0:
+            # Exactly neutral: no lean, no forced sign, no fill, just the centered marker.
+            score_html = f'<span class="score zero">0.0</span>{tag}'
+            bar = '<div class="track"><div class="center"></div></div>'
+        else:
+            side = "neg" if ax.score < 0 else "pos"
+            width = abs(ax.score) / ax.scale * 50
+            score_html = f'<span class="score {side}">{ax.score:+.1f}</span>{tag}'
+            fill_cls = f"fill {side}" + (" prov" if provisional else "")
+            bar = (
+                f'<div class="track"><div class="{fill_cls}" style="width:{width:g}%"></div>'
+                '<div class="center"></div></div>'
+            )
 
     details = (
         f"<details><summary>show the {len(ax.indicators)} signals behind this</summary>"

@@ -186,3 +186,18 @@ def test_html_states_there_is_no_aggregate_score():
     ax = _axis("Solid", score=-5.5, coverage=0.8, indicators=[_ind(IndicatorKind.MEASURED, True)])
     out = render_html(_profile([ax]))
     assert "no overall grade" in out  # the no-aggregate invariant, stated to the reader
+
+
+def test_html_neutral_score_reads_as_neutral_not_positive():
+    ax = _axis("Mid", score=0.0, coverage=0.8, indicators=[_ind(IndicatorKind.MEASURED, True)])
+    out = render_html(_profile([ax]))
+    assert '<span class="score zero">0.0</span>' in out  # neutral, no forced sign
+    assert "+0.0" not in out  # a zero is never dressed up as a faint positive
+    assert 'class="fill' not in out  # a neutral axis has no lean fill
+
+
+def test_text_neutral_score_has_no_forced_sign():
+    ax = _axis("Mid", score=0.0, coverage=0.8, indicators=[_ind(IndicatorKind.MEASURED, True)])
+    out = render_text(_profile([ax]))
+    assert "0.0" in out
+    assert "+0.0" not in out

@@ -25,6 +25,6 @@ indicators:
       type: vocabulary
       terms: ["tdd", "red-green", "test-first", "failing test", "coverage", "unit test", "test-driven"]
       bands:
-        - { max_count: 0, value: -1.0 }
-        - { max_count: 5, value: 0.3 }
-        - { max_count: null, value: 1.0 }
+        - { max_count: 0, value: -0.8 }
+        - { max_count: 5, value: 0.24 }
+        - { max_count: null, value: 0.8 }
