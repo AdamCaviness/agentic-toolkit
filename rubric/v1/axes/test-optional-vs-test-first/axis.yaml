@@ -1,0 +1,30 @@
+id: test-optional-vs-test-first
+title: Test-optional vs Test-first
+poles:
+  negative: test_optional
+  positive: test_first
+description: >
+  How central testing is to the approach. Negative means testing is incidental or
+  left to the user. Positive means test-first discipline (TDD) is enforced.
+indicators:
+  - id: tf1
+    question: "Does it enforce writing tests before implementation (TDD)?"
+    kind: classified
+    weight: 3
+    answers: { "no": -1.0, encouraged: 0.3, enforced: 1.0 }
+  - id: tf2
+    question: "Is testing a first-class phase, or incidental?"
+    kind: classified
+    weight: 1
+    answers: { incidental: -1.0, present: 0.3, first_class: 1.0 }
+  - id: tf3
+    question: "Density of test-first vocabulary across docs and commands."
+    kind: measured
+    weight: 2
+    signal:
+      type: vocabulary
+      terms: ["tdd", "red-green", "test-first", "failing test", "coverage", "unit test", "test-driven"]
+      bands:
+        - { max_count: 0, value: -0.8 }
+        - { max_count: 5, value: 0.24 }
+        - { max_count: null, value: 0.8 }

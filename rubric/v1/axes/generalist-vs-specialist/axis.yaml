@@ -1,0 +1,30 @@
+id: generalist-vs-specialist
+title: Generalist vs Specialist
+poles:
+  negative: generalist
+  positive: specialist
+description: >
+  How domain-focused the approach is. Negative means it targets any domain, from
+  writing to business to wellness. Positive means it specializes in software delivery.
+indicators:
+  - id: gs1
+    question: "Is it framed for any domain, or specifically for software engineering?"
+    kind: classified
+    weight: 3
+    answers: { any_domain: -0.8, mostly_software: 0.4, software_only: 0.8 }
+  - id: gs2
+    question: "Does it explicitly claim applicability beyond code (business, writing, wellness)?"
+    kind: classified
+    weight: 1
+    answers: { yes_broad: -0.8, some: 0.0, "no": 0.8 }
+  - id: gs3
+    question: "Density of software-specific vocabulary across docs and commands."
+    kind: measured
+    weight: 2
+    signal:
+      type: vocabulary
+      terms: ["compile", "deploy", "unit test", "pull request", "refactor", "api", "repository"]
+      bands:
+        - { max_count: 1, value: -0.8 }
+        - { max_count: 8, value: 0.24 }
+        - { max_count: null, value: 0.8 }
