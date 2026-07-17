@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.15.0...v0.15.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* **agentic-atlas:** recalibrate vendored rubric to v1.3.0 (remove pole saturation) ([#89](https://github.com/AdamCaviness/agentic-toolkit/issues/89)) ([63f2ef2](https://github.com/AdamCaviness/agentic-toolkit/commit/63f2ef2505819b3ce14a48945f31702f5cfbe9fa))
+
 ## [0.15.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.14.1...v0.15.0) (2026-07-17)
 
 
