@@ -5,8 +5,9 @@ description: >
   a complete, honest position on each. Drives the vendored agentic-atlas engine, which
   computes the measured indicators deterministically with no API key, while you answer the
   interpretive (classified) questions from the target repository. There is no aggregate
-  score. Trigger: /agentic-atlas <path-or-git-url> [--save]
-argument-hint: "<path-or-git-url> [--save]"
+  score. Defaults to the current directory when no target is given. Trigger: /agentic-atlas
+  [path-or-git-url] [--save]
+argument-hint: "[path-or-git-url] [--save]"
 ---
 
 # Agentic Atlas
@@ -36,13 +37,14 @@ skill unlocks the complete profile, with no key and no extra cost.
 
 ## Arguments
 
-- **`<path-or-git-url>` (required)**: a local directory path OR a git URL of the target to
-  profile. If no target is given, print a short usage line and stop. Do NOT fall back to the
-  current directory.
+- **`<path-or-git-url>` (optional)**: a local directory path OR a git URL of the target to
+  profile. If omitted, profile the current directory, but announce it first and never fall
+  back silently (see Step 2).
 - **`--save` (optional)**: in addition to printing, write the answers JSON and the profile
   JSON under `profiles/<target-name>/` in this repo. Default is print-only.
 
 ```
+/agentic-atlas                                # profile the current directory (announced)
 /agentic-atlas ~/code/some-framework          # profile a local checkout, print only
 /agentic-atlas https://github.com/org/repo     # clone, profile, clean up
 /agentic-atlas ~/code/some-framework --save     # also save artifacts under profiles/
@@ -100,6 +102,9 @@ the engine another way.
 
 ### Step 2: Resolve the target
 
+- **No argument**: profile the current working directory. Announce it before doing any work,
+  for example `No target given, profiling the current directory: <name> (<abs-path>)`, so a
+  fallback is never silent.
 - **Local path**: expand it to an absolute path and confirm it is a directory. If it does
   not exist or is not a directory, tell the user and stop.
 - **Git URL** (starts with `http://`, `https://`, `git@`, `ssh://`, or ends in `.git`):
@@ -124,6 +129,33 @@ the engine another way.
 
 Derive `TARGET_NAME` from the final path segment of the target (the repo or directory name),
 for use in `--save` and in the printed summary.
+
+**Then confirm the target is an agentic approach before spending effort on it.** This skill
+profiles agentic workflows, frameworks, and skill collections, not ordinary applications or
+libraries. Take a quick read of the target (its README and top-level structure) and look for
+the markers of an agentic approach:
+
+- structural: `SKILL.md`, `skills/`, `commands/`, `agents/`, `.claude/`, `.claude-plugin/`,
+  `AGENTS.md`, `GEMINI.md`, `*.prompt`, persona or workflow definitions, an MCP config, or a
+  plugin or extension manifest;
+- framing: a README or docs describing a methodology or toolset for AI coding agents, and a
+  density of agentic vocabulary.
+
+Then let intent set the strictness:
+
+- If it is clearly an agentic approach, proceed.
+- If it is clearly not one (a regular app or library with none of these markers) and the
+  target came from the no-argument current-directory fallback, stop and say so, for example
+  "This looks like a regular application, not an agentic workflow or framework, which is what
+  I profile. Re-run with an explicit target, or confirm you want to profile it anyway," and
+  wait for the user to confirm. If the user passed the target explicitly (a path or URL they
+  chose), treat that as intent: note the mismatch in one line and proceed.
+- If you are unsure, say what is ambiguous and ask the user to confirm before continuing.
+
+This gate is a judgment call, not a certainty, and it never blocks a determined user; it only
+keeps a non-agentic current-directory run from silently producing a hollow profile. Even when
+something slips through, coverage collapses and axes report `nothing could be read`, so the
+output stays honest.
 
 ### Step 3: Get the classified worklist
 
@@ -298,7 +330,11 @@ beyond them:
 
 ## Edge cases
 
-- **No argument**: print `usage: /agentic-atlas <path-or-git-url> [--save]` and stop.
+- **No argument**: profile the current directory, announced (Step 2). Do not print usage and
+  stop; the current directory is the default target.
+- **Target does not look like an agentic approach**: apply the Step 2 gate. On the
+  no-argument fallback, confirm before continuing rather than emitting a hollow profile; on
+  an explicitly passed target, note the mismatch and proceed.
 - **Target is a file, not a directory**: tell the user and stop.
 - **Git clone fails** (bad URL, no network, private repo): report the clone error and stop;
   do not fall back to another target.
