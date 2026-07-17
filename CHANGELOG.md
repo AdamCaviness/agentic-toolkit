@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.15.1...v0.15.2) (2026-07-17)
+
+
+### Bug Fixes
+
+* **agentic-atlas:** refresh vendored rubric to v1.4.0 (path_count + discrimination) ([#91](https://github.com/AdamCaviness/agentic-toolkit/issues/91)) ([704a059](https://github.com/AdamCaviness/agentic-toolkit/commit/704a0599d186f665d42c5b376f95effa51240680))
+
 ## [0.15.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.15.0...v0.15.1) (2026-07-17)
 
 
