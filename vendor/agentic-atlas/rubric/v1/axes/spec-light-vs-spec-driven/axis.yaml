@@ -6,6 +6,9 @@ poles:
 description: >
   How much written specification precedes code. Negative means it jumps to
   implementation. Positive means it produces and follows a spec or plan first.
+explain:
+  negative: jumps straight to implementation, little written up front
+  positive: writes and follows a spec or plan before coding
 indicators:
   - id: sd1
     question: "Is a written spec, PRD, or plan required before implementation?"

@@ -1,7 +1,14 @@
 """Tests for the report renderer: the coverage floor, coverage-by-kind, and the
 opinionated first-run pointer to the skill."""
 
-from agentic_atlas.models import AxisResult, IndicatorKind, IndicatorResult, Poles, Profile
+from agentic_atlas.models import (
+    AxisResult,
+    Explain,
+    IndicatorKind,
+    IndicatorResult,
+    Poles,
+    Profile,
+)
 from agentic_atlas.report import render_html, render_text
 
 
@@ -16,7 +23,7 @@ def _ind(kind: IndicatorKind, resolved: bool, weight: float = 1.0) -> IndicatorR
     )
 
 
-def _axis(title, score, coverage, indicators) -> AxisResult:
+def _axis(title, score, coverage, indicators, explain=Explain()) -> AxisResult:
     return AxisResult(
         axis_id=title.lower(),
         title=title,
@@ -25,6 +32,7 @@ def _axis(title, score, coverage, indicators) -> AxisResult:
         score=score,
         coverage=coverage,
         indicators=tuple(indicators),
+        explain=explain,
     )
 
 
@@ -185,13 +193,57 @@ def test_html_escapes_untrusted_evidence():
 def test_html_states_there_is_no_aggregate_score():
     ax = _axis("Solid", score=-5.5, coverage=0.8, indicators=[_ind(IndicatorKind.MEASURED, True)])
     out = render_html(_profile([ax]))
-    assert "no overall grade" in out  # the no-aggregate invariant, stated to the reader
+    assert (
+        "doesn't grade, rank, or crown a winner" in out
+    )  # the no-aggregate invariant, stated to the reader
 
 
 def test_html_neutral_score_reads_as_neutral_not_positive():
     ax = _axis("Mid", score=0.0, coverage=0.8, indicators=[_ind(IndicatorKind.MEASURED, True)])
     out = render_html(_profile([ax]))
     assert '<span class="score zero">0.0</span>' in out  # neutral, no forced sign
+
+
+def test_html_shows_pole_meanings_in_an_expander_when_present():
+    ax = _axis(
+        "GB",
+        score=-5.5,
+        coverage=0.8,
+        indicators=[_ind(IndicatorKind.MEASURED, True)],
+        explain=Explain(negative="excels from an idea", positive="excels in existing code"),
+    )
+    out = render_html(_profile([ax]))
+    assert "what these poles mean" in out  # the expander is present
+    assert "excels from an idea" in out
+    assert "excels in existing code" in out
+    # the shared neutral note is stated per axis, not authored per axis
+    assert "serves both ends well, or neither" in out
+
+
+def test_html_omits_pole_expander_when_no_meanings_authored():
+    ax = _axis("Bare", score=-5.5, coverage=0.8, indicators=[_ind(IndicatorKind.MEASURED, True)])
+    out = render_html(_profile([ax]))
+    assert "what these poles mean" not in out
+
+
+def test_html_and_text_humanize_underscored_pole_ids():
+    # Pole ids are stored as scoring keys; readers should never see the underscores.
+    ax = AxisResult(
+        axis_id="a",
+        title="A",
+        poles=Poles(negative="human_in_loop", positive="multi_agent"),
+        scale=10.0,
+        score=-5.5,
+        coverage=0.8,
+        indicators=(_ind(IndicatorKind.MEASURED, True),),
+    )
+    html = render_html(_profile([ax]))
+    text = render_text(_profile([ax]))
+    for out in (html, text):
+        assert "human in loop" in out
+        assert "multi agent" in out
+        assert "human_in_loop" not in out
+        assert "multi_agent" not in out
     assert "+0.0" not in out  # a zero is never dressed up as a faint positive
     assert 'class="fill' not in out  # a neutral axis has no lean fill
 

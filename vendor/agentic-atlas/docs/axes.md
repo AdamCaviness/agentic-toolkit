@@ -98,6 +98,7 @@ Some axes need evidence collectors beyond the defaults. Fresh↔Mature, for exam
 ## Authoring checklist
 
 - Both poles are legitimate, neither is framed as the failure mode.
+- Both poles have a plain-language `explain` meaning (one sharp sentence each), so the report can teach a reader what the pole words mean. The neutral middle is explained once by the renderer, not per axis, because it means the same thing on every axis.
 - At least one `measured` indicator, so the axis is not fully dependent on classification.
 - Every `classified` indicator has a small, mutually exclusive, defined answer set.
 - Weights are integers and their intent is documented in the rubric `description`.

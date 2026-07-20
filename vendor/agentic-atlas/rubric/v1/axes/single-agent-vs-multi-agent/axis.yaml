@@ -6,6 +6,9 @@ poles:
 description: >
   How the approach is structured internally. Negative means one conversation or
   agent. Positive means many specialized subagents or personas working together.
+explain:
+  negative: one agent in one conversation does the work
+  positive: many specialized subagents or personas work together
 indicators:
   - id: ma1
     question: "Does it orchestrate multiple specialized subagents or personas?"

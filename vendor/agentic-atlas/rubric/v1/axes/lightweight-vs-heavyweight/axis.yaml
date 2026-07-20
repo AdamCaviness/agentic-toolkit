@@ -6,6 +6,9 @@ poles:
 description: >
   How much a user must take on to adopt the approach. Negative means a small
   footprint and little ceremony. Positive means many concepts, roles, and steps.
+explain:
+  negative: small footprint, few concepts, little to learn before you start
+  positive: many concepts, roles, and steps to take on
 indicators:
   - id: lw1
     question: "How many concepts and how much ceremony must a user learn before getting value?"

@@ -6,6 +6,9 @@ poles:
 description: >
   Who the approach is built for. Negative means a single developer working alone.
   Positive means multiple contributors, with team-safe collaboration and handoffs.
+explain:
+  negative: built for one developer working alone
+  positive: built for many contributors, with team-safe collaboration and handoffs
 indicators:
   - id: st1
     question: "Does it provide team-safe collaboration (claiming or assigning work, avoiding conflicts between contributors)?"

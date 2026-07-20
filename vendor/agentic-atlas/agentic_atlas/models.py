@@ -22,6 +22,17 @@ class Poles:
 
 
 @dataclass(frozen=True)
+class Explain:
+    """Plain-language meaning of each pole, shown in the report so a reader who does not
+    already know the pole words still understands the axis. The neutral middle is not stored
+    per axis: it means the same thing on every axis (a tool near 0 does both ends well, or
+    neither), so the renderer states it once rather than repeating it thirteen times."""
+
+    negative: str = ""
+    positive: str = ""
+
+
+@dataclass(frozen=True)
 class Indicator:
     id: str
     question: str
@@ -41,6 +52,7 @@ class Axis:
     indicators: tuple[Indicator, ...]
     scale: float = 10.0
     description: str = ""
+    explain: Explain = Explain()
 
 
 @dataclass(frozen=True)
@@ -107,6 +119,7 @@ class AxisResult:
     score: float | None  # None when no indicator resolved
     coverage: float  # fraction of weight that was resolvable, 0.0..1.0
     indicators: tuple[IndicatorResult, ...]
+    explain: Explain = Explain()
 
 
 @dataclass(frozen=True)
@@ -134,6 +147,10 @@ class Profile:
                     "axis_id": ax.axis_id,
                     "title": ax.title,
                     "poles": {"negative": ax.poles.negative, "positive": ax.poles.positive},
+                    "explain": {
+                        "negative": ax.explain.negative,
+                        "positive": ax.explain.positive,
+                    },
                     "scale": ax.scale,
                     "score": ax.score,
                     "coverage": ax.coverage,

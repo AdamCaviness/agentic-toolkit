@@ -7,6 +7,9 @@ description: >
   Where the approach is strongest. Negative means it excels starting from an
   idea with no existing product. Positive means it excels working inside an
   existing codebase.
+explain:
+  negative: excels starting from an idea, with no code yet
+  positive: excels working inside an existing, established codebase
 indicators:
   - id: gb1
     question: "Is the first mandatory step generating a spec or PRD from an idea, assuming no product exists yet?"

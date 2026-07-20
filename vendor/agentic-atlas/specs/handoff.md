@@ -10,7 +10,7 @@ and the prioritized next steps.
 
 An open, versioned rubric that **profiles** agentic development approaches,
 frameworks, methods, and skill systems (BMAD-METHOD, Superpowers, GSD, LFG, and
-similar) by **locating** each on signed bipolar axes. It is for Claude Code and
+similar) by **locating** each on signed diverging axes. It is for Claude Code and
 comparable coding agents.
 
 **Purpose:** to let a person decide, as easily as possible, which approach best
@@ -24,7 +24,7 @@ a verdict ("this is best").
   number is meaningless (averaging signed positions cancels legitimate signal),
   and a leaderboard invites the "who are you to grade me" fight. A profile is a
   vector of positions, full stop. Do not add a total, average, or rank.
-- **Signed bipolar axes.** Each axis is a continuum between two opposed poles
+- **Signed diverging axes.** Each axis is a continuum between two opposed poles
   with `0.0` as neutral balance. Sign = which way it leans, magnitude = how far.
   Both poles are legitimate; neither is the failure mode. Default scale is `10`
   (positions run `-10` to `+10`). "Axis" is deliberate: a profile is a coordinate

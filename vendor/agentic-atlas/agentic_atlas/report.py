@@ -16,6 +16,21 @@ from html import escape as _html_escape
 
 from .models import AxisResult, IndicatorKind, Profile
 
+
+def _humanize(pole: str) -> str:
+    """Pole ids are stored as scoring keys (``human_in_loop``, ``single_agent``); show them
+    as words. Underscore to space keeps the same length, so terminal column widths hold."""
+    return pole.replace("_", " ")
+
+
+# The neutral middle means the same thing on every axis, so it is stated once here rather
+# than authored per axis: a position near 0 is a genuine lack of lean, which can be a tool
+# that serves both ends well or one that serves neither. The signals disambiguate.
+_MIDDLE_NOTE = (
+    "leans neither way, which can mean it serves both ends well, or neither. "
+    "The signals below tell you which."
+)
+
 _BAR_HALF = 20  # characters on each side of the neutral center
 
 # Below this fraction of resolved weight, an axis has too little evidence to plot a
@@ -127,7 +142,8 @@ def _axis_lines(ax: AxisResult, color: bool = False) -> list[str]:
     # Scale is a rubric-wide constant stated once in the header, so the per-axis line
     # just shows the signed value.
     header = f"{title}  {score_txt}  {detail}"
-    poles = f"  {ax.poles.negative:<20}{_bar(ax.score, ax.scale, color)}{ax.poles.positive:>20}"
+    neg, pos = _humanize(ax.poles.negative), _humanize(ax.poles.positive)
+    poles = f"  {neg:<20}{_bar(ax.score, ax.scale, color)}{pos:>20}"
     return [header, poles]
 
 
@@ -148,11 +164,17 @@ def render_markdown(profile: Profile) -> str:
         else:
             score = f"{ax.score:+.1f} (±{ax.scale:g})"
         m_res, m_total, c_res, c_total = _kind_counts(ax)
+        neg, pos = _humanize(ax.poles.negative), _humanize(ax.poles.positive)
         lines.append(f"## {ax.title}: {score}")
         lines.append(
-            f"Poles: `{ax.poles.negative}` (-) ↔ `{ax.poles.positive}` (+). "
+            f"Poles: `{neg}` (-) ↔ `{pos}` (+). "
             f"Coverage: measured {m_res}/{m_total}, classified {c_res}/{c_total}."
         )
+        if ax.explain.negative or ax.explain.positive:
+            lines.append("")
+            lines.append(f"- **{neg}** (-): {ax.explain.negative}")
+            lines.append(f"- **{pos}** (+): {ax.explain.positive}")
+            lines.append(f"- **near 0**: {_MIDDLE_NOTE}")
         lines.append("")
         lines.append("| indicator | kind | weight | answer | value | evidence | source |")
         lines.append("|---|---|---|---|---|---|---|")
@@ -260,6 +282,10 @@ _HTML_CSS = """
   summary::-webkit-details-marker{display:none}
   summary::before{content:"\\25B8 ";color:var(--faint)}
   details[open] summary::before{content:"\\25BE "}
+  dl.poles{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:12px 0 2px;font-size:.82rem}
+  dl.poles dt{font-weight:600;color:var(--fg);white-space:nowrap}
+  dl.poles dd{margin:0;color:var(--muted)}
+  dl.poles dt.mid,dl.poles dd.mid{color:var(--faint)}
   table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.78rem}
   .table-scroll{overflow-x:auto}
   th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -336,6 +362,26 @@ def _html_axis(ax: AxisResult) -> str:
                 '<div class="center"></div></div>'
             )
 
+    neg_label = _html_escape(_humanize(ax.poles.negative))
+    pos_label = _html_escape(_humanize(ax.poles.positive))
+
+    # Plain-language meaning of each pole, plus the shared neutral note, tucked into an
+    # expandable so a reader who does not know the pole words can learn them without the
+    # card growing taller by default. Uses the same <details> idiom as the signals table,
+    # so it works on touch and desktop with no script. Rendered even when nothing resolved:
+    # the meaning of the poles does not depend on the score.
+    explain_html = ""
+    if ax.explain.negative or ax.explain.positive:
+        explain_html = (
+            "    <details><summary>what these poles mean</summary>\n"
+            '      <dl class="poles">\n'
+            f"        <dt>{neg_label}</dt><dd>{_html_escape(ax.explain.negative)}</dd>\n"
+            f"        <dt>{pos_label}</dt><dd>{_html_escape(ax.explain.positive)}</dd>\n"
+            f'        <dt class="mid">near 0</dt><dd class="mid">{_html_escape(_MIDDLE_NOTE)}</dd>\n'
+            "      </dl>\n"
+            "    </details>\n"
+        )
+
     details = (
         f"<details><summary>show the {len(ax.indicators)} signals behind this</summary>"
         '<div class="table-scroll"><table>'
@@ -348,14 +394,15 @@ def _html_axis(ax: AxisResult) -> str:
         '  <section class="axis">\n'
         f'    <div class="axis-head"><span class="axis-title">{_html_escape(ax.title)}</span>{score_html}</div>\n'
         '    <div class="bar-row">\n'
-        f'      <span class="pole left">{_html_escape(ax.poles.negative)}</span>\n'
+        f'      <span class="pole left">{neg_label}</span>\n'
         f"      {bar}\n"
-        f'      <span class="pole right">{_html_escape(ax.poles.positive)}</span>\n'
+        f'      <span class="pole right">{pos_label}</span>\n'
         "    </div>\n"
         '    <div class="cov">\n'
         f'      <div class="cov-meter"><div class="cov-fill {_coverage_class(ax.coverage)}" style="width:{cov_pct}%"></div><div class="cov-floor"></div></div>\n'
         f'      <span class="cov-text">{_html_escape(cov_txt)}</span>\n'
         "    </div>\n"
+        f"{explain_html}"
         f"    {details}\n"
         "  </section>"
     )
@@ -398,8 +445,8 @@ def render_html(profile: Profile) -> str:
   <header>
     <h1>Agentic Atlas Profile</h1>
     <div class="stamps">{stamps}</div>
-    <p class="note">There's no overall grade here. Each axis shows where this tool leans between two equally valid ends, neither is "better", so you can judge fit for your own work rather than read a ranking.</p>
-    <p class="aside">Scale &plusmn;{scale:g} per axis, 0 is neutral. A bar's evidence meter shows how much of the intended evidence was found; a faded bar rests on thin evidence. Each position draws on signals the engine <strong>detected</strong> from the repo and ones a reviewer <strong>judged</strong> by reading it.</p>
+    <p class="note">Agentic Atlas reports what it sees, it doesn't grade, rank, or crown a winner. Every person and project has unique needs, so each axis simply shows where this tool leans between two equally valid ends, and you judge the fit for your own work.</p>
+    <p class="aside">Scale &plusmn;{scale:g} per axis. A score near 0 leans neither way, which can mean a tool serves both ends well or neither; expand an axis to see what its poles mean. A bar's evidence meter shows how much of the intended evidence was found; a faded bar rests on thin evidence. Each position draws on signals the engine <strong>detected</strong> from the repo and ones a reviewer <strong>judged</strong> by reading it.</p>
     <div class="legend">
       <span><span class="swatch" style="background:var(--neg)"></span>leans left</span>
       <span><span class="swatch" style="background:var(--pos)"></span>leans right</span>

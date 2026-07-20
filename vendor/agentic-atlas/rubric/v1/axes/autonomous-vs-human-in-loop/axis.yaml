@@ -6,6 +6,9 @@ poles:
 description: >
   How much the approach runs unattended. Negative means frequent checkpoints and
   approvals. Positive means autopilot, running end to end with little intervention.
+explain:
+  negative: pauses for your approval at checkpoints along the way
+  positive: runs end to end on its own, with little intervention
 indicators:
   - id: ah1
     question: "Does it advertise an autonomous or autopilot end-to-end mode?"

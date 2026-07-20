@@ -8,7 +8,7 @@ There's no single best agentic workflow, only a best fit for your project and ho
 
 ## What it does
 
-It is not a leaderboard. There's no ranking and no aggregate score, because collapsing independent axes into one number tells you nothing. It locates each tool on signed, bipolar axes: `0.0` is neutral, the sign says which pole the tool leans toward, and the magnitude says how strongly. A tool at `-7.8` on Greenfield ↔ Brownfield isn't worse than one at `+2.0`, it's simple aimed Greenfield projects and you are shown this to make your own conclusions on fit.
+Agentic Atlas reports what it sees, it doesn't grade, rank, or crown a winner, because every person and project has unique needs and collapsing independent axes into one number tells you nothing. It locates each tool on signed, diverging axes: `0.0` is neutral, the sign says which pole the tool leans toward, and the magnitude says how strongly. A tool at `-7.8` on Greenfield ↔ Brownfield isn't worse than one at `+2.0`, it is simply aimed at greenfield projects, and you are shown this to draw your own conclusions on fit.
 
 Each position is a deterministic function of small, named, evidence-backed indicators, every one cited to the target repository. So when you disagree with where a tool landed, trace it to the exact indicators behind it and open a pull request against the versioned rubric. The goal is to this methodology to be a community-maintained, open, and auditable rubric for agentic workflows.
 

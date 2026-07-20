@@ -49,3 +49,13 @@ def test_profile_is_deterministic(tmp_path):
     first.pop("target_sha")
     second.pop("target_sha")
     assert first == second
+
+
+def test_to_dict_carries_pole_meanings(tmp_path):
+    # The emitted artifact exposes each pole's plain-language meaning, so a consumer of the
+    # JSON (not just the HTML) can render it.
+    rubric = load_rubric(_RUBRIC)
+    data = profile_target(rubric, _synthetic_target(tmp_path)).to_dict()
+    for ax in data["axes"]:
+        assert ax["explain"]["negative"]
+        assert ax["explain"]["positive"]
