@@ -1,0 +1,33 @@
+id: autonomous-vs-human-in-loop
+title: Autonomous vs Human-in-loop
+poles:
+  negative: human_in_loop
+  positive: autonomous
+description: >
+  How much the approach runs unattended. Negative means frequent checkpoints and
+  approvals. Positive means autopilot, running end to end with little intervention.
+explain:
+  negative: pauses for your approval at checkpoints along the way
+  positive: runs end to end on its own, with little intervention
+indicators:
+  - id: ah1
+    question: "Does it advertise an autonomous or autopilot end-to-end mode?"
+    kind: classified
+    weight: 3
+    answers: { "yes": 1.0, partial: 0.3, "no": -1.0 }
+  - id: ah2
+    question: "Does it require explicit user approval between phases by default?"
+    kind: classified
+    weight: 3
+    answers: { every_phase: -1.0, some_phases: 0.0, none: 1.0 }
+  - id: ah3
+    question: "Density of checkpoint vocabulary (approve, confirm, review, wait, checkpoint)."
+    kind: measured
+    weight: 2
+    signal:
+      type: vocabulary
+      terms: ["approve", "confirm", "review", "checkpoint", "wait for", "your approval"]
+      bands:
+        - { max_count: 2, value: 0.8 }
+        - { max_count: 10, value: 0.0 }
+        - { max_count: null, value: -0.8 }

@@ -1,6 +1,0 @@
-{
-  "name": "agentic-toolkit",
-  "description": "A collection of skills for agentic coding tools: next-ticket, get-it-right, code-review, apply-review, pr, ship, convert-worktree, triage-bugs, triage-product, triage-architecture, update-deps, compress-markdown, agentic-atlas",
-  "version": "0.15.1",
-  "contextFileName": "AGENTS.md"
-}

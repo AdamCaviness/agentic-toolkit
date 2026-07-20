@@ -1,0 +1,37 @@
+id: single-agent-vs-multi-agent
+title: Single-agent vs Multi-agent
+poles:
+  negative: single_agent
+  positive: multi_agent
+description: >
+  How the approach is structured internally. Negative means one conversation or
+  agent. Positive means many specialized subagents or personas working together.
+explain:
+  negative: one agent in one conversation does the work
+  positive: many specialized subagents or personas work together
+indicators:
+  - id: ma1
+    question: "Does it orchestrate multiple specialized subagents or personas?"
+    kind: classified
+    weight: 3
+    answers: { single: -1.0, some: 0.3, many: 1.0 }
+  - id: ma2
+    question: "Density of multi-agent vocabulary across docs and commands."
+    kind: measured
+    weight: 2
+    signal:
+      type: vocabulary
+      terms: ["subagent", "persona", "orchestrate", "delegate", "specialist agent", "sub-agent"]
+      bands:
+        - { max_count: 0, value: -0.8 }
+        - { max_count: 5, value: 0.24 }
+        - { max_count: null, value: 0.8 }
+  - id: ma3
+    question: "Presence of agent or persona definition files."
+    kind: measured
+    weight: 1
+    signal:
+      type: path_presence
+      globs: ["**/agents/**", "**/*agent*.md", "**/personas/**", "**/agent.md"]
+      present: 0.6
+      absent: -0.6

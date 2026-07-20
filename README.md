@@ -1,258 +1,94 @@
-# Agentic Toolkit
+# Agentic Atlas
 
-A collection of skills for agentic coding tools, including [Claude Code](https://claude.ai/code), [Codex](https://openai.com/codex/), and [Gemini CLI](https://github.com/google-gemini/gemini-cli).
+An open methodology with tools for finding the ideal agentic workflow for you and your projects.
 
-| | Skill | Command | What it does |
-|---|-------|---------|-------------|
-| **Ticket** | [create-ticket](#create-ticket) | `/create-ticket [idea]` | Research an idea, craft a high-quality ticket, dedup, and file it |
-| | [next-ticket](#next-ticket) | `/next-ticket [id]` | Pick up a ticket (best open or specific), implement it with TDD, wait for review |
-| | [triage-architecture](#triage-architecture) | `/triage-architecture` | Find structural/safety issues in code; file tickets or `refine` existing |
-| | [triage-bugs](#triage-bugs) | `/triage-bugs` | Prove real defects with 4-pass analysis; file tickets or `refine` existing |
-| | [triage-product](#triage-product) | `/triage-product` | Find UX gaps and broken workflows; file tickets or `refine` existing |
-| **Quality** | [code-review](#code-review) | `/code-review` | Dispatch a reviewer subagent to evaluate all branch work (committed + uncommitted) |
-| | [apply-review](#apply-review) | `/apply-review` | Read PR review comments, fix valid ones, push, resolve addressed threads |
-| | [get-it-right](#get-it-right) | `/get-it-right` | Re-architect the current branch from scratch, leave unstaged for review |
-| **Workflow** | [pr](#pr) | `/pr` | Format, lint, test, commit, push, open PR |
-| | [ship](#ship) | `/ship` | Commit, push, merge PR, sync default branch, delete branch |
-| | [convert-worktree](#convert-worktree) | `/convert-worktree` | Cleanly convert a worktree back into a local branch |
-| **Utility** | [compress-markdown](#compress-markdown) | `/compress-markdown` | Compress markdown to save tokens; `deep` validates against codebase first |
-| | [update-deps](#update-deps) | `/update-deps` | Check CVEs, apply minor/patch updates, `major` for breaking changes; scopeable |
-| | [agentic-atlas](#agentic-atlas) | `/agentic-atlas <path-or-url>` | Profile an agentic approach on 13 signed axes; answers the engine's interpretive questions, no API key |
+An "agentic workflow" are the plugins or frameworks that you use your coding harness (Codex, Claude Code, etc). Popular examples include [Superpowers](https://github.com/obra/superpowers), [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD), [GSD](https://github.com/jnuyens/gsd-plugin), [LFG](https://mcpmarket.com/tools/skills/lfg-autonomous-engineering-workflow), but this approach can profile any framework, method, or skill collection.
 
----
+There's no single best agentic workflow, only a best fit for your project and how you like to work. Agentic Atlas shows you where each tool sits so you can pick.
 
-## Installation
+## What it does
 
-> Installation differs by platform. All three platforms consume the same `skills/<name>/SKILL.md` format, so one install gets you every skill.
+Agentic Atlas reports what it sees, it doesn't grade, rank, or crown a winner, because every person and project has unique needs and collapsing independent axes into one number tells you nothing. It locates each tool on signed, diverging axes: `0.0` is neutral, the sign says which pole the tool leans toward, and the magnitude says how strongly. A tool at `-7.8` on Greenfield ↔ Brownfield isn't worse than one at `+2.0`, it is simply aimed at greenfield projects, and you are shown this to draw your own conclusions on fit.
 
-<details>
-<summary>Claude Code</summary>
+Each position is a deterministic function of small, named, evidence-backed indicators, every one cited to the target repository. So when you disagree with where a tool landed, trace it to the exact indicators behind it and open a pull request against the versioned rubric. The goal is to this methodology to be a community-maintained, open, and auditable rubric for agentic workflows.
 
-Register the marketplace, then install the plugin:
+See [`docs/design.md`](docs/design.md) for the architecture and [`docs/axes.md`](docs/axes.md) for the axis authoring method and the full candidate catalog.
 
-```bash
-/plugin marketplace add adamcaviness/agentic-marketplace
-/plugin install agentic-toolkit@agentic-marketplace
+## How an axis is scored
+
+An axis is a signed spectrum (negative/positive float) between two named poles, with a symmetric scale (default `10`, so scores run `-10` to `+10`). Neither pole is a failure mode.
+
+You never score an axis directly. It decomposes into indicators, each a narrow question with a bounded answer mapping to a value in `[-1, 1]` signed toward one pole. Two kinds:
+
+- **measured**: computed by the engine from the repository, no model (vocabulary density, file presence, git statistics, GitHub stars). Same input, same output.
+- **classified**: a model reads the repository and picks from a fixed answer set, backing the choice with a quote copied verbatim from the target. The engine rejects any answer whose quote it can't find, so nothing rests on an unverified claim.
+
+The score is then arithmetic, over resolved indicators, clamped to `[-scale, +scale]`:
+
+```
+axis_score = scale * sum(weight_i * value_i) / sum(weight_i)
 ```
 
-</details>
+Unresolved indicators are excluded and the profile reports coverage, so you never mistake a partial profile for a complete one.
 
-<details>
-<summary>Codex</summary>
+## Axes in v1
 
-See [.codex/INSTALL.md](.codex/INSTALL.md). Short version:
+Thirteen axes ship today. The full candidate catalog is much larger, see [`docs/axes.md`](docs/axes.md); heavily correlated axes dilute a profile rather than sharpen it, so the rest are backlog.
 
-```bash
-git clone https://github.com/adamcaviness/agentic-toolkit.git ~/.codex/agentic-toolkit
-mkdir -p ~/.agents/skills
-ln -s ~/.codex/agentic-toolkit/skills ~/.agents/skills/agentic-toolkit
-```
+| Axis (negative ↔ positive) | Meaning |
+|---|---|
+| **Interrogative ↔ Opinionated** | Elicits and asks vs prescribes a strong default path |
+| **Human-in-loop ↔ Autonomous** | Frequent checkpoints vs unattended autopilot |
+| **Greenfield ↔ Brownfield** | Excels from an idea vs excels inside an existing codebase |
+| **Small-scope ↔ Large-scope** | One task vs the whole delivery lifecycle |
+| **Prototype ↔ Production** | Fast throwaway output vs production hardening |
+| **Solo ↔ Team** | Single developer vs multi-contributor and team-safe |
+| **Generalist ↔ Specialist** | Any domain vs software delivery specifically |
+| **Fresh ↔ Mature** | New and fast-moving vs established and battle-tested |
+| **Spec-light ↔ Spec-driven** | Jumps to code vs plans and specs first |
+| **Test-optional ↔ Test-first** | Testing incidental vs TDD enforced |
+| **Single-agent ↔ Multi-agent** | One conversation vs specialized subagents or personas |
+| **Prescriptive ↔ Composable** | Fixed pipeline vs pick-and-choose parts |
+| **Lightweight ↔ Heavyweight** | Small footprint and little ceremony vs large and elaborate |
 
-Restart Codex to discover the skills.
+Authoritative definitions live in `rubric/v1/`.
 
-</details>
+## Usage
 
-<details>
-<summary>Gemini CLI</summary>
-
-```bash
-gemini extensions install https://github.com/adamcaviness/agentic-toolkit
-```
-
-Update with `gemini extensions update agentic-toolkit`.
-
-</details>
-
-<details>
-<summary>Manual (any platform)</summary>
-
-If you prefer not to use a plugin/extension system, clone the repo and symlink the skill directories.
+Everything runs through the Makefile. Run `make` to list targets.
 
 ```bash
-git clone https://github.com/adamcaviness/agentic-toolkit.git ~/opensource/agentic-toolkit
-
-
-# Claude Code (user-level)
-for skill in ~/opensource/agentic-toolkit/skills/*/; do
-  ln -s "$skill" ~/.claude/skills/"$(basename "$skill")"
-done
-
-# Codex (user-level)
-for skill in ~/opensource/agentic-toolkit/skills/*/; do
-  ln -s "$skill" ~/.agents/skills/"$(basename "$skill")"
-done
+make setup                 # create the venv and install with dev deps
+make check                 # lint then test (the CI gate)
+make validate              # validate the rubric against the schema
+make profile TARGET=/path/to/approach FORMAT=md
 ```
 
-For a single skill: `ln -s ~/opensource/agentic-toolkit/skills/next-ticket ~/.claude/skills/next-ticket`.
+The `agentic-atlas` CLI is available inside the venv:
 
-For project-level install, symlink into `.claude/skills/` or `.agents/skills/` inside the project root.
+```bash
+agentic-atlas validate rubric/v1                                    # check against the schema
+agentic-atlas docs rubric/v1                                        # regenerate axis README scoring blocks
+agentic-atlas profile /path/to/approach                             # measured indicators, deterministic, no key
+agentic-atlas questions /path/to/approach                           # emit the classified questions to answer
+agentic-atlas profile /path/to/approach --answers answers.json      # unlock classified indicators from answers
+agentic-atlas compare bmad-method superpowers gsd                   # (planned) overlay tools on the same axes
+```
 
-</details>
+The engine is deterministic and needs no API key. A bare `profile` run resolves the **measured** indicators, the ones the engine computes directly from the repository, and reports how much of each axis that covers. The **classified** indicators, the ones that need the repository read and interpreted, are unlocked by supplying answers: `questions` lists them, an agent answers each with a value from its fixed set and a quote from the target, and `profile --answers` validates every answer (the quote must appear verbatim, the value must be one of the declared options) and scores the ones that pass. The engine never calls a model; it validates.
 
----
+The intended answerer is the `/agentic-atlas` skill in [agentic-toolkit](https://github.com/adamcaviness/agentic-toolkit): its host agent is already a capable model with repo access, so it answers the questions and feeds them back, no key required. Running the engine raw gives you the deterministic measured axes; running it through the skill unlocks the rest.
 
-## Ticket Skills
+## Reproducibility and fairness
 
-> Skills for creating, implementing, and maintaining your project's issue backlog.
+The rubric (`rubric/`) is versioned data (axes, poles, indicators, weights) and the engine (`agentic_atlas/`) is the code that reads it, each under its own semver. See [`docs/versioning.md`](docs/versioning.md). Every profile stamps the rubric version, engine version, target commit SHA, and, for classified indicators, the source of each supplied answer, so any profile is reproducible and arguable.
 
-### [create-ticket](skills/create-ticket/SKILL.md)
+I also maintain [agentic-toolkit](https://github.com/adamcaviness/agentic-toolkit), which is itself a target and gets profiled with the same rubric and engine as everything else, no special treatment. I built this tool specifically so I could evaluate my own work and get a picture on where it best fits.
 
-Turns a user-provided idea into a well-researched, well-structured ticket and files it.
+## Status
 
-- Explores project context when available (works equally well on greenfield projects with no code)
-- Searches the web for prior art and known pitfalls
-- Deduplicates against the existing backlog, including rejection learning from not-planned tickets
-- Asks clarifying questions only when options are too nuanced to auto-resolve
-- Produces one ticket per run with type-appropriate body structure (feature, bug, architecture, product, or chore)
-- Presents a full draft for review and files only after approval
-
-**Usage:** `/create-ticket add dark mode support` or `/create-ticket` then describe the idea.
-
-### [next-ticket](skills/next-ticket/SKILL.md)
-
-Picks up a ticket from your issue tracker, implements it end-to-end with TDD, and waits for your review.
-
-- **Auto-pick** (no argument): fetches all eligible tickets, scores by severity, simplicity, blocking power, and value, picks the best candidate
-- **Specific ticket** (with ID): fetches that ticket directly, skips scoring
-- Validates the ticket against current code, checking for prior fixes or partial resolution
-- Claims with a team-safe self-assignment protocol (re-reads assignee after a randomized pause to avoid collisions)
-- Ticket IDs are resolved flexibly: bare numbers are interpreted per platform (e.g., `42` becomes `ABC-42` on Jira), prefixed IDs like `#42` or `ABC-42` are used as-is
-
-**Usage:** `/next-ticket` (auto-pick best ticket) or `/next-ticket 42` (pick up a specific ticket).
-
-> [!NOTE]
-> All ticket skills auto-detect your ticket system: the agent reads repo signals (README, CLAUDE.md, git remotes, commit conventions) to determine which system you use. Supported out of the box: GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs in your session. Detection results are cached so detection only runs once per project. For persistent override, add `ticketSystem: <name>` to your project's CLAUDE.md.
-
----
-
-**Triage skills** audit your codebase and file tickets for what they find. Each skill caches existing tickets (for deduplication and rejection learning), builds a project map, then spawns 4 parallel sub-agents (one per concern cluster) that read code, prove findings, and file or refine tickets directly in your issue tracker. Each supports three modes:
-
-- **Create** (default): Find new problems, file up to 3 tickets per cluster
-- **Refine**: Improve existing tickets, create none
-- **Refine with duration** (e.g., `refine 5h`): Scope refinement to tickets created within the given time window
-
-### [triage-architecture](skills/triage-architecture/SKILL.md)
-
-Finds structural and safety issues in code and files a ticket for each confirmed finding. Covers security vulnerabilities, missing error handling, race conditions, architectural gaps, DRY violations, and incomplete implementations. Clusters: Safety, Correctness, Maintainability, Completeness.
-
-**Usage:** `/triage-architecture`, `/triage-architecture refine`, `/triage-architecture refine 5h`
-
-### [triage-bugs](skills/triage-bugs/SKILL.md)
-
-Investigates the codebase for proven defects and files a ticket for each confirmed bug. Each sub-agent applies a 4-pass method:
-
-1. **Frame** the specific claim
-2. **Trace** the code path end-to-end
-3. **Falsify** by actively trying to disprove the suspicion
-4. **Prove** with a reproduction, code-path proof, or failing test
-
-Only findings that clear this bar get filed. The result includes both confirmed bugs and a rejection ledger of investigated-but-dismissed candidates. Clusters: Data & State, Security & Auth, Correctness, Silent Failures.
-
-**Usage:** `/triage-bugs`, `/triage-bugs refine`, `/triage-bugs refine 5h`
-
-### [triage-product](skills/triage-product/SKILL.md)
-
-Finds UX gaps, broken workflows, missing states, confusing terminology, accessibility issues, and competitive table stakes, filing a ticket for each confirmed finding. Sub-agents judge against what the product actually promises (from its README), not abstract ideals. Clusters: Core Experience, Error & Edge States, Polish & Consistency, Reach & Access.
-
-**Usage:** `/triage-product`, `/triage-product refine`, `/triage-product refine 5h`
-
-> [!TIP]
-> The triage skills learn from tickets you reject. When closing a ticket as out of scope or won't fix, use the platform's **not-planned** close-state (GitHub: "Close as not planned", Jira: resolution "Won't Do") with a one-line reason. The next triage run reads that close-state and skips refiling the same class of concern. Closing as completed breaks this loop.
-
----
-
-## Quality Skills
-
-> Skills for reviewing and improving what you've built.
-
-### [code-review](skills/code-review/SKILL.md)
-
-Dispatches a code-reviewer subagent to evaluate all branch work against requirements: every commit since the merge base with the default branch, plus any staged, unstaged, or untracked changes in your working tree. The reviewer gets a crafted context (git range, changed-path inventory, working-tree state, what you built, what it should do), never your session history. Returns categorized feedback (Critical, Important, Minor) plus a merge verdict, then automatically fixes Critical and Important issues before proceeding.
-
-**Usage:** `/code-review`
-
-### [apply-review](skills/apply-review/SKILL.md)
-
-Reads all review comments on the current PR (human, Copilot, Claude, any reviewer), validates each against the actual code, fixes valid comments, pushes, resolves addressed threads via GitHub's API, and leaves succinct replies on threads it did not resolve. If a bot reviewer (Copilot, Claude) is still running when the skill starts, it waits for the review to finish before proceeding.
-
-**Usage:** `/apply-review`, `/apply-review 42`
-
-### [get-it-right](skills/get-it-right/SKILL.md)
-
-Re-evaluates the current branch's work as if starting from scratch. Deep-reads every changed file, performs retrospective analysis (unnecessary complexity, fragmentation, what the simplest working version looks like), then auto-implements improvements without committing. Leaves all changes unstaged for your review with a brief testing playbook.
-
-**Usage:** `/get-it-right`
-
----
-
-## Workflow Skills
-
-> Skills for the branch lifecycle, from commit to merge.
-
-### [pr](skills/pr/SKILL.md)
-
-The cautious "I'm done." Runs format/lint and tests (skips if already passing with no file changes), commits auto-fixed formatting, pushes, extracts the issue number from the branch name (`fix/224-bug` becomes `Closes #224`), and creates a PR. Stops on any failure. Use `/pr` when you want to wait for CI to pass or collect PR review feedback before merging. Pair with `/apply-review` to pick up that feedback and implement what makes sense.
-
-**Usage:** `/pr`
-
-### [ship](skills/ship/SKILL.md)
-
-The optimistic "I'm done completely." Commits, pushes, creates or updates a PR, merges, syncs the local default branch, and deletes the branch. If nothing in the VCS blocks the merge, every step happens without delay. Detects your repo's allowed merge strategies (merge, squash, rebase) and caches the policy in `.git/agents/repo-policy.json` with a 30-day freshness window, retrying once on policy errors. For forked repos, PRs always target your fork, never upstream.
-
-**Usage:** `/ship`
-
-### [convert-worktree](skills/convert-worktree/SKILL.md)
-
-Converts a git worktree into a regular local branch:
-
-- Commits any uncommitted work as a WIP commit
-- Runs project cleanup (e.g., `make dev-stop`) while still in the worktree so project-specific variables resolve correctly
-- Rebases onto the latest base branch, auto-resolving lockfile conflicts and aborting on code conflicts
-- Checks the main workspace for uncommitted changes before removing the worktree and checking out the branch
-
-Never blocks on failures: rebase conflicts, cleanup errors, and lockfile conflicts produce warnings, not errors.
-
-**Usage:** `/convert-worktree` (from inside a worktree)
-
----
-
-## Utility Skills
-
-> Maintenance and optimization tools.
-
-### [compress-markdown](skills/compress-markdown/SKILL.md)
-
-Reduces markdown verbosity to save input tokens, particularly useful for CLAUDE.md files but works on any markdown. Default mode is lossless: drops filler words, uses short synonyms, converts sentences to fragments while preserving all code blocks, URLs, paths, and directive keywords character-for-character. Deep mode (pass `deep` before the filepath) verifies each section against the codebase first, removing stale content before compressing. A deterministic validator catches structural regressions.
-
-**Usage:** `/compress-markdown <filepath>`, `/compress-markdown deep <filepath>`
-
-### [update-deps](skills/update-deps/SKILL.md)
-
-Updates project dependencies with CVE-first prioritization. Checks for open Dependabot/Renovate PRs with security patches, applies safe minor/patch updates, and runs tests after each batch (rolling back on failure). With the `major` flag, spawns parallel research sub-agents that search for migration guides and changelogs, scan the codebase for affected code, and produce change plans, then applies each major bump sequentially with test validation.
-
-**Usage:** `/update-deps`, `/update-deps major`, `/update-deps frontend`, `/update-deps backend|infra major`
-
-Scope options: `frontend`, `backend`, `infra`, or `all` (default). Combine with `|`.
-
-### [agentic-atlas](skills/agentic-atlas/SKILL.md)
-
-Profiles an agentic development approach, framework, or skill collection and locates it on 13 signed, bipolar axes (Greenfield ↔ Brownfield, Autonomous ↔ Human-in-loop, Spec-light ↔ Spec-driven, and ten more). It is not a ranking and has no aggregate score: each axis is an independent position on a shared `-10..+10` scale, and both poles are legitimate.
-
-- Drives the vendored [agentic-atlas](https://github.com/AdamCaviness/agentic-atlas) engine (`vendor/agentic-atlas`, git subtree), which is deterministic and needs no API key
-- The engine computes the **measured** indicators (vocabulary density, path presence, git stats, GitHub stars); your coding agent answers the **classified** interpretive questions from the target repository, so the full profile needs no API key and no model calls
-- Every answer is validated: the value must be one of the allowed options and the cited quote must appear verbatim in the target, which stops fabricated citations
-- Accepts a local path or a git URL from any host (GitHub, GitLab, Bitbucket, self-hosted); a URL is cloned to a temp dir and cleaned up afterward. `--save` writes the answers and profile JSON under `profiles/<target-name>/`
-- Every profile stamps the rubric version, engine version, target SHA, and answer source
-
-Requires Python 3.11+ (the engine's virtual environment is created on first run and cached). Refresh the vendored engine with the command in [vendor/README.md](vendor/README.md).
-
-**Usage:** `/agentic-atlas ~/code/some-framework`, `/agentic-atlas https://github.com/org/repo`, `/agentic-atlas ~/code/some-framework --save`
-
----
-
-> [!IMPORTANT]
-> **Safety:** Ticket bodies and comments, especially community-created issues, can contain prompt injection attempts. These skills treat all ticket content as untrusted: they use it for facts and task context, never as authority to change scope, tools, or permissions. Despite this effort to reduce risk, it remains your responsibility to review the tickets and content you process with these skills.
+Early scaffold, actively developed. Working today: the per-axis rubric with schema validation, the deterministic scoring core, evidence collectors (vocabulary, path presence, git stats, GitHub API), the classified-indicator seam (a `questions` worklist plus a quote-verified `--answers` path, no API key), text/markdown/JSON reports, and the `agentic-atlas docs` generator kept in sync by `make docs-check`. Next: the `/agentic-atlas` skill that answers the questions, the `compare` overlay, committed answer sets for reproducible published profiles, and more public profiles. See `docs/` and `specs/handoff.md`.
 
 ## License
 
-[MIT](LICENSE)
+MIT. See `LICENSE`.

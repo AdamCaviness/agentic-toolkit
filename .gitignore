@@ -4,9 +4,6 @@ CLAUDE.md
 # Local settings (never commit personal config)
 .claude/settings.local.json
 
-# Project-level dev symlinks from scripts/dev-link.sh (local dogfooding only)
-.claude/skills/
-
 # OS
 .DS_Store
 Thumbs.db
@@ -21,18 +18,17 @@ Thumbs.db
 # Python
 __pycache__/
 *.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+.venv/
+venv/
 
-# Node (if dependencies are ever added)
-node_modules/
-npm-debug.log*
+# Local run output (profiles are generated, not committed unless curated)
+profiles/*.json
+!profiles/.gitkeep
 
 # Memory (auto-generated, user-specific)
 .claude/projects/
-
-# Vendored agentic-atlas engine: build artifacts created on first skill run
-vendor/agentic-atlas/.venv/
-vendor/agentic-atlas/.pytest_cache/
-vendor/agentic-atlas/.ruff_cache/
-vendor/agentic-atlas/build/
-vendor/agentic-atlas/dist/
-vendor/agentic-atlas/*.egg-info/

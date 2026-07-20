@@ -1,0 +1,33 @@
+id: lightweight-vs-heavyweight
+title: Lightweight vs Heavyweight
+poles:
+  negative: lightweight
+  positive: heavyweight
+description: >
+  How much a user must take on to adopt the approach. Negative means a small
+  footprint and little ceremony. Positive means many concepts, roles, and steps.
+explain:
+  negative: small footprint, few concepts, little to learn before you start
+  positive: many concepts, roles, and steps to take on
+indicators:
+  - id: lw1
+    question: "How many concepts and how much ceremony must a user learn before getting value?"
+    kind: classified
+    weight: 3
+    answers: { minimal: -1.0, moderate: 0.2, heavy: 1.0 }
+  - id: lw2
+    question: "How large is the install and setup footprint?"
+    kind: classified
+    weight: 2
+    answers: { tiny: -1.0, moderate: 0.0, large: 1.0 }
+  - id: lw3
+    question: "Density of ceremony vocabulary across docs and commands."
+    kind: measured
+    weight: 2
+    signal:
+      type: vocabulary
+      terms: ["phase", "gate", "ceremony", "role", "artifact", "template", "workflow", "epic"]
+      bands:
+        - { max_count: 3, value: -0.8 }
+        - { max_count: 15, value: 0.24 }
+        - { max_count: null, value: 0.8 }

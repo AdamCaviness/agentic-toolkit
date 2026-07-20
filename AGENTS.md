@@ -1,90 +1,55 @@
-# AGENTS.md
+# Agent instructions: Agentic Atlas
 
-## `skills/` is distribution, not local config
+This file is the canonical guidance for AI agents (Claude Code and others) working in this repository. `CLAUDE.md` is a symlink to this file.
 
-Every `skills/<name>/` is public API. All three harnesses discover the same `SKILL.md` content; each has its own install mechanism (see README). Edits go live on the next release, so treat them accordingly.
+## What this project is
 
-## Skills
+Agentic Atlas profiles agentic development approaches and frameworks by locating each on signed, diverging axes. It is **not** a ranking tool and there is **no aggregate score**. Read `README.md` and `docs/design.md` before making architectural changes.
 
-Never duplicate a skill into a harness-specific subtree. All three harnesses auto-discover `skills/<name>/SKILL.md`. The `model` frontmatter key is honored by Claude Code and ignored by Codex and Gemini.
+## Core invariants (do not violate without a versioned rubric change)
 
-## Vendored engine (`vendor/agentic-atlas`)
+1. **No aggregate score.** Never sum, average, or otherwise collapse axes into a single number. Axes are independent positions, and averaging signed positions is meaningless.
+2. **The rubric is data, the engine is code.** Scoring logic that belongs to the rubric (weights, indicator definitions, formulas) lives in `rubric/*.yaml`, never hardcoded in `agentic_atlas/`. The engine interprets the rubric, it does not embed a specific rubric.
+3. **The axis score is a deterministic function of indicators.** The engine's `scoring.py` is pure arithmetic. Given the same indicator values it must always return the same axis score.
+4. **Every profile is reproducible.** Stamp rubric version, engine version, target commit SHA, and (for classified indicators) the model id, on every emitted profile.
+5. **`measured` vs `classified` stays separated.** `measured` indicators are computed by the engine with no model. `classified` indicators require reading and a bounded answer plus a cited quote. Never let a classified indicator masquerade as measured.
 
-The `/agentic-atlas` skill drives the [agentic-atlas](https://github.com/AdamCaviness/agentic-atlas) engine, vendored as a git subtree under `vendor/agentic-atlas/` so the skill ships with the engine it needs. The plugin source is the whole repo, so the subtree reaches every install (plugin, symlink, extension). Do not hand-edit files under the subtree prefix; that fights future `git subtree pull`. Refresh and re-vendor commands live in `vendor/README.md`.
+## Semver
 
-`skills/agentic-atlas/atlas.sh` is the launcher: it resolves the engine from the skill's real (symlink-resolved) path, bootstraps `vendor/agentic-atlas/.venv/` on first run, and forwards arguments to the engine. The venv and other build artifacts are gitignored. The engine is deterministic and needs no API key; the skill's host agent answers the classified questions the engine validates.
+Two independent version lines:
 
-## Dogfooding skills locally
+- **Rubric version** (`rubric_version` in each rubric file). MAJOR = any change that moves scores for identical evidence (add/remove indicator, change weight or formula, redefine a pole). MINOR = add a whole new axis or optional metadata that leaves existing axis scores untouched. PATCH = wording that cannot change any indicator value. See `docs/versioning.md`.
+- **Engine version** (package version in `pyproject.toml`). Standard software semver.
 
-`scripts/dev-link.sh` symlinks every `skills/<name>/` into project-level `.claude/skills/`, so Claude Code serves the live working-tree skills (bare-named, `/pr`) only while your cwd is this repo. They coexist with the global marketplace plugin's namespaced commands (`/agentic-toolkit:pr`), which stay pinned to the released version and remain the only commands visible in other projects. The script is idempotent: re-run it after adding a skill to link the new one and prune removed ones. `.claude/skills/` is gitignored. Creating it for the first time needs one Claude Code restart before the project skills are watched. To stop dogfooding: `rm -rf .claude/skills`.
+A profile only compares to another profile computed with the same rubric MAJOR version.
 
-## Deployment context for this repo
+## Layout
 
-The skills in this repo are personal-machine tooling for an individual operator, not multi-user infrastructure. Threat models that assume shared hosts, shared `$TMPDIR`, untrusted local processes, network-exposed services, or supply-chain attackers reading per-user temp do not apply when triaging this codebase. Cached ticket bodies, project maps, and run state live in the operator's per-user temp (on macOS, `/var/folders/.../T/`, mode 700, owned by the operator) alongside `~/.ssh/`, `~/.aws/`, browser cookies, and keychain data the operating system already keeps private.
-
-When `triage-architecture`, `triage-bugs`, or any other skill audits this repo, ground every security or robustness concern in this context. Hardening proposed with the framing "in case the cache is read by another user", "if `$TMPDIR` is shared", "if a co-tenant on the host", or "to defend against a local attacker" is out of scope and should be downgraded or rejected, not filed. Real concerns in this context look like: secrets actually committed to the repo, dependency CVEs that affect runtime behavior, public-API correctness bugs, data loss in the operator's own workflow, or footguns that turn into real bugs on a single-user machine.
-
-This boundary is load-bearing for the triage skills' rejection-learning loop: when the operator closes a ticket as not-planned with reasoning grounded in this context, the triage skills cache that reasoning into `issues-closed.json` so future runs can recognize the same class of concern under a different title and skip refiling.
-
-## User-only skills
-
-Skills that should only be triggered by the user (not autonomously by the model) declare `disable-model-invocation: true` in frontmatter. This prevents the model from invoking the skill on its own initiative; the user must type the slash command explicitly. It does not restrict what the model does during execution. Currently honored by Claude Code, tolerated by Codex and Gemini. Apply to skills with side effects or timing sensitivity where the user controls when they run: `pr`, `ship`, and `convert-worktree`. Add the key to any future skill the user should invoke deliberately rather than the model triggering automatically.
-
-## Branch lifecycle
-
-Workflow skills that compare against, sync with, or guard the default branch share one contract. Resolve the default branch into `BASE_BRANCH` with this snippet, then use `$BASE_BRANCH` in every command and prose mention:
-
-```bash
-BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
-if [ -z "$BASE_BRANCH" ]; then
-  git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
-fi
+```
+rubric/v1/                   One directory per MAJOR version
+  rubric.yaml                Manifest: version, title, ordered axis ids
+  rubric.schema.json         Schema for the manifest
+  axis.schema.json           Schema for a single axis file
+  axes/<id>/axis.yaml        Source of truth for one axis (poles, indicators, weights)
+  axes/<id>/README.md        Human rationale + a generated scoring block
+  CHANGELOG.md
+agentic_atlas/ Python engine (spec, scoring, evidence, classify, profiler, report, docs, cli)
+docs/          Design, axis authoring method, versioning policy
+tests/         Tests, with the deterministic scoring core covered first
+profiles/      Curated public profiles (generated JSON), including self-eval
 ```
 
-Never hardcode `main` or `master` in skill commands, guards, diff ranges, or user-facing wording. Use "default branch" in prose. The ahead-of-base check is `git rev-list --count "$BASE_BRANCH..HEAD"`. The diff range for a feature branch is `"$BASE_BRANCH"...HEAD`. The post-merge sync is `git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"`. The remote-tracking reference is `"origin/$BASE_BRANCH"`. Skills that document the resolved default branch back to the user should print `$BASE_BRANCH`, not the literal word `main`.
+Each axis README's scoring block is generated from its `axis.yaml` by `agentic-atlas docs`
+(`make docs`). Never hand-edit the block between the generated markers, edit the
+`axis.yaml` and regenerate. `make docs-check` (part of `make check`) fails on drift.
 
-Shell state does not persist between separate Bash tool invocations. Each skill must either re-resolve `BASE_BRANCH` at the top of every bash block that consumes it, or substitute the resolved literal branch name into the commands the agent runs (instead of letting `$BASE_BRANCH` expand in a fresh shell where it is unset). Do not assume a variable set in step N is still in scope in step N+1.
+## Conventions
 
-## Capability glossary for public skills
+- Python 3.11+. Keep the deterministic core (`models.py`, `spec.py`, `scoring.py`) dependency-light and fully tested.
+- No `TODO` comments. Implement it, or record the plan in `docs/`.
+- Document what the code **is**, not what it was. Git history covers the past.
+- Prose in docs uses commas rather than dashes for punctuation.
 
-Public skills are distributed to Claude Code, Codex, and Gemini. Skill prose may use harness-specific tool names where they read naturally (`Task tool`, `WebSearch`, `Agent tool`); other harnesses generally infer the equivalent. This is a **glossary**, not a required vocabulary, that names recurring capabilities so future skills and adapter docs have a shared lexicon to reach for.
+## When changing the rubric
 
-| Capability | What it provides |
-| --- | --- |
-| `project.instructions` | The project's own contributor instructions, found in `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md` depending on harness. |
-| `ticket.read` | Read access to the project's ticket system (GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, etc.). |
-| `ticket.write` | Create, update, comment on, or close tickets in the project's ticket system. |
-| `subagent.dispatch` | Dispatch one isolated subagent with a fresh context, given a single prompt as its full instructions. |
-| `subagent.dispatch.parallel` | Dispatch multiple isolated subagents in parallel from one orchestrator turn. |
-| `web.research` | Fetch content from the public web (search engines, documentation, package registries, release notes). |
-| `verification.run` | Execute the project's verification commands (tests, linters, formatters, type checks) and return their output. |
-
-Two things *are* enforced in public skill bodies because they are concrete failure modes, not stylistic ones, and because untested abstraction would be a bigger regression risk than the current prose. The validator in `tests/test_capability_vocabulary.py` checks both:
-
-- The literal Claude API parameter shape `subagent_type` and its value `general-purpose` must not appear. They are meaningless on Codex and Gemini, where no such parameter exists.
-- Generated PR or commit output must not brand a single harness (no `Generated with [Claude Code]` trailer in PR body templates).
-
-Frontmatter keys (`model:`, `disable-model-invocation:`) are allowed to stay harness-specific.
-
-## Commits and releases
-
-- Only `feat:` (minor) and `fix:` (patch) drive a release PR. Other conventional types are silently ignored by release-please for bump purposes. Use `feat(skill):` scopes to classify new skills.
-- Never hand-edit `version` in any manifest. Release-please bumps via JSONPath.
-- Never manually tag. Release-please tags when its release PR merges.
-
-## Attribution
-
-Ported skills require an `ATTRIBUTIONS.md` next to `SKILL.md` with the source project's full license text.
-
-## Triage skills share one source
-
-The `triage-architecture`, `triage-bugs`, and `triage-product` SKILL.md files are generated from `triage_shared/template.md` plus per-skill inputs in `triage_shared/skills.py`. The generated public files stay standalone so all three harnesses still discover `skills/<name>/SKILL.md`, but maintainers edit the shared mechanics (ticket-system detection, two-tier cache, untrusted-content boundary, cross-cluster notes, post-processing, cleanup, planner-state updates) in one place.
-
-Do not hand-edit `skills/triage-architecture/SKILL.md`, `skills/triage-bugs/SKILL.md`, or `skills/triage-product/SKILL.md`. Edit `triage_shared/template.md` for shared mechanics or `triage_shared/skills.py` for per-skill policy, then run `python3 -m triage_shared.generate` to regenerate the public files. The `tests/test_triage_shared_source.py` validator refuses merges that bypass that flow.
-
-## Style
-
-- Commas, not em-dashes or hyphens, for punctuation.
-- Document what **is**, not what **was**.
-- No `Co-Authored-By` trailers.
-- No TODOs in code.
+Any edit under `rubric/` that can move scores requires: a version bump, a `rubric/CHANGELOG.md` entry, and a rationale in the PR description. Do not silently recalibrate.

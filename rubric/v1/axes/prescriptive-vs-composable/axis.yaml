@@ -1,0 +1,35 @@
+id: prescriptive-vs-composable
+title: Prescriptive vs Composable
+poles:
+  negative: prescriptive
+  positive: composable
+description: >
+  How rigidly the approach's parts are arranged. Negative means a fixed pipeline you
+  follow in order. Positive means modular parts you pick and combine as needed.
+explain:
+  negative: a fixed pipeline you follow in order
+  positive: modular parts you pick and combine as you need them
+indicators:
+  - id: pc1
+    question: "Is it a fixed pipeline you follow, or modular parts you compose?"
+    kind: classified
+    weight: 3
+    answers: { fixed_pipeline: -1.0, mixed: 0.0, composable: 1.0 }
+  - id: pc2
+    question: "Are steps mandatory and ordered, or optional and reorderable?"
+    kind: classified
+    weight: 2
+    answers: { mandatory_ordered: -1.0, mixed: 0.0, optional_reorderable: 1.0 }
+  - id: pc3
+    question: "Presence of many independent skill or module files."
+    kind: measured
+    weight: 2
+    signal:
+      type: path_count
+      globs: ["**/skills/**", "**/modules/**", "**/commands/**"]
+      bands:
+        - { max_count: 0, value: -0.6 }
+        - { max_count: 3, value: -0.2 }
+        - { max_count: 15, value: 0.3 }
+        - { max_count: 60, value: 0.6 }
+        - { max_count: null, value: 0.8 }
