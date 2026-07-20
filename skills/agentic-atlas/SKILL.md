@@ -1,11 +1,13 @@
 ---
 name: agentic-atlas
 description: >
-  Profile an agentic development approach or framework on 13 signed, bipolar axes and print
-  a complete, honest position on each. Drives the vendored agentic-atlas engine, which
-  computes the measured indicators deterministically with no API key, while you answer the
-  interpretive (classified) questions from the target repository. There is no aggregate
-  score. Defaults to the current directory when no target is given. Trigger: /agentic-atlas
+  Understand how an agentic tool, framework, or workflow fits your own style and projects.
+  Profiles the target on 13 independent, diverging axes (Greenfield ↔ Brownfield, Autonomous ↔
+  Human-in-loop, Spec-light ↔ Spec-driven, and ten more) on a shared -10..+10 scale where
+  both poles are legitimate: it locates a tool, it does not rank one, and there is no
+  aggregate score. The vendored engine computes the measured indicators deterministically
+  with no API key, while you answer the interpretive questions from the target repository.
+  Defaults to the current directory when no target is given. Trigger: /agentic-atlas
   [path-or-git-url] [--save]
 argument-hint: "[path-or-git-url] [--save]"
 ---
@@ -13,10 +15,11 @@ argument-hint: "[path-or-git-url] [--save]"
 # Agentic Atlas
 
 Profile a development approach, framework, or skill collection and locate it on 13 signed,
-bipolar axes (for example Greenfield ↔ Brownfield, Autonomous ↔ Human-in-loop, Spec-light ↔
+diverging axes (for example Greenfield ↔ Brownfield, Autonomous ↔ Human-in-loop, Spec-light ↔
 Spec-driven). Each axis is an independent position on a shared `-10..+10` scale where `0` is
-neutral. Both poles of every axis are legitimate. This is not a ranking and there is no
-aggregate score: the profile locates a tool so a reader can judge fit for their own context.
+neutral. Both poles of every axis are legitimate. Agentic Atlas reports what it sees rather
+than grading, ranking, or crowning a winner: the profile locates a tool so a reader can judge
+fit for their own context.
 
 ## What this does
 

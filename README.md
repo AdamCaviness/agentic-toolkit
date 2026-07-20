@@ -236,7 +236,7 @@ Scope options: `frontend`, `backend`, `infra`, or `all` (default). Combine with 
 
 ### [agentic-atlas](skills/agentic-atlas/SKILL.md)
 
-Profiles an agentic development approach, framework, or skill collection and locates it on 13 signed, bipolar axes (Greenfield ↔ Brownfield, Autonomous ↔ Human-in-loop, Spec-light ↔ Spec-driven, and ten more). It is not a ranking and has no aggregate score: each axis is an independent position on a shared `-10..+10` scale, and both poles are legitimate.
+Profiles an agentic development approach, framework, or skill collection and locates it on 13 signed, diverging axes (Greenfield ↔ Brownfield, Autonomous ↔ Human-in-loop, Spec-light ↔ Spec-driven, and ten more). It reports what it sees rather than grading, ranking, or crowning a winner: each axis is an independent position on a shared `-10..+10` scale where both poles are legitimate, so you can judge fit for your own work.
 
 - Drives the vendored [agentic-atlas](https://github.com/AdamCaviness/agentic-atlas) engine (`vendor/agentic-atlas`, git subtree), which is deterministic and needs no API key
 - The engine computes the **measured** indicators (vocabulary density, path presence, git stats, GitHub stars); your coding agent answers the **classified** interpretive questions from the target repository, so the full profile needs no API key and no model calls
