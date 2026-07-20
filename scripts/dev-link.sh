@@ -3,7 +3,7 @@
 #
 # Symlinks every skills/<name>/ into project-level .claude/skills/, which Claude
 # Code discovers only while your cwd is this repo. The links are bare-named
-# (/pr, /agentic-atlas), so they sit alongside the global marketplace plugin's
+# (/pr, /ship), so they sit alongside the global marketplace plugin's
 # namespaced commands (/agentic-toolkit:pr) without conflict, and they serve the
 # live working tree instead of a pinned release.
 #
