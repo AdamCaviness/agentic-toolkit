@@ -8,12 +8,6 @@ Every `skills/<name>/` is public API. All three harnesses discover the same `SKI
 
 Never duplicate a skill into a harness-specific subtree. All three harnesses auto-discover `skills/<name>/SKILL.md`. The `model` frontmatter key is honored by Claude Code and ignored by Codex and Gemini.
 
-## Vendored engine (`vendor/agentic-atlas`)
-
-The `/agentic-atlas` skill drives the [agentic-atlas](https://github.com/AdamCaviness/agentic-atlas) engine, vendored as a git subtree under `vendor/agentic-atlas/` so the skill ships with the engine it needs. The plugin source is the whole repo, so the subtree reaches every install (plugin, symlink, extension). Do not hand-edit files under the subtree prefix; that fights future `git subtree pull`. Refresh and re-vendor commands live in `vendor/README.md`.
-
-`skills/agentic-atlas/atlas.sh` is the launcher: it resolves the engine from the skill's real (symlink-resolved) path, bootstraps `vendor/agentic-atlas/.venv/` on first run, and forwards arguments to the engine. The venv and other build artifacts are gitignored. The engine is deterministic and needs no API key; the skill's host agent answers the classified questions the engine validates.
-
 ## Dogfooding skills locally
 
 `scripts/dev-link.sh` symlinks every `skills/<name>/` into project-level `.claude/skills/`, so Claude Code serves the live working-tree skills (bare-named, `/pr`) only while your cwd is this repo. They coexist with the global marketplace plugin's namespaced commands (`/agentic-toolkit:pr`), which stay pinned to the released version and remain the only commands visible in other projects. The script is idempotent: re-run it after adding a skill to link the new one and prune removed ones. `.claude/skills/` is gitignored. Creating it for the first time needs one Claude Code restart before the project skills are watched. To stop dogfooding: `rm -rf .claude/skills`.
