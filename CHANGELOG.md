@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.17.0...v1.0.0) (2026-07-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **agentic-atlas:** the agentic-atlas skill is no longer part of agentic-toolkit; install the agentic-atlas plugin from agentic-marketplace instead.
+
+### Features
+
+* **agentic-atlas:** extract the atlas skill into its own plugin ([#98](https://github.com/AdamCaviness/agentic-toolkit/issues/98)) ([4995bf9](https://github.com/AdamCaviness/agentic-toolkit/commit/4995bf9cf2ba29bf608831556af46375fc538090))
+
 ## [0.17.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.16.0...v0.17.0) (2026-07-20)
 
 
