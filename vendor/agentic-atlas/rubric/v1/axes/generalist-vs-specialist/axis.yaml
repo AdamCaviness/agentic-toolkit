@@ -6,6 +6,9 @@ poles:
 description: >
   How domain-focused the approach is. Negative means it targets any domain, from
   writing to business to wellness. Positive means it specializes in software delivery.
+explain:
+  negative: works across any domain, from writing to business to code
+  positive: built specifically for software delivery
 indicators:
   - id: gs1
     question: "Is it framed for any domain, or specifically for software engineering?"

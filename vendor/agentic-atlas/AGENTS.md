@@ -4,7 +4,7 @@ This file is the canonical guidance for AI agents (Claude Code and others) worki
 
 ## What this project is
 
-Agentic Atlas profiles agentic development approaches and frameworks by locating each on signed, bipolar axes. It is **not** a ranking tool and there is **no aggregate score**. Read `README.md` and `docs/design.md` before making architectural changes.
+Agentic Atlas profiles agentic development approaches and frameworks by locating each on signed, diverging axes. It is **not** a ranking tool and there is **no aggregate score**. Read `README.md` and `docs/design.md` before making architectural changes.
 
 ## Core invariants (do not violate without a versioned rubric change)
 

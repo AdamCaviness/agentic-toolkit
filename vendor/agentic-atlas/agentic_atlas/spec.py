@@ -17,7 +17,7 @@ from pathlib import Path
 
 import yaml
 
-from .models import Axis, Indicator, IndicatorKind, Poles, Rubric
+from .models import Axis, Explain, Indicator, IndicatorKind, Poles, Rubric
 
 
 def _resolve_dir(path: str | Path) -> Path:
@@ -61,6 +61,7 @@ def parse_axis(raw: dict, scale: float = 10.0) -> Axis:
         )
         for i in raw["indicators"]
     )
+    explain_raw = raw.get("explain") or {}
     return Axis(
         id=raw["id"],
         title=raw["title"],
@@ -68,6 +69,10 @@ def parse_axis(raw: dict, scale: float = 10.0) -> Axis:
         indicators=indicators,
         scale=scale,
         description=raw.get("description", ""),
+        explain=Explain(
+            negative=explain_raw.get("negative", ""),
+            positive=explain_raw.get("positive", ""),
+        ),
     )
 
 

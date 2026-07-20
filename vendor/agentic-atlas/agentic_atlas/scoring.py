@@ -36,6 +36,7 @@ def score_axis(axis: Axis, results: list[IndicatorResult], *, ndigits: int = 1) 
         score=score,
         coverage=round(coverage, 4),
         indicators=tuple(results),
+        explain=axis.explain,
     )
 
 

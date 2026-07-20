@@ -6,6 +6,9 @@ poles:
 description: >
   How the approach reaches decisions. Negative means it elicits, asks questions,
   and defers to the user. Positive means it prescribes a strong default path.
+explain:
+  negative: asks questions and defers the decisions to you
+  positive: prescribes a strong default path and drives it
 indicators:
   - id: io1
     question: "Does it run a questioning or brainstorming phase before writing code?"

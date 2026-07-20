@@ -6,6 +6,9 @@ poles:
 description: >
   How central testing is to the approach. Negative means testing is incidental or
   left to the user. Positive means test-first discipline (TDD) is enforced.
+explain:
+  negative: testing is incidental, left to your judgment
+  positive: test-first discipline (TDD) is built in and enforced
 indicators:
   - id: tf1
     question: "Does it enforce writing tests before implementation (TDD)?"

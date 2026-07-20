@@ -7,6 +7,9 @@ description: >
   What kind of output the approach optimizes for. Negative means fast, throwaway,
   proof-of-concept output. Positive means production hardening: tests, CI, security,
   and maintainability.
+explain:
+  negative: fast, throwaway output to prove an idea
+  positive: hardened output with tests, CI, security, and maintainability in mind
 indicators:
   - id: pp1
     question: "How much emphasis on production hardening (CI, deployment, security, observability)?"

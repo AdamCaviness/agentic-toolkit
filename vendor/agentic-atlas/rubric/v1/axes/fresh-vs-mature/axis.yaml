@@ -10,6 +10,9 @@ description: >
   pole is better: fresh often means the newest ideas, mature often means fewer
   surprises. This axis leans on deterministic repository facts, so it scores
   meaningfully even with no classified indicators answered.
+explain:
+  negative: new and moving fast, the newest ideas on a thin track record
+  positive: established and battle tested, stable but slower to change
 indicators:
   - id: fm1
     question: "How old is the repository, from its first commit to HEAD?"

@@ -2,7 +2,7 @@
 
 ## Thesis
 
-Comparisons of agentic workflows are usually opinion. Agentic Atlas makes the comparison a transparent, versioned computation: it profiles a tool by locating it on signed bipolar axes, and each position is computed from many small, named, evidence-backed indicators.
+Comparisons of agentic workflows are usually opinion. Agentic Atlas makes the comparison a transparent, versioned computation: it profiles a tool by locating it on signed diverging axes, and each position is computed from many small, named, evidence-backed indicators.
 
 It does not claim objective truth. It claims something you can inspect and argue with: a spec you can contest at the level of a single indicator and change with a versioned pull request.
 

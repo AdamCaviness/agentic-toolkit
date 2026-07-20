@@ -6,6 +6,9 @@ poles:
 description: >
   How rigidly the approach's parts are arranged. Negative means a fixed pipeline you
   follow in order. Positive means modular parts you pick and combine as needed.
+explain:
+  negative: a fixed pipeline you follow in order
+  positive: modular parts you pick and combine as you need them
 indicators:
   - id: pc1
     question: "Is it a fixed pipeline you follow, or modular parts you compose?"

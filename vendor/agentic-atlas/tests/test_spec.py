@@ -71,3 +71,12 @@ def test_answer_values_in_range():
         for ind in axis.indicators:
             for v in ind.answers.values():
                 assert -1.0 <= v <= 1.0
+
+
+def test_every_axis_has_plain_language_pole_meanings():
+    # Every shipped axis must explain both poles so the report can teach a reader what the
+    # pole words mean. The neutral middle is explained once by the renderer, not per axis.
+    r = load_rubric(_RUBRIC)
+    for axis in r.axes:
+        assert axis.explain.negative, f"{axis.id} is missing a negative pole meaning"
+        assert axis.explain.positive, f"{axis.id} is missing a positive pole meaning"

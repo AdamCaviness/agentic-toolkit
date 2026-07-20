@@ -18,6 +18,16 @@
         "positive": { "type": "string" }
       }
     },
+    "explain": {
+      "type": "object",
+      "required": ["negative", "positive"],
+      "additionalProperties": false,
+      "description": "Plain-language meaning of each pole, shown in the report. One sharp sentence per pole. The neutral middle is explained once by the renderer, not per axis.",
+      "properties": {
+        "negative": { "type": "string" },
+        "positive": { "type": "string" }
+      }
+    },
     "indicators": {
       "type": "array",
       "minItems": 1,

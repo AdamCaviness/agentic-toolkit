@@ -6,6 +6,9 @@ poles:
 description: >
   How much of the delivery lifecycle the approach covers. Negative means a single
   focused task. Positive means the whole lifecycle from idea to release.
+explain:
+  negative: one focused task
+  positive: the whole delivery lifecycle, from idea to release
 indicators:
   - id: sl1
     question: "How many lifecycle phases does it cover (idea, spec, plan, implement, test, review, release)?"
