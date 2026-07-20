@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.16.0...v0.17.0) (2026-07-20)
+
+
+### Features
+
+* **agentic-atlas:** refresh vendored engine with per-axis pole descriptions ([#95](https://github.com/AdamCaviness/agentic-toolkit/issues/95)) ([a2b74af](https://github.com/AdamCaviness/agentic-toolkit/commit/a2b74afefbd4c65361adf7fba4223b0953dc7135))
+
 ## [0.16.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.15.2...v0.16.0) (2026-07-17)
 
 
