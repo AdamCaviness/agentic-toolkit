@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.0.0...v1.0.1) (2026-07-31)
+
+
+### Bug Fixes
+
+* **skills:** harden the shared guards in the workflow skills ([#100](https://github.com/AdamCaviness/agentic-toolkit/issues/100)) ([a6c3880](https://github.com/AdamCaviness/agentic-toolkit/commit/a6c388024aa4db9763de3308246201a6cab2e969))
+
 ## [1.0.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v0.17.0...v1.0.0) (2026-07-20)
 
 
