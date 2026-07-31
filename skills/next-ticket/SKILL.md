@@ -305,7 +305,7 @@ BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|ref
 if [ -z "$BASE_BRANCH" ]; then
   git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
 fi
-BASE_SHA=$(git merge-base HEAD "origin/$BASE_BRANCH" 2>/dev/null || git merge-base HEAD "$BASE_BRANCH")
+BASE_SHA=$(git merge-base HEAD "origin/$BASE_BRANCH" 2>/dev/null || git merge-base HEAD "$BASE_BRANCH" 2>/dev/null || true)
 HEAD_SHA=$(git rev-parse HEAD)
 HAS_UNCOMMITTED=$([ -n "$(git status --porcelain)" ] && echo "yes" || echo "no")
 CHANGED_PATH_INVENTORY=$(
@@ -316,11 +316,30 @@ CHANGED_PATH_INVENTORY=$(
     git ls-files --others --exclude-standard | sed 's/^/untracked\t/'
   } | sort -u
 )
-HIGH_RISK_PATHS=$(
-  printf '%s\n' "$CHANGED_PATH_INVENTORY" |
-    grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc|id_rsa|id_dsa|credentials|secrets?|token|key)(\.|/|$)|\.(pem|p12|pfx|key|crt|sqlite|db|dump|zip|tar|tgz|gz)$|(^|/)\.github/workflows/' || true
+# Bare paths, with no state or status column. The screen anchors on (^|/) and a
+# leading "committed<TAB>A<TAB>" column would put a tab where it expects the
+# start of the path, so every root-level .env, id_rsa, or credentials.json
+# would slip through unmatched.
+CHANGED_PATHS=$(
+  {
+    git diff --name-only "$BASE_SHA..$HEAD_SHA"
+    git diff --cached --name-only
+    git diff --name-only
+    git ls-files --others --exclude-standard
+  } | sort -u
 )
+HIGH_RISK_PATHS=$(
+  printf '%s\n' "$CHANGED_PATHS" |
+    grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$|(^|/)(token|key)(\.|/|$)|\.(zip|tar|tgz|gz)$|(^|/)\.github/workflows/' || true
+)
+
+printf 'BASE_SHA=%s\nHEAD_SHA=%s\nHAS_UNCOMMITTED=%s\n' \
+  "$BASE_SHA" "$HEAD_SHA" "$HAS_UNCOMMITTED"
+printf -- '--- CHANGED_PATH_INVENTORY ---\n%s\n' "$CHANGED_PATH_INVENTORY"
+printf -- '--- HIGH_RISK_PATHS ---\n%s\n' "$HIGH_RISK_PATHS"
 ```
+
+The grep opens with the shared high-risk path screen from AGENTS.md, then adds the archive and workflow alternations, matching the `code-review` skill exactly. The block prints every value it builds, because shell state does not persist between Bash invocations and a variable that is only assigned is gone by the time the next step runs. Read the check below and the reviewer-prompt placeholders from that printed output. If `BASE_SHA` is empty, neither `origin/$BASE_BRANCH` nor `$BASE_BRANCH` resolves and the range `$BASE_SHA..$HEAD_SHA` is malformed, so the inventory would silently misreport the change set. Treat that as the Step 9.5 failure mode below: capture `Review: skipped (no merge base with <default branch>)` and continue to Step 10.
 
 2. **Build the narrative placeholders:**
    - `DESCRIPTION`: a one to two sentence summary of the change you just implemented.

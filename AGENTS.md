@@ -39,6 +39,30 @@ Never hardcode `main` or `master` in skill commands, guards, diff ranges, or use
 
 Shell state does not persist between separate Bash tool invocations. Each skill must either re-resolve `BASE_BRANCH` at the top of every bash block that consumes it, or substitute the resolved literal branch name into the commands the agent runs (instead of letting `$BASE_BRANCH` expand in a fresh shell where it is unset). Do not assume a variable set in step N is still in scope in step N+1.
 
+## High-risk path screen
+
+Skills that publish to a remote, or that hand a change set to a reviewer, screen the path inventory for secret-shaped files with one shared regex. Carry it verbatim so a change to the pattern set lands everywhere at once:
+
+```
+(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$
+```
+
+The fenced block that runs the screen resolves and verifies `BASE_BRANCH` itself, and never inherits it from an earlier block. Both ways of getting the base wrong fail silently in the same direction. An unset `BASE_BRANCH` reduces `"$BASE_BRANCH"...HEAD` to `...HEAD`, which compares HEAD with itself and prints nothing, and a `BASE_BRANCH` naming a branch the repository does not have makes `git diff` fail into the same empty output, which the trailing `|| true` then masks. Empty output reads as a clean inventory, so a gate that skipped the check would pass a committed secret through. The publishing skills therefore verify the base resolves before the diff, and stop rather than reporting clean. They check the local branch first and fall back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one, and stopping there would block a legitimate push. The reviewing skills reach the same base through `git merge-base`, which returns nothing when neither ref resolves; `code-review` stops there and `next-ticket` records `Review: skipped` and continues to its final report.
+
+The `credentials` and `secrets` components take decoration on both sides, so the screen matches `aws-credentials.json`, `config/app-secrets.yaml`, `my_secret.txt`, and `client_secrets_v2.json`. The prose glob list this regex replaced matched those through `*credential*` and `*secret*`, and dropping them would have narrowed the gate while unifying it.
+
+What keeps that breadth from blocking ordinary work is the terminator, not the decoration. A decorated component only matches when the path then ends, continues into a directory, or carries a data-bearing extension from the listed set. Source and documentation extensions are absent from that set, so `docs/managing-secrets.md`, `src/hooks/use-secrets.ts`, `src/secrets-manager.ts`, and `internal/aws_credentials_test.go` do not stop a push, while `k8s/base/db-credentials.yaml` and `aws-credentials.json` do. Trailing decoration also excludes dots, `([-_ ][^/.]*)?`, so it cannot swallow an extension and reach the end-of-path alternative. Adding a data extension to that list widens the gate; adding one that source files use would start blocking source files.
+
+The SSH component covers `id_ecdsa` and `id_ed25519` alongside `id_rsa` and `id_dsa`, and accepts a suffix so `id_rsa2` and `deploy/id_rsa_backup` match. The extension group covers the SQLite sidecar files, `db.sqlite3-journal` and `data.db-shm`, which sit beside a matched database and hold the same rows.
+
+`tests/test_high_risk_path_screen.py` asserts every skill that screens paths carries this literal, and runs the literal through `grep` against a list of paths it must match and a list it must leave alone, so a future widening cannot quietly start blocking ordinary source files. Before the validator existed the screen had drifted into two dialects: `pr`, `ship`, and `apply-review` used a prose glob list, while `code-review` and `next-ticket` used a wider regex. The publishing skills were screening for less than the reporting ones, which is backwards.
+
+The validator also fails when a skill outside the two rosters contains `git push` or a screen fingerprint such as `id_rsa`. The rosters are hand-maintained, so without that check a skill added later could push without screening, or hand-roll its own pattern set, and every other assertion in the file would stay silent. `.npmrc` is deliberately not a fingerprint, since `update-deps` legitimately discusses npm registry configuration.
+
+Disposition differs by skill, the pattern set does not. A publishing skill stops and makes the user confirm or remove the path. A reviewing skill passes the matches to the reviewer as `{HIGH_RISK_PATHS}` and never blocks.
+
+Reviewing skills append three alternations after the shared literal: bare `token` and `key` path components, archives, and `.github/workflows/`. Those stay out of the publishing gate on purpose. A false positive costs a reviewer one glance, while a blocking gate that matches `src/auth/token.ts`, a release tarball, or a routine CI edit prompts the user on every single push. The shared literal still catches a real `server.key` or `id_rsa` through the extension group and the credential components.
+
 ## Capability glossary for public skills
 
 Public skills are distributed to Claude Code, Codex, and Gemini. Skill prose may use harness-specific tool names where they read naturally (`Task tool`, `WebSearch`, `Agent tool`); other harnesses generally infer the equivalent. This is a **glossary**, not a required vocabulary, that names recurring capabilities so future skills and adapter docs have a shared lexicon to reach for.

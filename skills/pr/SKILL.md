@@ -59,7 +59,25 @@ Single command to go from "I'm done" to "PR is open."
    - Verify the branch has commits ahead of base: `git rev-list --count "$BASE_BRANCH..HEAD"`. If zero, stop and report "nothing to publish". This is the only valid no-op exit.
    - Verify the working tree is clean: `git status --porcelain` must be empty. If anything remains, stop and report which paths are still uncommitted. The skill never pushes a branch while staged, unstaged, or untracked work remains.
    - Inventory the publication content: `git diff --name-status "$BASE_BRANCH"...HEAD` lists every committed path the push will publish. Read this list.
-   - Screen the publication inventory for high-risk patterns. Stop and report if any path matches `.env`, `.env.*`, `*.pem`, `*.key`, `id_rsa*`, `*.p12`, `*.pfx`, `*credential*`, `*secret*`, or `*.sqlite*`. The user must explicitly confirm or remove the path before push.
+   - Screen the publication inventory for high-risk paths using the shared screen from AGENTS.md. The block re-resolves `BASE_BRANCH` and verifies the base ref itself, so it stays correct even when it runs as its own shell call. An unset `BASE_BRANCH` reduces the range to `...HEAD`, which compares HEAD with itself and prints nothing, and a `BASE_BRANCH` that names a branch this repository does not have makes `git diff` fail into the same empty output. Both cases are indistinguishable from a clean inventory once `|| true` masks the exit code, so the screen confirms its own base before it trusts an empty result. It checks the local branch first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push:
+
+     ```bash
+     BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+     if [ -z "$BASE_BRANCH" ]; then
+       git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
+     fi
+     BASE_REF="$BASE_BRANCH"
+     git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
+     git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
+       printf 'base branch "%s" resolves neither locally nor on origin, cannot screen for high-risk paths\n' "$BASE_BRANCH" >&2
+       exit 1
+     }
+     git diff --name-only "$BASE_REF"...HEAD |
+       grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$' || true
+     ```
+
+   - A non-zero exit from that block means the screen never ran. Stop and report the unresolved base branch. Never treat it as a clean result.
+   - Stop and report every matched path. The user must explicitly confirm or remove the path before push.
 
 7. **Push to remote**:
    - Check if branch exists on remote: `git ls-remote --heads origin $(git branch --show-current)`

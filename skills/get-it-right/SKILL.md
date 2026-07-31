@@ -36,7 +36,10 @@ fi
 Determine what work is being done on the current branch:
 - `git log "$BASE_BRANCH"..HEAD --oneline`, all commits on this branch
 - `git diff "$BASE_BRANCH"...HEAD --stat`, all changed files
+- `git status --porcelain`, uncommitted work this skill may have left from an earlier run
 - If issue number is in branch name, read the GitHub issue for original intent
+
+When all three are empty the branch has no work to re-architect. Stop here and report it, then ask the user which branch or change set to target. Do not enter Step 2 with an empty scope: every later step, the retrospective, the plan, and the footprint guard's percentage, is undefined against a zero-file footprint.
 
 ### 1.5. Untrusted Content Boundary
 
@@ -75,32 +78,35 @@ Enter plan mode. The plan must:
 
 ### 4.5. Footprint Guard
 
-Before auto-implementing, compare the planned footprint to the branch's existing footprint against the default branch. The guard is a stop-and-report checkpoint, not a kill-switch: within bounds the skill proceeds to Step 5 without prompting; outside bounds it stops and asks the user to confirm or revise the plan.
+Before auto-implementing, compare the planned footprint to the branch's existing footprint. The guard is a stop-and-report checkpoint, not a kill-switch: within bounds the skill proceeds to Step 5 without prompting; outside bounds it stops and asks the user to confirm or revise the plan.
 
-Re-resolve the default branch (shell state does not persist across bash blocks):
+Re-resolve the default branch (shell state does not persist across bash blocks), then list committed and uncommitted work together:
 
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
 if [ -z "$BASE_BRANCH" ]; then
   git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
 fi
-git diff --name-only "$BASE_BRANCH"...HEAD
+{
+  git diff --name-only "$BASE_BRANCH"...HEAD
+  git diff --name-only HEAD
+  git ls-files --others --exclude-standard
+} | sort -u
 ```
+
+`git diff --name-only "$BASE_BRANCH"...HEAD` alone sees only commits. This skill leaves its own output uncommitted, so on a second run against the same branch that range scores the first run's files as net-new. The other two commands cover tracked edits and untracked additions.
 
 Define the footprints:
 
-- Original footprint: the file list from `git diff --name-only "$BASE_BRANCH"...HEAD` above. Files the branch already touches.
+- Original footprint: the file list from the command above. Files the branch already touches, committed or not.
 - Planned footprint: every file the Step 4 plan intends to modify, create, or delete.
 - Net-new files: planned footprint minus original footprint.
 - Net-removed files: original footprint minus planned footprint (a file the branch already touches that the plan no longer touches at all).
 
-Stop and ask the user to confirm when any of these is true:
+Stop and ask the user to confirm when either is true:
 
-1. Net-new files exceed 50% of the original footprint count.
-2. Original footprint has 1 to 3 files and net-new files exceed 2. The percentage rule is too sharp on tiny branches; this minimum allowance keeps the guard from tripping on a one-file branch that legitimately splits into two.
-3. Any net-new or net-removed file is not justified by a stated retrospective insight from Step 3.
-
-50% is the published threshold. It tolerates ordinary re-architecture moves, extracting one helper, splitting one module, on a typical branch of 4 to 20 files, while catching the failure mode where the plan triples the footprint. The exact number is debatable; the load-bearing requirement is that there is a documented limit and a stop point.
+1. The net-new count exceeds the allowance, which is the larger of 2 files or 50% of the original footprint count. The percentage tolerates ordinary re-architecture moves, extracting one helper, splitting one module, on a branch of 4 to 20 files, while catching the failure mode where the plan triples the footprint. The 2 file minimum keeps the ratio from tripping on a tiny branch that legitimately splits in two.
+2. Any net-new or net-removed file is not justified by a stated retrospective insight from Step 3.
 
 When the guard trips, print:
 
@@ -108,12 +114,12 @@ When the guard trips, print:
 - Planned footprint count and file list.
 - Net-new files with the retrospective insight that justifies each, or "no insight cited" if absent.
 - Net-removed files with the same justification annotation.
-- Total count delta and the net-new percentage.
-- Which threshold tripped.
+- Net-new count against the allowance, and the total count delta.
+- Which condition tripped.
 
 Then ask the user to confirm proceeding or to revise the plan. Do not auto-implement until the user responds.
 
-When the guard holds, print a one-line summary (original count, planned count, net-new count, net-new percent) and proceed to Step 5.
+When the guard holds, print a one-line summary (original count, planned count, net-new count, allowance) and proceed to Step 5.
 
 ### 5. Auto-Implement
 
@@ -137,6 +143,6 @@ After implementation, output a brief playbook the user follows in the running ap
 - **Fewer files > more files.** Consolidate unless separation of concerns demands otherwise.
 - **Fewer abstractions > more abstractions.** Every indirection layer must earn its keep.
 - **Tests are the constraint.** All existing behavior must be preserved. Tests must pass.
-- **Stay within the branch's footprint.** Re-architecture that adds files outside the branch's existing diff against the default branch needs the user's confirmation before auto-implementing. The footprint guard in Step 4.5 documents the threshold and the stop point.
+- **Stay within the branch's footprint.** Re-architecture that adds files the branch does not already touch needs the user's confirmation before auto-implementing. The footprint guard in Step 4.5 defines the allowance and the stop point.
 - **Don't commit.** The user reviews everything before any git operations.
 - **Don't ask.** Auto-implement unaided when the footprint guard holds. The testing playbook is how the user validates.

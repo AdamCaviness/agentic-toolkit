@@ -45,6 +45,57 @@ class GetItRightFootprintGuardTest(unittest.TestCase):
                     f"footprint guard must reference {phrase!r}",
                 )
 
+    def test_original_footprint_includes_uncommitted_work(self):
+        # The skill leaves its own output uncommitted, so a footprint built from
+        # the committed range alone scores an earlier run's files as net-new.
+        guard_lower = self._extract_guard_section().lower()
+        for phrase in [
+            "git diff --name-only head",
+            "git ls-files --others --exclude-standard",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(
+                    phrase,
+                    guard_lower,
+                    f"original footprint must cover uncommitted work via {phrase!r}",
+                )
+
+    def test_scope_step_stops_when_branch_has_no_work(self):
+        # A branch with no commits and a clean tree yields a zero-file footprint,
+        # against which the guard's percentage is undefined.
+        scope_start = self._index_of("### 1. identify scope")
+        scope_end = self._index_of("### 1.5.", start=scope_start)
+        scope_lower = self.lower[scope_start:scope_end]
+        self.assertIn(
+            "git status --porcelain",
+            scope_lower,
+            "scope step must check for uncommitted work, not commits alone",
+        )
+        self.assertIn(
+            "no work to re-architect",
+            scope_lower,
+            "scope step must name the empty-scope condition",
+        )
+        self.assertTrue(
+            "stop here" in scope_lower and "empty scope" in scope_lower,
+            "scope step must stop rather than proceed with an empty scope",
+        )
+
+    def test_threshold_is_stated_once(self):
+        # The threshold previously appeared in the numbered rules, a rationale
+        # paragraph, and Key Principles, so a change had to land in three places.
+        self.assertEqual(
+            len(re.findall(r"\b50\s*%", self.lower)),
+            1,
+            "the footprint threshold must be stated exactly once in SKILL.md",
+        )
+        principles_idx = self._index_of("## key principles")
+        self.assertNotIn(
+            "50",
+            self.lower[principles_idx:],
+            "Key Principles must point at the guard, not restate its threshold",
+        )
+
     def test_guard_names_a_stop_and_confirm_condition(self):
         # The guard must name a stop point tied to the original-branch footprint,
         # not just describe the comparison abstractly.
