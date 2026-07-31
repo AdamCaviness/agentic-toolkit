@@ -38,12 +38,12 @@ Complete the current branch by committing, pushing, merging, and cleaning up.
    git diff --name-status "$BASE_REF"...HEAD
    printf -- '--- high-risk paths ---\n'
    git diff --name-only "$BASE_REF"...HEAD |
-     grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$' || true
+     grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$' || [ $? -eq 1 ]
    ```
 
    Read each labeled section:
 
-   - **A non-zero exit means the gate never ran.** Stop and report the unresolved base branch. Never treat the absent output as a clean result. An unset base would reduce the range to `...HEAD`, comparing HEAD with itself, and a base naming a branch this repository does not have would make `git diff` fail into the same empty output, which the trailing `|| true` then masks. Both read as a clean inventory. The base is checked locally first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push.
+   - **A non-zero exit means the gate never ran.** Stop and report the unresolved base branch. Never treat the absent output as a clean result. An unset base would reduce the range to `...HEAD`, comparing HEAD with itself, and a base naming a branch this repository does not have would make `git diff` fail into the same empty output. Both read as a clean inventory. The screen ends in `|| [ $? -eq 1 ]` rather than `|| true` for the same reason: `grep` exits 1 for "no matches", which is clean, and 2 for a failure such as an invalid pattern, which is not. `|| true` flattened both to success and handed back the same empty output. The base is checked locally first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push.
    - **publication inventory**: every committed path the push will publish. Read this list.
    - **high-risk paths**: every skill that publishes or reviews carries this same screen verbatim. Stop and report every matched path. The user must remove the path, add it to `.gitignore`, or explicitly confirm before push continues.
 4. **Push**: Push the current branch to origin with `-u` flag if not already pushed.

@@ -330,8 +330,17 @@ CHANGED_PATHS=$(
 )
 HIGH_RISK_PATHS=$(
   printf '%s\n' "$CHANGED_PATHS" |
-    grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$|(^|/)(token|key)(\.|/|$)|\.(zip|tar|tgz|gz)$|(^|/)\.github/workflows/' || true
-)
+    grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$|(^|/)(token|key)(\.|/|$)|\.(zip|tar|tgz|gz)$|(^|/)\.github/workflows/'
+) || {
+  SCREEN_STATUS=$?
+  # grep exits 1 for "no matches", which is a clean result. Any other status
+  # is the screen failing, and an empty HIGH_RISK_PATHS would then tell the
+  # reviewer there is nothing to look at.
+  [ "$SCREEN_STATUS" -eq 1 ] || {
+    printf 'high-risk screen failed with grep exit %s, stopping rather than reporting clean\n' "$SCREEN_STATUS" >&2
+    exit 1
+  }
+}
 
 printf 'BASE_SHA=%s\nHEAD_SHA=%s\nHAS_UNCOMMITTED=%s\n' \
   "$BASE_SHA" "$HEAD_SHA" "$HAS_UNCOMMITTED"

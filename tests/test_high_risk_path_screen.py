@@ -308,11 +308,35 @@ class HighRiskPathScreenTest(unittest.TestCase):
         for skill_name in PUBLISHING_SKILLS:
             with self.subTest(skill=skill_name):
                 self.assertIn(
-                    "**A non-zero exit means the gate never ran.** Stop and "
-                    "report the unresolved base branch. Never treat the absent "
-                    "output as a clean result.",
+                    "**A non-zero exit means the gate never ran.**",
                     self.skill_text(skill_name),
                     f"{skill_name}: must name the failed-screen disposition",
+                )
+
+    def test_screen_distinguishes_no_matches_from_a_failed_screen(self):
+        # `|| true` swallows every grep status. grep exits 1 for "no matches",
+        # which is a clean result, and 2 for a failure such as an invalid
+        # pattern or a missing grep. Flattening both to success hands back the
+        # same empty output, which reads as a clean gate: the exact fail-open
+        # this screen exists to prevent.
+        for skill_name in SCREENING_SKILLS:
+            with self.subTest(skill=skill_name):
+                # Only the screen itself. The reviewing blocks also carry a
+                # deliberate `|| true` on the merge-base line, which lets
+                # BASE_SHA come back empty so the explicit emptiness check can
+                # stop on it.
+                screen_tail = self.screen_block(skill_name).partition("grep -Ei")[2]
+                self.assertNotIn(
+                    "|| true",
+                    screen_tail,
+                    f"{skill_name}: `|| true` turns a failed screen into an "
+                    "empty result that reads as clean",
+                )
+                self.assertRegex(
+                    screen_tail,
+                    r'\$\? -eq 1|SCREEN_STATUS" -eq 1',
+                    f"{skill_name}: the screen must accept grep's exit 1 only, "
+                    "and let any other status stop the gate",
                 )
 
     def test_reviewing_skills_screen_bare_paths(self):
