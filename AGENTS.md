@@ -4,6 +4,10 @@
 
 Every `skills/<name>/` is public API. All three harnesses discover the same `SKILL.md` content; each has its own install mechanism (see README). Edits go live on the next release, so treat them accordingly.
 
+A shipped skill runs inside someone else's project, with none of this repository around it. It must therefore never cite this file. On an end user's machine the bare name `AGENTS.md` resolves to *their* project's file, not this one, so a citation points the reader at unrelated third-party text. For the high-risk path screen that is worse than a dead link: it would source a security control from a document the skill's own Untrusted Content Boundary classifies as untrusted.
+
+State the contract inside the skill and keep the rationale here. Shared content stays identical across copies because `tests/` asserts it verbatim, not because a skill tells the reader where the content came from. The one legitimate mention of `AGENTS.md` in a shipped skill is as one of the *target project's* convention files, listed beside `CLAUDE.md`, which means the user's own file and is the intended reading. The same applies to repository-only paths: `tests/`, `triage_shared/`, `docs/`, and `scripts/` do not exist in the project a skill is invoked against. `tests/test_distribution_boundary.py` enforces both rules.
+
 ## Skills
 
 Never duplicate a skill into a harness-specific subtree. All three harnesses auto-discover `skills/<name>/SKILL.md`. The `model` frontmatter key is honored by Claude Code and ignored by Codex and Gemini.

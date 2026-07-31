@@ -12,7 +12,7 @@ Single command to go from "I'm done" to "PR is open."
 
 ## Workflow
 
-0. **Resolve default branch** (shared branch lifecycle contract from AGENTS.md):
+0. **Resolve default branch** (never hardcode `main` or `master`):
 
    First check the PR cache (see the PR Cache section below for its worktree-safe path). If it has a `baseBranch`, use it. Otherwise resolve it with the snippet and write it back to the cache:
 
@@ -59,7 +59,7 @@ Single command to go from "I'm done" to "PR is open."
    - Verify the branch has commits ahead of base: `git rev-list --count "$BASE_BRANCH..HEAD"`. If zero, stop and report "nothing to publish". This is the only valid no-op exit.
    - Verify the working tree is clean: `git status --porcelain` must be empty. If anything remains, stop and report which paths are still uncommitted. The skill never pushes a branch while staged, unstaged, or untracked work remains.
    - Inventory the publication content: `git diff --name-status "$BASE_BRANCH"...HEAD` lists every committed path the push will publish. Read this list.
-   - Screen the publication inventory for high-risk paths using the shared screen from AGENTS.md. The block re-resolves `BASE_BRANCH` and verifies the base ref itself, so it stays correct even when it runs as its own shell call. An unset `BASE_BRANCH` reduces the range to `...HEAD`, which compares HEAD with itself and prints nothing, and a `BASE_BRANCH` that names a branch this repository does not have makes `git diff` fail into the same empty output. Both cases are indistinguishable from a clean inventory once `|| true` masks the exit code, so the screen confirms its own base before it trusts an empty result. It checks the local branch first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push:
+   - Screen the publication inventory for high-risk paths. Every skill that publishes or reviews carries this same screen verbatim. The block re-resolves `BASE_BRANCH` and verifies the base ref itself, so it stays correct even when it runs as its own shell call. An unset `BASE_BRANCH` reduces the range to `...HEAD`, which compares HEAD with itself and prints nothing, and a `BASE_BRANCH` that names a branch this repository does not have makes `git diff` fail into the same empty output. Both cases are indistinguishable from a clean inventory once `|| true` masks the exit code, so the screen confirms its own base before it trusts an empty result. It checks the local branch first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push:
 
      ```bash
      BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')

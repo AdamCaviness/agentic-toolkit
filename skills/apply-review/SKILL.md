@@ -10,7 +10,7 @@ Read all review comments on a PR, validate each against the code, fix valid ones
 
 ## Step 0: Resolve Default Branch
 
-Shared branch lifecycle contract from AGENTS.md:
+Resolve the default branch. Never hardcode `main` or `master`:
 
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
@@ -176,7 +176,7 @@ git diff --name-only "$BASE_REF"...HEAD |
   grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$' || true
 ```
 
-The grep is the shared high-risk path screen from AGENTS.md. A non-zero exit from that block means the screen never ran. Stop and report the unresolved base branch. Never treat it as a clean result. Otherwise stop and report every matched path. The user must confirm or remove the path before push.
+The grep is the high-risk path screen that every publishing and reviewing skill carries verbatim. A non-zero exit from that block means the screen never ran. Stop and report the unresolved base branch. Never treat it as a clean result. Otherwise stop and report every matched path. The user must confirm or remove the path before push.
 
 Push:
 

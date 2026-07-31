@@ -63,7 +63,7 @@ printf -- '--- CHANGED_PATH_INVENTORY ---\n%s\n' "$CHANGED_PATH_INVENTORY"
 printf -- '--- HIGH_RISK_PATHS ---\n%s\n' "$HIGH_RISK_PATHS"
 ```
 
-The grep opens with the shared high-risk path screen from AGENTS.md, then adds the archive and workflow alternations. Those extras are review-only: a false positive costs the reviewer one glance, whereas the publishing skills block on a match and must not stop a push on every CI edit.
+The grep opens with the high-risk path screen that every publishing and reviewing skill carries verbatim, then adds the archive and workflow alternations. Those extras are review-only: a false positive costs the reviewer one glance, whereas the publishing skills block on a match and must not stop a push on every CI edit.
 
 The block prints every value it builds. Shell state does not persist between Bash invocations, so a variable that is only assigned is gone by the time the next step runs, and the stop conditions below would be evaluated against nothing. Read both stop conditions and the reviewer-prompt placeholders from that printed output.
 

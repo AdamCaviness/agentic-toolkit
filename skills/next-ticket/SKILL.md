@@ -241,7 +241,7 @@ Determine the branch category from the ticket content:
 - Documentation = `docs/`
 - Everything else = `chore/`
 
-Resolve the default branch using the shared branch lifecycle contract from AGENTS.md:
+Resolve the default branch. Never hardcode `main` or `master`:
 
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
@@ -298,7 +298,7 @@ Do NOT push. Do NOT create a PR. Proceed to Step 9.5.
 
 Before announcing completion, dispatch the code-reviewer subagent against the work just committed. The reviewer's findings are folded into the Step 10 summary so the user gets implementation status and review verdict in one shot.
 
-1. **Resolve the default branch and build review variables.** Re-resolve `BASE_BRANCH` per the AGENTS.md branch lifecycle contract; shell state does not persist between Bash invocations.
+1. **Resolve the default branch and build review variables.** Re-resolve `BASE_BRANCH` here rather than inheriting it; shell state does not persist between Bash invocations.
 
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
@@ -339,7 +339,7 @@ printf -- '--- CHANGED_PATH_INVENTORY ---\n%s\n' "$CHANGED_PATH_INVENTORY"
 printf -- '--- HIGH_RISK_PATHS ---\n%s\n' "$HIGH_RISK_PATHS"
 ```
 
-The grep opens with the shared high-risk path screen from AGENTS.md, then adds the archive and workflow alternations, matching the `code-review` skill exactly. The block prints every value it builds, because shell state does not persist between Bash invocations and a variable that is only assigned is gone by the time the next step runs. Read the check below and the reviewer-prompt placeholders from that printed output. If `BASE_SHA` is empty, neither `origin/$BASE_BRANCH` nor `$BASE_BRANCH` resolves and the range `$BASE_SHA..$HEAD_SHA` is malformed, so the inventory would silently misreport the change set. Treat that as the Step 9.5 failure mode below: capture `Review: skipped (no merge base with <default branch>)` and continue to Step 10.
+The grep opens with the high-risk path screen that every publishing and reviewing skill carries verbatim, then adds the archive and workflow alternations, matching the `code-review` skill exactly. The block prints every value it builds, because shell state does not persist between Bash invocations and a variable that is only assigned is gone by the time the next step runs. Read the check below and the reviewer-prompt placeholders from that printed output. If `BASE_SHA` is empty, neither `origin/$BASE_BRANCH` nor `$BASE_BRANCH` resolves and the range `$BASE_SHA..$HEAD_SHA` is malformed, so the inventory would silently misreport the change set. Treat that as the Step 9.5 failure mode below: capture `Review: skipped (no merge base with <default branch>)` and continue to Step 10.
 
 2. **Build the narrative placeholders:**
    - `DESCRIPTION`: a one to two sentence summary of the change you just implemented.

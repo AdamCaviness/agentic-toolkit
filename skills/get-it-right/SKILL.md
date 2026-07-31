@@ -24,7 +24,7 @@ digraph get_it_right {
 
 ### 1. Identify Scope
 
-Resolve the default branch first (shared branch lifecycle contract from AGENTS.md):
+Resolve the default branch first. Never hardcode `main` or `master`:
 
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')

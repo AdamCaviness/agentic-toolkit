@@ -10,7 +10,7 @@ Complete the current branch by committing, pushing, merging, and cleaning up.
 
 ## Steps
 
-0. **Resolve default branch** (shared branch lifecycle contract from AGENTS.md):
+0. **Resolve default branch** (never hardcode `main` or `master`):
 
    ```bash
    BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
@@ -31,7 +31,7 @@ Complete the current branch by committing, pushing, merging, and cleaning up.
    ```
 
    - Inventory the publication content: `git diff --name-status "$BASE_BRANCH"...HEAD` lists every committed path the push will publish. Read this list.
-   - Screen the publication inventory for high-risk paths using the shared screen from AGENTS.md. The block re-resolves `BASE_BRANCH` and verifies the base ref itself. An unset `BASE_BRANCH` reduces the range to `...HEAD`, which compares HEAD with itself and prints nothing, and a `BASE_BRANCH` that names a branch this repository does not have makes `git diff` fail into the same empty output. Both cases are indistinguishable from a clean inventory once `|| true` masks the exit code, so the screen confirms its own base before it trusts an empty result. It checks the local branch first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push:
+   - Screen the publication inventory for high-risk paths. Every skill that publishes or reviews carries this same screen verbatim. The block re-resolves `BASE_BRANCH` and verifies the base ref itself. An unset `BASE_BRANCH` reduces the range to `...HEAD`, which compares HEAD with itself and prints nothing, and a `BASE_BRANCH` that names a branch this repository does not have makes `git diff` fail into the same empty output. Both cases are indistinguishable from a clean inventory once `|| true` masks the exit code, so the screen confirms its own base before it trusts an empty result. It checks the local branch first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push:
 
      ```bash
      BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
