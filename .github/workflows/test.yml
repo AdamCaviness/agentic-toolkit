@@ -1,0 +1,56 @@
+name: test
+
+# The tests/ suite is this repository's only enforcement mechanism. The skills
+# are markdown, so nothing compiles and nothing type-checks; the validators are
+# what keep the shared literals, guards, and prose rules from drifting between
+# the copies that carry them. Without this job they run only when someone
+# remembers to run them locally.
+
+# `main` is written literally here on purpose. The AGENTS.md rule against
+# hardcoding a default branch governs `skills/`, which run inside arbitrary
+# repositories where the name is unknown. This workflow runs only in this
+# repository, whose default branch is `main`, and `release-please.yml` states
+# it the same way. GitHub does not accept expressions in a trigger filter, so
+# the alternative is to trigger on every push and skip inside the job, which
+# starts a runner per branch push to do nothing. `pull_request` already covers
+# branch work; this push filter exists for the post-merge run.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A pull request that gets three pushes in a minute should run this once, not
+# three times. Superseded runs tell you nothing.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # tests/ has no __init__.py, so the test modules import by bare name and
+      # the top-level directory cannot be the repository root. `-t tests` is
+      # what discover already defaults to here, and is spelled out so the
+      # command matches the one the contributor docs give and so `-t .` is not
+      # reintroduced by mistake.
+      - name: Run validator suite
+        run: python -m unittest discover -s tests -p "test_*.py" -t tests -v
+
+      # Pinned so a new ruff release cannot fail an unrelated pull request by
+      # adding a lint rule. Bump it deliberately. Only `check` runs: the
+      # repository has no ruff config and most files are not ruff-formatted, so
+      # `format --check` would fail on contents this job does not own.
+      - name: Lint
+        run: |
+          pip install ruff==0.15.6
+          ruff check .

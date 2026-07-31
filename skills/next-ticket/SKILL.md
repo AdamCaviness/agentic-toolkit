@@ -241,7 +241,7 @@ Determine the branch category from the ticket content:
 - Documentation = `docs/`
 - Everything else = `chore/`
 
-Resolve the default branch using the shared branch lifecycle contract from AGENTS.md:
+Resolve the default branch. Never hardcode `main` or `master`:
 
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
@@ -298,14 +298,14 @@ Do NOT push. Do NOT create a PR. Proceed to Step 9.5.
 
 Before announcing completion, dispatch the code-reviewer subagent against the work just committed. The reviewer's findings are folded into the Step 10 summary so the user gets implementation status and review verdict in one shot.
 
-1. **Resolve the default branch and build review variables.** Re-resolve `BASE_BRANCH` per the AGENTS.md branch lifecycle contract; shell state does not persist between Bash invocations.
+1. **Resolve the default branch and build review variables.** Re-resolve `BASE_BRANCH` here rather than inheriting it; shell state does not persist between Bash invocations.
 
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
 if [ -z "$BASE_BRANCH" ]; then
   git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
 fi
-BASE_SHA=$(git merge-base HEAD "origin/$BASE_BRANCH" 2>/dev/null || git merge-base HEAD "$BASE_BRANCH")
+BASE_SHA=$(git merge-base HEAD "origin/$BASE_BRANCH" 2>/dev/null || git merge-base HEAD "$BASE_BRANCH" 2>/dev/null || true)
 HEAD_SHA=$(git rev-parse HEAD)
 HAS_UNCOMMITTED=$([ -n "$(git status --porcelain)" ] && echo "yes" || echo "no")
 CHANGED_PATH_INVENTORY=$(
@@ -316,17 +316,36 @@ CHANGED_PATH_INVENTORY=$(
     git ls-files --others --exclude-standard | sed 's/^/untracked\t/'
   } | sort -u
 )
-HIGH_RISK_PATHS=$(
-  printf '%s\n' "$CHANGED_PATH_INVENTORY" |
-    grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc|id_rsa|id_dsa|credentials|secrets?|token|key)(\.|/|$)|\.(pem|p12|pfx|key|crt|sqlite|db|dump|zip|tar|tgz|gz)$|(^|/)\.github/workflows/' || true
+# Bare paths, with no state or status column. The screen anchors on (^|/) and a
+# leading "committed<TAB>A<TAB>" column would put a tab where it expects the
+# start of the path, so every root-level .env, id_rsa, or credentials.json
+# would slip through unmatched.
+CHANGED_PATHS=$(
+  {
+    git diff --name-only "$BASE_SHA..$HEAD_SHA"
+    git diff --cached --name-only
+    git diff --name-only
+    git ls-files --others --exclude-standard
+  } | sort -u
 )
+HIGH_RISK_PATHS=$(
+  printf '%s\n' "$CHANGED_PATHS" |
+    grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$|(^|/)(token|key)(\.|/|$)|\.(zip|tar|tgz|gz)$|(^|/)\.github/workflows/' || true
+)
+
+printf 'BASE_SHA=%s\nHEAD_SHA=%s\nHAS_UNCOMMITTED=%s\n' \
+  "$BASE_SHA" "$HEAD_SHA" "$HAS_UNCOMMITTED"
+printf -- '--- CHANGED_PATH_INVENTORY ---\n%s\n' "$CHANGED_PATH_INVENTORY"
+printf -- '--- HIGH_RISK_PATHS ---\n%s\n' "$HIGH_RISK_PATHS"
 ```
+
+The grep opens with the high-risk path screen that every publishing and reviewing skill carries verbatim, then adds the archive and workflow alternations, matching the `code-review` skill exactly. The block prints every value it builds, because shell state does not persist between Bash invocations and a variable that is only assigned is gone by the time the next step runs. Read the check below and the reviewer-prompt placeholders from that printed output. If `BASE_SHA` is empty, neither `origin/$BASE_BRANCH` nor `$BASE_BRANCH` resolves and the range `$BASE_SHA..$HEAD_SHA` is malformed, so the inventory would silently misreport the change set. Treat that as the Step 9.5 failure mode below: capture `Review: skipped (no merge base with <default branch>)` and continue to Step 10.
 
 2. **Build the narrative placeholders:**
    - `DESCRIPTION`: a one to two sentence summary of the change you just implemented.
    - `PLAN_OR_REQUIREMENTS`: the ticket title plus the ticket body, verbatim, as fetched in Step 2.
 
-3. **Load and dispatch.** Read `skills/code-review/reviewer-prompt.md`, substitute every `{PLACEHOLDER}` with the values built above, and pass the resulting text as the prompt to the unspecialized reviewer subagent via the Task tool / equivalent. Do not name a specialized reviewer agent from another plugin; the unspecialized subagent takes the template as its full instructions, which is what the template is written for.
+3. **Load and dispatch.** Read `reviewer-prompt.md` from the `code-review` skill's directory, which is a sibling of this skill's own directory (`../code-review/reviewer-prompt.md`). Substitute every `{PLACEHOLDER}` with the values built above, and pass the resulting text as the prompt to the unspecialized reviewer subagent via the Task tool / equivalent. Do not name a specialized reviewer agent from another plugin; the unspecialized subagent takes the template as its full instructions, which is what the template is written for.
 
 4. **Capture findings.** Parse the reviewer's structured output for severity counts (Critical, Important, Minor), the Assessment verdict line (Yes / No / With fixes), and the top issues in severity order with their file:line references. Cap the captured issues at five.
 

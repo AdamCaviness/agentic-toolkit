@@ -52,9 +52,69 @@ FORBIDDEN_PATTERNS = {
 }
 
 
+# A range operation needs a ref that resolves, and BASE_BRANCH is only a name.
+# A single-branch clone has origin/<base> and no local <base>, so
+# `git diff "$BASE_BRANCH"...HEAD` exits 128 there. Every range walks BASE_REF.
+RANGE_OPERATIONS_ON_UNVERIFIED_NAME = [
+    r'git diff [^`\n]*"\$BASE_BRANCH"\.\.\.?HEAD',
+    r'git log "\$BASE_BRANCH"\.\.HEAD',
+    r'git rev-list [^`\n]*"\$BASE_BRANCH\.\.HEAD"',
+]
+
+
 class BranchLifecycleContractTest(unittest.TestCase):
     def skill_text(self, skill_name):
         return (SKILLS_DIR / skill_name / "SKILL.md").read_text()
+
+
+    def test_range_operations_use_a_verified_base_ref(self):
+        for skill_name in LIFECYCLE_REQUIRED_SKILLS:
+            text = self.skill_text(skill_name)
+            for pattern in RANGE_OPERATIONS_ON_UNVERIFIED_NAME:
+                with self.subTest(skill=skill_name, pattern=pattern):
+                    match = re.search(pattern, text)
+                    self.assertIsNone(
+                        match,
+                        f"{skill_name}: {match.group(0) if match else pattern!r} "
+                        "walks a range against BASE_BRANCH, which is a branch "
+                        "name and need not resolve. Derive BASE_REF and use it.",
+                    )
+
+    def test_blocks_that_walk_a_range_derive_the_base_ref(self):
+        # The derivation and the range must live in the same block. Shell state
+        # does not persist between Bash invocations, so a BASE_REF resolved in
+        # an earlier block is unset by the time the range runs.
+        for skill_name in LIFECYCLE_REQUIRED_SKILLS:
+            for block in self.fenced_blocks(skill_name):
+                if '"$BASE_REF"' not in block:
+                    continue
+                with self.subTest(skill=skill_name, block=block[:60]):
+                    self.assertIn(
+                        'BASE_REF="$BASE_BRANCH"',
+                        block,
+                        f"{skill_name}: a block using $BASE_REF must derive it "
+                        "in the same block",
+                    )
+                    self.assertIn(
+                        'BASE_REF="origin/$BASE_BRANCH"',
+                        block,
+                        f"{skill_name}: the derivation must fall back to "
+                        "origin/<base> for single-branch clones",
+                    )
+
+    def fenced_blocks(self, skill_name):
+        text = self.skill_text(skill_name)
+        blocks, current = [], None
+        for line in text.splitlines():
+            if line.strip().startswith("```"):
+                if current is None:
+                    current = []
+                else:
+                    blocks.append("\n".join(current))
+                    current = None
+            elif current is not None:
+                current.append(line)
+        return blocks
 
     def test_workflow_skills_include_default_branch_detection(self):
         for skill_name in LIFECYCLE_REQUIRED_SKILLS:

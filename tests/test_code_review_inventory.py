@@ -42,7 +42,7 @@ class CodeReviewInventoryTest(unittest.TestCase):
 
     def test_skill_md_references_reviewer_prompt_file(self):
         skill_text = CODE_REVIEW_SKILL.read_text()
-        self.assertIn("skills/code-review/reviewer-prompt.md", skill_text)
+        self.assertIn("`reviewer-prompt.md` in the same directory", skill_text)
 
     def test_readme_describes_untracked_files_in_review_scope(self):
         text = README.read_text().lower()

@@ -34,7 +34,7 @@ fi
 WORKTREE_PATH=$(pwd)
 ```
 
-Resolve the default branch using the shared branch lifecycle contract from AGENTS.md:
+Resolve the default branch. Never hardcode `main` or `master`:
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
 if [ -z "$BASE_BRANCH" ]; then
@@ -165,5 +165,5 @@ Branch <BRANCH> checked out in <MAIN_WORKTREE>
 - **Never push, create PRs, delete branches, or merge.** Those are separate user decisions.
 - **Cleanup before rebase.** Project cleanup needs worktree context (variables, paths). Rebase happens after.
 - **Never auto-commit untracked files.** Tracked modifications and explicitly staged content go into the WIP commit; unstaged untracked files are stashed and re-popped in the main workspace. `.gitignore` is an exclusion list, not a secret scanner, so a blanket `git add -A` can leak `.env` files, credentials, or generated artifacts into history.
-- **Detect the base branch dynamically.** Use the shared branch lifecycle contract from AGENTS.md: `git symbolic-ref refs/remotes/origin/HEAD`, fall back to `main`, then `master`. Never hardcode the default branch name.
+- **Detect the base branch dynamically.** Use `git symbolic-ref refs/remotes/origin/HEAD`, fall back to `main`, then `master`. Never hardcode the default branch name.
 - If on the default branch or not in a worktree, warn and stop.

@@ -10,7 +10,7 @@ Read all review comments on a PR, validate each against the code, fix valid ones
 
 ## Step 0: Resolve Default Branch
 
-Shared branch lifecycle contract from AGENTS.md:
+Resolve the default branch. Never hardcode `main` or `master`:
 
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
@@ -132,7 +132,13 @@ BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|ref
 if [ -z "$BASE_BRANCH" ]; then
   git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
 fi
-git diff --name-only "$BASE_BRANCH"...HEAD
+BASE_REF="$BASE_BRANCH"
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
+  printf 'base branch "%s" resolves neither locally nor on origin\n' "$BASE_BRANCH" >&2
+  exit 1
+}
+git diff --name-only "$BASE_REF"...HEAD
 ```
 
 If a review comment targets a file outside this set, classify as out of scope.
@@ -165,10 +171,20 @@ BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|ref
 if [ -z "$BASE_BRANCH" ]; then
   git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
 fi
-git diff --name-status "$BASE_BRANCH"...HEAD
+BASE_REF="$BASE_BRANCH"
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
+  printf 'base branch "%s" resolves neither locally nor on origin, cannot run the pre-push gate\n' "$BASE_BRANCH" >&2
+  exit 1
+}
+printf -- '--- publication inventory ---\n'
+git diff --name-status "$BASE_REF"...HEAD
+printf -- '--- high-risk paths ---\n'
+git diff --name-only "$BASE_REF"...HEAD |
+  grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$' || true
 ```
 
-Screen the publication inventory for high-risk patterns. Stop and report if any path matches `.env`, `.env.*`, `*.pem`, `*.key`, `id_rsa*`, `*.p12`, `*.pfx`, `*credential*`, `*secret*`, or `*.sqlite*`. The user must confirm or remove the path before push.
+The grep is the high-risk path screen that every publishing and reviewing skill carries verbatim. **A non-zero exit means the gate never ran.** Stop and report the unresolved base branch. Never treat the absent output as a clean result. Otherwise stop and report every matched path. The user must confirm or remove the path before push.
 
 Push:
 

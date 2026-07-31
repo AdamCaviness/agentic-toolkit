@@ -12,7 +12,7 @@ Single command to go from "I'm done" to "PR is open."
 
 ## Workflow
 
-0. **Resolve default branch** (shared branch lifecycle contract from AGENTS.md):
+0. **Resolve default branch** (never hardcode `main` or `master`):
 
    First check the PR cache (see the PR Cache section below for its worktree-safe path). If it has a `baseBranch`, use it. Otherwise resolve it with the snippet and write it back to the cache:
 
@@ -47,19 +47,37 @@ Single command to go from "I'm done" to "PR is open."
    - If there are changes: stage them, commit with message `style: auto-format and lint fixes`. This is a separate commit from the implementation commit in step 2.
    - If no changes: skip
 
-6. **Pre-push gate** (build the publication inventory before any push). Run the read-only checks below in a single shell call with labeled sections, re-resolving `BASE_BRANCH` at the top of that call since shell state does not persist between Bash invocations:
+6. **Pre-push gate** (build the publication inventory before any push). Run this whole block as one shell call. It resolves and verifies its own base rather than inheriting one, since shell state does not persist between Bash invocations, and every check below reads the same verified `BASE_REF`:
 
    ```bash
    BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
    if [ -z "$BASE_BRANCH" ]; then
      git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
    fi
+   BASE_REF="$BASE_BRANCH"
+   git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
+   git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
+     printf 'base branch "%s" resolves neither locally nor on origin, cannot run the pre-push gate\n' "$BASE_BRANCH" >&2
+     exit 1
+   }
+   printf -- '--- commits ahead of %s ---\n' "$BASE_REF"
+   git rev-list --count "$BASE_REF..HEAD"
+   printf -- '--- working tree ---\n'
+   git status --porcelain
+   printf -- '--- publication inventory ---\n'
+   git diff --name-status "$BASE_REF"...HEAD
+   printf -- '--- high-risk paths ---\n'
+   git diff --name-only "$BASE_REF"...HEAD |
+     grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$' || true
    ```
 
-   - Verify the branch has commits ahead of base: `git rev-list --count "$BASE_BRANCH..HEAD"`. If zero, stop and report "nothing to publish". This is the only valid no-op exit.
-   - Verify the working tree is clean: `git status --porcelain` must be empty. If anything remains, stop and report which paths are still uncommitted. The skill never pushes a branch while staged, unstaged, or untracked work remains.
-   - Inventory the publication content: `git diff --name-status "$BASE_BRANCH"...HEAD` lists every committed path the push will publish. Read this list.
-   - Screen the publication inventory for high-risk patterns. Stop and report if any path matches `.env`, `.env.*`, `*.pem`, `*.key`, `id_rsa*`, `*.p12`, `*.pfx`, `*credential*`, `*secret*`, or `*.sqlite*`. The user must explicitly confirm or remove the path before push.
+   Read each labeled section:
+
+   - **A non-zero exit means the gate never ran.** Stop and report the unresolved base branch. Never treat the absent output as a clean result. An unset base would reduce the range to `...HEAD`, comparing HEAD with itself, and a base naming a branch this repository does not have would make `git diff` fail into the same empty output, which the trailing `|| true` then masks. Both read as a clean inventory. The base is checked locally first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push.
+   - **commits ahead**: if zero, stop and report "nothing to publish". This is the only valid no-op exit.
+   - **working tree**: must be empty. If anything remains, stop and report which paths are still uncommitted. The skill never pushes a branch while staged, unstaged, or untracked work remains.
+   - **publication inventory**: every committed path the push will publish. Read this list.
+   - **high-risk paths**: every skill that publishes or reviews carries this same screen verbatim. Stop and report every matched path. The user must explicitly confirm or remove the path before push.
 
 7. **Push to remote**:
    - Check if branch exists on remote: `git ls-remote --heads origin $(git branch --show-current)`
@@ -76,7 +94,7 @@ Single command to go from "I'm done" to "PR is open."
    - Check if PR exists: `gh pr view --json number,url 2>/dev/null`
    - If PR exists: show URL, say "PR updated with latest changes"
    - If no PR exists:
-     - Understand scope from commit messages and file-level stats, not a re-read of the full content diff: `git log "$BASE_BRANCH"..HEAD` (messages) plus `git diff --stat "$BASE_BRANCH"...HEAD` (changed paths). If the diff content was already captured earlier in this conversation and no commits were added since, reuse it. Read full hunks only for commits whose messages do not explain the change.
+     - Understand scope from commit messages and file-level stats, not a re-read of the full content diff: `git log "$BASE_REF"..HEAD` (messages) plus `git diff --stat "$BASE_REF"...HEAD` (changed paths). If the diff content was already captured earlier in this conversation and no commits were added since, reuse it. Read full hunks only for commits whose messages do not explain the change.
      - **Resolve PR template**: if the PR cache (see the PR Cache section below) has a `prTemplatePath` and that file still exists, use it. Otherwise discover it by checking these paths in order, using the first that exists, then write the result to the cache:
 
        ```bash

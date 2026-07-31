@@ -26,7 +26,7 @@ description: >
 
 ### Default mode
 
-1. **Guard.** Check the file extension. Only compress `.md`, `.txt`, `.markdown`, `.rst`, or extensionless files. Refuse anything else. Skip files ending in `.original.md`.
+1. **Guard.** Check the file extension. Only compress `.md`, `.txt`, `.markdown`, `.rst`, or extensionless files. Refuse anything else. Skip files ending in `.original.md` or `.audited.md`; both are this skill's own scratch files, and compressing one corrupts the baseline a later validation depends on.
 2. **Backup.** If `<stem>.original.md` already exists, stop and tell the user (prevents overwriting a previous backup). Otherwise copy the original file to `<stem>.original.md`.
 3. **Compress.** Read the file and rewrite it following the Compression Rules below. Write the compressed content back to the original path.
 4. **Validate.** Run `python3 validate.py <backup_path> <compressed_path>` using the `validate.py` in the same directory as this SKILL.md. Read the output.
@@ -57,11 +57,11 @@ Deep mode trusts you to read the codebase and make intelligent editorial decisio
    - **Partially correct (moved, renamed, behavior changed):** Update the content to reflect reality. Don't just delete, fix it.
    - **Genuinely uncertain (can't determine from the codebase alone):** Keep it and add a note in the report. Don't remove what you can't disprove.
 
-5. **Write the audited file.** Apply all removals and updates. Save a copy of this audited content as the validation baseline (e.g., `<stem>.audited.md`).
+5. **Write the audited file.** Apply all removals and updates. Save a copy of this audited content as the validation baseline at `<stem>.audited.md`. Use that exact name, since the step 1 guard refuses that exact suffix and a different name would let a later run compress its own baseline.
 
 6. **Compress.** Apply the same verbosity reduction as default mode to the surviving content. Write the compressed result to the original path.
 
-7. **Validate, Fix.** Run `validate.py` comparing the **audited file** (step 5) against the **compressed file** (step 6), not the original backup. The audit intentionally changed content, so the original is the wrong baseline. After validation passes or the fix loop completes, remove the audited file.
+7. **Validate, Fix.** Run `validate.py` comparing the **audited file** (step 5) against the **compressed file** (step 6), not the original backup. The audit intentionally changed content, so the original is the wrong baseline. Remove the audited file on every exit path, including the one where the fix loop gives up and restores the backup. Default mode's step 5 only knows about the backup, so without this the audited file survives a failed deep run and is left behind in the user's repo.
 
 8. **Report.** In addition to the standard compression stats, include:
    - Sections or content removed and why (one line each)

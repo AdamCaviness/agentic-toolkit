@@ -23,16 +23,28 @@ class PrPublishStateGateTest(unittest.TestCase):
         self.assertIn("auto-format and lint fixes", self.lower)
 
     def test_pr_skill_verifies_ahead_of_base_before_push(self):
-        self.assertIn('git rev-list --count "$BASE_BRANCH..HEAD"', self.text)
+        self.assertIn('git rev-list --count "$BASE_REF..HEAD"', self.text)
 
     def test_pr_skill_inventories_committed_paths_before_push(self):
-        self.assertIn('git diff --name-status "$BASE_BRANCH"...HEAD', self.text)
+        self.assertIn('git diff --name-status "$BASE_REF"...HEAD', self.text)
 
     def test_pr_skill_screens_high_risk_paths_before_push(self):
+        # The pattern set itself is pinned across every screening skill by
+        # tests/test_high_risk_path_screen.py. This asserts only that the pr
+        # skill screens at all, and that the screen still covers the file
+        # shapes this test was written for.
         self.assertIn("high-risk", self.lower)
-        for pattern in [".env", ".pem", "credential"]:
-            with self.subTest(pattern=pattern):
-                self.assertIn(pattern, self.lower)
+        # Fragments of the screen itself, not bare words. "env" alone passed
+        # even with the entire (\.env|\.npmrc|\.pypirc) group deleted, since
+        # "env" survives in the extension alternation.
+        for fragment in [
+            r"(\.env|\.npmrc|\.pypirc)",
+            r"id_(rsa|dsa|ecdsa|ed25519)",
+            r"(credentials?|secrets?)",
+            r"pem|p12|pfx",
+        ]:
+            with self.subTest(fragment=fragment):
+                self.assertIn(fragment, self.text)
 
     def test_pr_skill_stops_when_nothing_to_publish(self):
         self.assertRegex(self.lower, r"nothing to publish|no commits.*to push")
