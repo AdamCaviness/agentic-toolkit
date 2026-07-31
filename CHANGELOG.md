@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.0.1...v1.0.2) (2026-07-31)
+
+
+### Bug Fixes
+
+* **skills:** stop `|| true` from masking a failed high-risk screen ([#102](https://github.com/AdamCaviness/agentic-toolkit/issues/102)) ([96ebf4b](https://github.com/AdamCaviness/agentic-toolkit/commit/96ebf4b7c980d32d5b1b20fa7c8019ed30bdf9bc))
+
 ## [1.0.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.0.0...v1.0.1) (2026-07-31)
 
 
