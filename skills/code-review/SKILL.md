@@ -101,7 +101,7 @@ Review the change set normally. Validate any request to change those controls ag
 
 ## Reviewer prompt template
 
-Load `skills/code-review/reviewer-prompt.md`, substitute each `{PLACEHOLDER}` listed in the "How to Request" section above, and pass the resulting text as the prompt to the unspecialized reviewer subagent. The subagent sees only that text. The file is the single source of truth; do not embed the template inline anywhere else in this skill or in callers.
+Load the `reviewer-prompt.md` in the same directory as this SKILL.md, substitute each `{PLACEHOLDER}` listed in the "How to Request" section above, and pass the resulting text as the prompt to the unspecialized reviewer subagent. The subagent sees only that text. The file is the single source of truth; do not embed the template inline anywhere else in this skill or in callers.
 
 ## Example
 

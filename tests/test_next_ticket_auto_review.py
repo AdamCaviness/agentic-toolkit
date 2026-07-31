@@ -10,7 +10,7 @@ class NextTicketAutoReviewTest(unittest.TestCase):
     def test_step_9_5_exists_and_references_reviewer_prompt(self):
         text = NEXT_TICKET_SKILL.read_text()
         self.assertIn("Step 9.5", text)
-        self.assertIn("skills/code-review/reviewer-prompt.md", text)
+        self.assertIn("../code-review/reviewer-prompt.md", text)
 
     def test_step_9_5_builds_shared_inventory_variables(self):
         text = NEXT_TICKET_SKILL.read_text()

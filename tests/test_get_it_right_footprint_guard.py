@@ -36,7 +36,9 @@ class GetItRightFootprintGuardTest(unittest.TestCase):
         for phrase in [
             "planned footprint",
             "original footprint",
-            'git diff --name-only "$base_branch"...head',
+            # BASE_REF, not BASE_BRANCH: a range needs a ref that resolves,
+            # and a single-branch clone has only origin/<base>.
+            'git diff --name-only "$base_ref"...head',
         ]:
             with self.subTest(phrase=phrase):
                 self.assertIn(

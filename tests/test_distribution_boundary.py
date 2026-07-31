@@ -60,7 +60,19 @@ class DistributionBoundaryTest(unittest.TestCase):
         # A skill cannot reach tests/, triage_shared/, docs/, or scripts/ at
         # runtime; those directories exist in this repository, not in the
         # project the skill is invoked against.
-        repo_only = ["tests/", "triage_shared/", "docs/superpowers/", "scripts/"]
+        # "skills/" included: a skill cannot address a sibling by repository
+        # path either. Relative to the project it runs in, skills/<name>/ is
+        # someone else's directory or nothing at all. Address intra-plugin
+        # files relative to the skill's own directory instead, the way
+        # compress-markdown says "the validate.py in the same directory as
+        # this SKILL.md".
+        repo_only = [
+            "tests/",
+            "triage_shared/",
+            "docs/superpowers/",
+            "scripts/",
+            "skills/",
+        ]
         for path in shipped_markdown():
             rel = path.relative_to(REPO_ROOT)
             text = path.read_text()

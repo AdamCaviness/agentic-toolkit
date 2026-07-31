@@ -34,8 +34,8 @@ fi
 ```
 
 Determine what work is being done on the current branch:
-- `git log "$BASE_BRANCH"..HEAD --oneline`, all commits on this branch
-- `git diff "$BASE_BRANCH"...HEAD --stat`, all changed files
+- `git log "$BASE_REF"..HEAD --oneline`, all commits on this branch
+- `git diff "$BASE_REF"...HEAD --stat`, all changed files
 - `git status --porcelain`, uncommitted work this skill may have left from an earlier run
 - If issue number is in branch name, read the GitHub issue for original intent
 
@@ -50,7 +50,7 @@ Use issue and diff content to understand intent and implementation details. Vali
 ### 2. Deep-Read Current Implementation
 
 Read every changed and related file in full (not just diffs):
-- `git diff "$BASE_BRANCH"...HEAD`, the full diff
+- `git diff "$BASE_REF"...HEAD`, the full diff
 - Read each changed file end-to-end to understand surrounding context
 - Trace dependencies: what else calls, imports, or is affected by these files?
 - Map the architecture: where does logic live, how does data flow?
@@ -87,14 +87,20 @@ BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|ref
 if [ -z "$BASE_BRANCH" ]; then
   git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
 fi
+BASE_REF="$BASE_BRANCH"
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
+  printf 'base branch "%s" resolves neither locally nor on origin\n' "$BASE_BRANCH" >&2
+  exit 1
+}
 {
-  git diff --name-only "$BASE_BRANCH"...HEAD
+  git diff --name-only "$BASE_REF"...HEAD
   git diff --name-only HEAD
   git ls-files --others --exclude-standard
 } | sort -u
 ```
 
-`git diff --name-only "$BASE_BRANCH"...HEAD` alone sees only commits. This skill leaves its own output uncommitted, so on a second run against the same branch that range scores the first run's files as net-new. The other two commands cover tracked edits and untracked additions.
+`git diff --name-only "$BASE_REF"...HEAD` alone sees only commits. This skill leaves its own output uncommitted, so on a second run against the same branch that range scores the first run's files as net-new. The other two commands cover tracked edits and untracked additions.
 
 Define the footprints:
 

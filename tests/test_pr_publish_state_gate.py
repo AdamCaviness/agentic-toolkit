@@ -23,10 +23,10 @@ class PrPublishStateGateTest(unittest.TestCase):
         self.assertIn("auto-format and lint fixes", self.lower)
 
     def test_pr_skill_verifies_ahead_of_base_before_push(self):
-        self.assertIn('git rev-list --count "$BASE_BRANCH..HEAD"', self.text)
+        self.assertIn('git rev-list --count "$BASE_REF..HEAD"', self.text)
 
     def test_pr_skill_inventories_committed_paths_before_push(self):
-        self.assertIn('git diff --name-status "$BASE_BRANCH"...HEAD', self.text)
+        self.assertIn('git diff --name-status "$BASE_REF"...HEAD', self.text)
 
     def test_pr_skill_screens_high_risk_paths_before_push(self):
         # The pattern set itself is pinned across every screening skill by

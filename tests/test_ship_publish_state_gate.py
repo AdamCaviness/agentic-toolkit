@@ -12,7 +12,7 @@ class ShipPublishStateGateTest(unittest.TestCase):
         self.lower = self.text.lower()
 
     def test_ship_skill_inventories_committed_paths_before_push(self):
-        self.assertIn('git diff --name-status "$BASE_BRANCH"...HEAD', self.text)
+        self.assertIn('git diff --name-status "$BASE_REF"...HEAD', self.text)
 
     def test_ship_skill_screens_high_risk_paths_before_push(self):
         # The pattern set itself is pinned across every screening skill by

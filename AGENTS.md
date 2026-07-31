@@ -6,6 +6,8 @@ Every `skills/<name>/` is public API. All three harnesses discover the same `SKI
 
 A shipped skill runs inside someone else's project, with none of this repository around it. It must therefore never cite this file. On an end user's machine the bare name `AGENTS.md` resolves to *their* project's file, not this one, so a citation points the reader at unrelated third-party text. For the high-risk path screen that is worse than a dead link: it would source a security control from a document the skill's own Untrusted Content Boundary classifies as untrusted.
 
+The same applies to paths. A skill addresses a file it ships with relative to its own directory, never by repository path. `skills/code-review/reviewer-prompt.md` names nothing in the project a skill runs against; "the `reviewer-prompt.md` in the same directory as this SKILL.md" resolves everywhere, and a sibling skill is reached as `../<skill-name>/<file>`. The plugin layout `skills/<name>/` is stable across all three harnesses, so a sibling reference is safe; a repository-rooted one is not.
+
 State the contract inside the skill and keep the rationale here. Shared content stays identical across copies because `tests/` asserts it verbatim, not because a skill tells the reader where the content came from. The one legitimate mention of `AGENTS.md` in a shipped skill is as one of the *target project's* convention files, listed beside `CLAUDE.md`, which means the user's own file and is the intended reading. The same applies to repository-only paths: `tests/`, `triage_shared/`, `docs/`, and `scripts/` do not exist in the project a skill is invoked against. `tests/test_distribution_boundary.py` enforces both rules.
 
 ## Skills
@@ -39,7 +41,20 @@ if [ -z "$BASE_BRANCH" ]; then
 fi
 ```
 
-Never hardcode `main` or `master` in skill commands, guards, diff ranges, or user-facing wording. Use "default branch" in prose. The ahead-of-base check is `git rev-list --count "$BASE_BRANCH..HEAD"`. The diff range for a feature branch is `"$BASE_BRANCH"...HEAD`. The post-merge sync is `git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"`. The remote-tracking reference is `"origin/$BASE_BRANCH"`. Skills that document the resolved default branch back to the user should print `$BASE_BRANCH`, not the literal word `main`.
+`BASE_BRANCH` is a branch *name*. It is not guaranteed to resolve as a ref. A single-branch clone has `origin/<base>` and no local `<base>`, so `git diff "$BASE_BRANCH"...HEAD` exits 128 there while the identical command against `origin/<base>` succeeds. Any block that walks a range therefore derives `BASE_REF` first and uses that:
+
+```bash
+BASE_REF="$BASE_BRANCH"
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
+  printf 'base branch "%s" resolves neither locally nor on origin\n' "$BASE_BRANCH" >&2
+  exit 1
+}
+```
+
+Keep the two apart by what the command needs. A command that needs the *name* uses `$BASE_BRANCH`: `git checkout "$BASE_BRANCH"`, `git pull origin "$BASE_BRANCH"`, comparing the current branch against the default, and every prose mention. A command that walks a *range* uses `$BASE_REF`: `git rev-list --count "$BASE_REF..HEAD"`, `git diff "$BASE_REF"...HEAD`, `git log "$BASE_REF"..HEAD`. Mixing them inside one block is the bug this rule exists to prevent, since the verified ref sitting two lines above an unverified range reads as safe and is not.
+
+Never hardcode `main` or `master` in skill commands, guards, diff ranges, or user-facing wording. Use "default branch" in prose. Skills that document the resolved default branch back to the user should print `$BASE_BRANCH`, not the literal word `main`.
 
 Shell state does not persist between separate Bash tool invocations. Each skill must either re-resolve `BASE_BRANCH` at the top of every bash block that consumes it, or substitute the resolved literal branch name into the commands the agent runs (instead of letting `$BASE_BRANCH` expand in a fresh shell where it is unset). Do not assume a variable set in step N is still in scope in step N+1.
 

@@ -308,9 +308,9 @@ class HighRiskPathScreenTest(unittest.TestCase):
         for skill_name in PUBLISHING_SKILLS:
             with self.subTest(skill=skill_name):
                 self.assertIn(
-                    "A non-zero exit from that block means the screen never "
-                    "ran. Stop and report the unresolved base branch. Never "
-                    "treat it as a clean result.",
+                    "**A non-zero exit means the gate never ran.** Stop and "
+                    "report the unresolved base branch. Never treat the absent "
+                    "output as a clean result.",
                     self.skill_text(skill_name),
                     f"{skill_name}: must name the failed-screen disposition",
                 )
