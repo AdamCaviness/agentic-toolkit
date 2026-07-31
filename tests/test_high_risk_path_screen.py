@@ -157,6 +157,30 @@ class HighRiskPathScreenTest(unittest.TestCase):
         )
         return matches[0]
 
+    def screen_code(self, skill_name):
+        """The screen block from the grep onward, comments stripped.
+
+        Comments are removed so prose describing an invariant can never stand
+        in for the code implementing it. Trailing comments count too: a drift
+        to `|| :  # || [ $? -eq 1 ]` restores the fail-open while leaving the
+        required substring on the line. Quote state is tracked because the
+        screen regex itself sits inside single quotes and may legitimately
+        contain a `#`.
+        """
+        tail = self.screen_block(skill_name).partition("grep -Ei")[2]
+        stripped = []
+        for line in tail.splitlines():
+            in_quote = False
+            cut = len(line)
+            for index, char in enumerate(line):
+                if char == "'":
+                    in_quote = not in_quote
+                elif char == "#" and not in_quote:
+                    cut = index
+                    break
+            stripped.append(line[:cut].rstrip())
+        return "\n".join(stripped)
+
     def test_every_screening_skill_carries_the_canonical_screen(self):
         for skill_name in SCREENING_SKILLS:
             with self.subTest(skill=skill_name):
@@ -308,12 +332,46 @@ class HighRiskPathScreenTest(unittest.TestCase):
         for skill_name in PUBLISHING_SKILLS:
             with self.subTest(skill=skill_name):
                 self.assertIn(
-                    "**A non-zero exit means the gate never ran.** Stop and "
-                    "report the unresolved base branch. Never treat the absent "
-                    "output as a clean result.",
+                    "**A non-zero exit means the gate never ran.**",
                     self.skill_text(skill_name),
                     f"{skill_name}: must name the failed-screen disposition",
                 )
+
+    def test_screen_distinguishes_no_matches_from_a_failed_screen(self):
+        # `|| true` swallows every grep status. grep exits 1 for "no matches",
+        # which is a clean result, and 2 for a failure such as an invalid
+        # pattern or a missing grep. Flattening both to success hands back the
+        # same empty output, which reads as a clean gate: the exact fail-open
+        # this screen exists to prevent.
+        # Asserted as exact code, per roster, with comments stripped. A looser
+        # check passed when the terminator drifted to `|| :`, another spelling
+        # of `|| true`, because a nearby comment mentioning the intended check
+        # satisfied it. `|| true` is not the only way to spell this bug, so
+        # requiring the correct form beats forbidding one wrong one.
+        for skill_name in PUBLISHING_SKILLS:
+            with self.subTest(skill=skill_name):
+                self.assertIn(
+                    "|| [ $? -eq 1 ]",
+                    self.screen_code(skill_name),
+                    f"{skill_name}: the screen must end in `|| [ $? -eq 1 ]`, "
+                    "which accepts grep's \"no matches\" and lets every other "
+                    "status stop the gate",
+                )
+
+        for skill_name in REVIEWING_SKILLS:
+            with self.subTest(skill=skill_name):
+                code = self.screen_code(skill_name)
+                # These capture the screen's output, so a terminator alone
+                # would not surface the failure: a failed substitution leaves
+                # HIGH_RISK_PATHS empty and the reviewer is told there is
+                # nothing to look at.
+                for required in ("SCREEN_STATUS=$?", '[ "$SCREEN_STATUS" -eq 1 ]'):
+                    self.assertIn(
+                        required,
+                        code,
+                        f"{skill_name}: a captured screen must check the status "
+                        f"explicitly and stop on anything but 1 ({required})",
+                    )
 
     def test_reviewing_skills_screen_bare_paths(self):
         # CHANGED_PATH_INVENTORY prefixes each line with a state and status
