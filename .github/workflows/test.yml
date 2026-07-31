@@ -6,6 +6,14 @@ name: test
 # the copies that carry them. Without this job they run only when someone
 # remembers to run them locally.
 
+# `main` is written literally here on purpose. The AGENTS.md rule against
+# hardcoding a default branch governs `skills/`, which run inside arbitrary
+# repositories where the name is unknown. This workflow runs only in this
+# repository, whose default branch is `main`, and `release-please.yml` states
+# it the same way. GitHub does not accept expressions in a trigger filter, so
+# the alternative is to trigger on every push and skip inside the job, which
+# starts a runner per branch push to do nothing. `pull_request` already covers
+# branch work; this push filter exists for the post-merge run.
 on:
   pull_request:
   push:

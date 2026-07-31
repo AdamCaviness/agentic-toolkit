@@ -4,9 +4,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-# AGENTS.md requires commas, not em-dashes or hyphens, for punctuation. The rule
-# existed with nothing enforcing it, which is how an em-dash reached a
-# distributed skill. Scoped to the surfaces the rule governs: the public skills,
+# AGENTS.md asks for commas, not dashes, as punctuation. This validator checks
+# the half of that rule a validator can check: the em-dash and en-dash
+# characters, which are always punctuation. The hyphen is left alone because it
+# is not distinguishable by character from its legitimate uses, compound words,
+# kebab-case names, and CLI flags. The rule existed with nothing enforcing it,
+# which is how an em-dash reached a distributed skill. Scoped to the surfaces the rule governs: the public skills,
 # the shared triage source they are generated from, the contributor docs, and
 # these tests. docs/superpowers/ is excluded on purpose; those plans and specs
 # are historical design records, not living prose.

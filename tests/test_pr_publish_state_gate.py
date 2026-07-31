@@ -34,9 +34,17 @@ class PrPublishStateGateTest(unittest.TestCase):
         # skill screens at all, and that the screen still covers the file
         # shapes this test was written for.
         self.assertIn("high-risk", self.lower)
-        for pattern in ["env", "pem", "credential"]:
-            with self.subTest(pattern=pattern):
-                self.assertIn(pattern, self.lower)
+        # Fragments of the screen itself, not bare words. "env" alone passed
+        # even with the entire (\.env|\.npmrc|\.pypirc) group deleted, since
+        # "env" survives in the extension alternation.
+        for fragment in [
+            r"(\.env|\.npmrc|\.pypirc)",
+            r"id_(rsa|dsa|ecdsa|ed25519)",
+            r"(credentials?|secrets?)",
+            r"pem|p12|pfx",
+        ]:
+            with self.subTest(fragment=fragment):
+                self.assertIn(fragment, self.text)
 
     def test_pr_skill_stops_when_nothing_to_publish(self):
         self.assertRegex(self.lower, r"nothing to publish|no commits.*to push")
