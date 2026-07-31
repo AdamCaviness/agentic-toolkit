@@ -157,6 +157,17 @@ class HighRiskPathScreenTest(unittest.TestCase):
         )
         return matches[0]
 
+    def screen_code(self, skill_name):
+        """The screen block from the grep onward, comments stripped.
+
+        Comments are removed so prose describing an invariant can never stand
+        in for the code implementing it.
+        """
+        tail = self.screen_block(skill_name).partition("grep -Ei")[2]
+        return "\n".join(
+            line for line in tail.splitlines() if not line.lstrip().startswith("#")
+        )
+
     def test_every_screening_skill_carries_the_canonical_screen(self):
         for skill_name in SCREENING_SKILLS:
             with self.subTest(skill=skill_name):
@@ -319,25 +330,35 @@ class HighRiskPathScreenTest(unittest.TestCase):
         # pattern or a missing grep. Flattening both to success hands back the
         # same empty output, which reads as a clean gate: the exact fail-open
         # this screen exists to prevent.
-        for skill_name in SCREENING_SKILLS:
+        # Asserted as exact code, per roster, with comments stripped. A looser
+        # check passed when the terminator drifted to `|| :`, another spelling
+        # of `|| true`, because a nearby comment mentioning the intended check
+        # satisfied it. `|| true` is not the only way to spell this bug, so
+        # requiring the correct form beats forbidding one wrong one.
+        for skill_name in PUBLISHING_SKILLS:
             with self.subTest(skill=skill_name):
-                # Only the screen itself. The reviewing blocks also carry a
-                # deliberate `|| true` on the merge-base line, which lets
-                # BASE_SHA come back empty so the explicit emptiness check can
-                # stop on it.
-                screen_tail = self.screen_block(skill_name).partition("grep -Ei")[2]
-                self.assertNotIn(
-                    "|| true",
-                    screen_tail,
-                    f"{skill_name}: `|| true` turns a failed screen into an "
-                    "empty result that reads as clean",
+                self.assertIn(
+                    "|| [ $? -eq 1 ]",
+                    self.screen_code(skill_name),
+                    f"{skill_name}: the screen must end in `|| [ $? -eq 1 ]`, "
+                    "which accepts grep's \"no matches\" and lets every other "
+                    "status stop the gate",
                 )
-                self.assertRegex(
-                    screen_tail,
-                    r'\$\? -eq 1|SCREEN_STATUS" -eq 1',
-                    f"{skill_name}: the screen must accept grep's exit 1 only, "
-                    "and let any other status stop the gate",
-                )
+
+        for skill_name in REVIEWING_SKILLS:
+            with self.subTest(skill=skill_name):
+                code = self.screen_code(skill_name)
+                # These capture the screen's output, so a terminator alone
+                # would not surface the failure: a failed substitution leaves
+                # HIGH_RISK_PATHS empty and the reviewer is told there is
+                # nothing to look at.
+                for required in ("SCREEN_STATUS=$?", '[ "$SCREEN_STATUS" -eq 1 ]'):
+                    self.assertIn(
+                        required,
+                        code,
+                        f"{skill_name}: a captured screen must check the status "
+                        f"explicitly and stop on anything but 1 ({required})",
+                    )
 
     def test_reviewing_skills_screen_bare_paths(self):
         # CHANGED_PATH_INVENTORY prefixes each line with a state and status
