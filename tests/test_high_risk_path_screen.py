@@ -161,12 +161,25 @@ class HighRiskPathScreenTest(unittest.TestCase):
         """The screen block from the grep onward, comments stripped.
 
         Comments are removed so prose describing an invariant can never stand
-        in for the code implementing it.
+        in for the code implementing it. Trailing comments count too: a drift
+        to `|| :  # || [ $? -eq 1 ]` restores the fail-open while leaving the
+        required substring on the line. Quote state is tracked because the
+        screen regex itself sits inside single quotes and may legitimately
+        contain a `#`.
         """
         tail = self.screen_block(skill_name).partition("grep -Ei")[2]
-        return "\n".join(
-            line for line in tail.splitlines() if not line.lstrip().startswith("#")
-        )
+        stripped = []
+        for line in tail.splitlines():
+            in_quote = False
+            cut = len(line)
+            for index, char in enumerate(line):
+                if char == "'":
+                    in_quote = not in_quote
+                elif char == "#" and not in_quote:
+                    cut = index
+                    break
+            stripped.append(line[:cut].rstrip())
+        return "\n".join(stripped)
 
     def test_every_screening_skill_carries_the_canonical_screen(self):
         for skill_name in SCREENING_SKILLS:
