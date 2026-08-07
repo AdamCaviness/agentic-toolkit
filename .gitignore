@@ -28,3 +28,6 @@ npm-debug.log*
 
 # Memory (auto-generated, user-specific)
 .claude/projects/
+
+# Local brainstorming / writing-plans artifacts (not shipped)
+docs/superpowers/

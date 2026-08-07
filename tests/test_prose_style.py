@@ -11,8 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # kebab-case names, and CLI flags. The rule existed with nothing enforcing it,
 # which is how an em-dash reached a distributed skill. Scoped to the surfaces the rule governs: the public skills,
 # the shared triage source they are generated from, the contributor docs, and
-# these tests. docs/superpowers/ is excluded on purpose; those plans and specs
-# are historical design records, not living prose.
+# these tests.
 CHECKED_TREES = ["skills", "tests", "triage_shared"]
 CHECKED_FILES = ["AGENTS.md", "README.md"]
 
