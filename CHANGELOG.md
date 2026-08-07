@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.0.2...v1.1.0) (2026-08-07)
+
+
+### Features
+
+* add Cursor as a peer install path ([#105](https://github.com/AdamCaviness/agentic-toolkit/issues/105)) ([9509626](https://github.com/AdamCaviness/agentic-toolkit/commit/95096263bd34f6f23734dd8a409f6178e5d44c1e))
+
 ## [1.0.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.0.1...v1.0.2) (2026-07-31)
 
 
