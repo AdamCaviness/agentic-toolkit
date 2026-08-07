@@ -50,6 +50,8 @@ Reload the window (**Developer: Reload Window**) or restart Cursor. Skills appea
 
 Update later with `git -C ~/.cursor/plugins/local/agentic-toolkit pull`, then reload again.
 
+Use only this plugin path for Cursor. Do not also symlink into `~/.agents/skills/` or `~/.cursor/skills/`, or every skill appears twice (Cursor discovers all three locations).
+
 > **Teams / Enterprise only:** importing a marketplace repo is a web admin flow at [cursor.com/dashboard](https://cursor.com/dashboard) → **Plugins**, not something in the desktop app. Pro users use the clone path above.
 
 </details>
@@ -83,7 +85,7 @@ Update with `gemini extensions update agentic-toolkit`.
 <details>
 <summary>Manual (any platform)</summary>
 
-If you prefer not to use a plugin/extension system, clone the repo and symlink the skill directories.
+If you prefer not to use a plugin/extension system, clone the repo and symlink the skill directories. Pick **one** discovery location per harness. For Cursor, prefer [.cursor/INSTALL.md](.cursor/INSTALL.md) (`~/.cursor/plugins/local`) instead of the per-skill loops below; using both lists every skill twice.
 
 ```bash
 git clone https://github.com/adamcaviness/agentic-toolkit.git ~/opensource/agentic-toolkit
@@ -94,12 +96,7 @@ for skill in ~/opensource/agentic-toolkit/skills/*/; do
   ln -s "$skill" ~/.claude/skills/"$(basename "$skill")"
 done
 
-# Cursor (user-level)
-for skill in ~/opensource/agentic-toolkit/skills/*/; do
-  ln -s "$skill" ~/.cursor/skills/"$(basename "$skill")"
-done
-
-# Codex (user-level); Cursor also discovers ~/.agents/skills/
+# Codex (user-level)
 for skill in ~/opensource/agentic-toolkit/skills/*/; do
   ln -s "$skill" ~/.agents/skills/"$(basename "$skill")"
 done
@@ -107,7 +104,7 @@ done
 
 For a single skill: `ln -s ~/opensource/agentic-toolkit/skills/next-ticket ~/.claude/skills/next-ticket`.
 
-For project-level install, symlink into `.claude/skills/`, `.cursor/skills/`, or `.agents/skills/` inside the project root.
+For project-level install, symlink into `.claude/skills/` or `.agents/skills/` inside the project root. For Cursor project-level, use `.cursor/skills/` **or** a project-scoped plugin, not both, and not alongside `~/.cursor/plugins/local/agentic-toolkit`.
 
 </details>
 
