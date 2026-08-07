@@ -39,20 +39,13 @@ Register the marketplace, then install the plugin:
 <details>
 <summary>Cursor</summary>
 
-See [.cursor/INSTALL.md](.cursor/INSTALL.md). Short version for Pro (and other individual plans), user-level, every project:
+See [.cursor/INSTALL.md](.cursor/INSTALL.md) for the full matrix. Short version:
 
-```bash
-mkdir -p ~/.cursor/plugins/local
-git clone https://github.com/adamcaviness/agentic-toolkit.git ~/.cursor/plugins/local/agentic-toolkit
-```
+- **Also use Claude Code?** Install once with `/plugin marketplace add adamcaviness/agentic-marketplace` then `/plugin install agentic-toolkit@agentic-marketplace`. Cursor picks it up automatically. Do not also install a Cursor local plugin.
+- **Cursor only (Pro)?** `git clone` into `~/.cursor/plugins/local/agentic-toolkit`, then **Developer: Reload Window**.
+- **Teams / Enterprise?** Admins import the marketplace at [cursor.com/dashboard](https://cursor.com/dashboard) → **Plugins** (web admin UI, not the desktop app).
 
-Reload the window (**Developer: Reload Window**) or restart Cursor. Skills appear under `/` in Agents. Confirm in **Customize → Skills**.
-
-Update later with `git -C ~/.cursor/plugins/local/agentic-toolkit pull`, then reload again.
-
-Use only this plugin path for Cursor. Do not also symlink into `~/.agents/skills/` or `~/.cursor/skills/`, or every skill appears twice (Cursor discovers all three locations).
-
-> **Teams / Enterprise only:** importing a marketplace repo is a web admin flow at [cursor.com/dashboard](https://cursor.com/dashboard) → **Plugins**, not something in the desktop app. Pro users use the clone path above.
+Use exactly one path, or every skill appears twice.
 
 </details>
 
@@ -85,7 +78,7 @@ Update with `gemini extensions update agentic-toolkit`.
 <details>
 <summary>Manual (any platform)</summary>
 
-If you prefer not to use a plugin/extension system, clone the repo and symlink the skill directories. Pick **one** discovery location per harness. For Cursor, prefer [.cursor/INSTALL.md](.cursor/INSTALL.md) (`~/.cursor/plugins/local`) instead of the per-skill loops below; using both lists every skill twice.
+If you prefer not to use a plugin/extension system, clone the repo and symlink the skill directories. Pick **one** discovery location per harness. For Cursor, prefer [.cursor/INSTALL.md](.cursor/INSTALL.md) (Claude Code marketplace reuse, or `~/.cursor/plugins/local`) instead of stacking multiple roots.
 
 ```bash
 git clone https://github.com/adamcaviness/agentic-toolkit.git ~/opensource/agentic-toolkit
@@ -104,7 +97,7 @@ done
 
 For a single skill: `ln -s ~/opensource/agentic-toolkit/skills/next-ticket ~/.claude/skills/next-ticket`.
 
-For project-level install, symlink into `.claude/skills/` or `.agents/skills/` inside the project root. For Cursor project-level, use `.cursor/skills/` **or** a project-scoped plugin, not both, and not alongside `~/.cursor/plugins/local/agentic-toolkit`.
+For project-level install, symlink into `.claude/skills/` or `.agents/skills/` inside the project root. For Cursor, see [.cursor/INSTALL.md](.cursor/INSTALL.md); do not combine a project `.cursor/skills/` tree with a Claude Code marketplace install of the same skills.
 
 </details>
 

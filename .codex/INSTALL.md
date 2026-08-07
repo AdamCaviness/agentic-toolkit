@@ -27,6 +27,8 @@ Enable these skills in Codex via native skill discovery. Clone the repo once, th
 
 3. **Restart Codex** (quit and relaunch the CLI) to discover the skills.
 
+> **Also use Cursor?** Cursor can load skills from `~/.agents/skills/` when third-party includes are on. Prefer installing via Claude Code's marketplace for dual Claude Code + Cursor setups (see [.cursor/INSTALL.md](../.cursor/INSTALL.md)), and avoid stacking a Cursor `~/.cursor/plugins/local` install on top of this Codex link for the same skills.
+
 ## Verify
 
 ```bash
