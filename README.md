@@ -39,13 +39,13 @@ Register the marketplace, then install the plugin:
 <details>
 <summary>Cursor</summary>
 
-Import the marketplace as a Team Marketplace, then install the plugin:
+See [.cursor/INSTALL.md](.cursor/INSTALL.md) for the full matrix. Short version:
 
-1. Open **Dashboard → Plugins → Team Marketplaces** (or **Customize → Plugins**).
-2. Import `https://github.com/adamcaviness/agentic-marketplace`.
-3. Install **agentic-toolkit** at user or project scope.
+- **Also use Claude Code?** Install once with `/plugin marketplace add adamcaviness/agentic-marketplace` then `/plugin install agentic-toolkit@agentic-marketplace`. Cursor picks it up automatically. Do not also install a Cursor local plugin.
+- **Cursor only (Pro)?** `git clone` into `~/.cursor/plugins/local/agentic-toolkit`, then **Developer: Reload Window**.
+- **Teams / Enterprise?** Admins import the marketplace at [cursor.com/dashboard](https://cursor.com/dashboard) → **Plugins** (web admin UI, not the desktop app).
 
-Skills appear under `/` in the Agents window (for example `/pr`, `/triage-bugs`). Open **Customize → Skills** to confirm discovery.
+Use exactly one path, or every skill appears twice.
 
 </details>
 
@@ -78,7 +78,7 @@ Update with `gemini extensions update agentic-toolkit`.
 <details>
 <summary>Manual (any platform)</summary>
 
-If you prefer not to use a plugin/extension system, clone the repo and symlink the skill directories.
+If you prefer not to use a plugin/extension system, clone the repo and symlink the skill directories. Pick **one** discovery location per harness. For Cursor, prefer [.cursor/INSTALL.md](.cursor/INSTALL.md) (Claude Code marketplace reuse, or `~/.cursor/plugins/local`) instead of stacking multiple roots.
 
 ```bash
 git clone https://github.com/adamcaviness/agentic-toolkit.git ~/opensource/agentic-toolkit
@@ -89,12 +89,7 @@ for skill in ~/opensource/agentic-toolkit/skills/*/; do
   ln -s "$skill" ~/.claude/skills/"$(basename "$skill")"
 done
 
-# Cursor (user-level)
-for skill in ~/opensource/agentic-toolkit/skills/*/; do
-  ln -s "$skill" ~/.cursor/skills/"$(basename "$skill")"
-done
-
-# Codex (user-level); Cursor also discovers ~/.agents/skills/
+# Codex (user-level)
 for skill in ~/opensource/agentic-toolkit/skills/*/; do
   ln -s "$skill" ~/.agents/skills/"$(basename "$skill")"
 done
@@ -102,7 +97,7 @@ done
 
 For a single skill: `ln -s ~/opensource/agentic-toolkit/skills/next-ticket ~/.claude/skills/next-ticket`.
 
-For project-level install, symlink into `.claude/skills/`, `.cursor/skills/`, or `.agents/skills/` inside the project root.
+For project-level install, symlink into `.claude/skills/` or `.agents/skills/` inside the project root. For Cursor, see [.cursor/INSTALL.md](.cursor/INSTALL.md); do not combine a project `.cursor/skills/` tree with a Claude Code marketplace install of the same skills.
 
 </details>
 
