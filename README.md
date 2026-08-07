@@ -39,13 +39,17 @@ Register the marketplace, then install the plugin:
 <details>
 <summary>Cursor</summary>
 
-Import the marketplace as a Team Marketplace, then install the plugin:
+For Cursor desktop (and CLI), load the plugin from your local plugins directory:
 
-1. Open **Dashboard → Plugins → Team Marketplaces** (or **Customize → Plugins**).
-2. Import `https://github.com/adamcaviness/agentic-marketplace`.
-3. Install **agentic-toolkit** at user or project scope.
+```bash
+git clone https://github.com/adamcaviness/agentic-toolkit.git ~/opensource/agentic-toolkit
+mkdir -p ~/.cursor/plugins/local
+ln -s ~/opensource/agentic-toolkit ~/.cursor/plugins/local/agentic-toolkit
+```
 
-Skills appear under `/` in the Agents window (for example `/pr`, `/triage-bugs`). Open **Customize → Skills** to confirm discovery.
+Reload the window (**Developer: Reload Window**) or restart Cursor. Skills appear under `/` in the Agents window (for example `/pr`, `/triage-bugs`). Confirm in **Customize → Skills** in the sidebar.
+
+> **Teams / Enterprise only:** importing a GitHub repo as a Team Marketplace is a web admin flow at [cursor.com/dashboard](https://cursor.com/dashboard) → **Plugins** → **Team Marketplaces**, not something in the desktop app. Admins import `https://github.com/adamcaviness/agentic-marketplace`, then teammates install **agentic-toolkit** from **Customize** in the sidebar. Individual and Hobby plans use the local plugin path above.
 
 </details>
 
