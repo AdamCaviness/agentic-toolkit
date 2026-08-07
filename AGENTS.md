@@ -2,17 +2,17 @@
 
 ## `skills/` is distribution, not local config
 
-Every `skills/<name>/` is public API. All three harnesses discover the same `SKILL.md` content; each has its own install mechanism (see README). Edits go live on the next release, so treat them accordingly.
+Every `skills/<name>/` is public API. Claude Code, Cursor, Codex, and Gemini discover the same `SKILL.md` content; each has its own install mechanism (see README). Edits go live on the next release, so treat them accordingly.
 
 A shipped skill runs inside someone else's project, with none of this repository around it. It must therefore never cite this file. On an end user's machine the bare name `AGENTS.md` resolves to *their* project's file, not this one, so a citation points the reader at unrelated third-party text. For the high-risk path screen that is worse than a dead link: it would source a security control from a document the skill's own Untrusted Content Boundary classifies as untrusted.
 
-The same applies to paths. A skill addresses a file it ships with relative to its own directory, never by repository path. `skills/code-review/reviewer-prompt.md` names nothing in the project a skill runs against; "the `reviewer-prompt.md` in the same directory as this SKILL.md" resolves everywhere, and a sibling skill is reached as `../<skill-name>/<file>`. The plugin layout `skills/<name>/` is stable across all three harnesses, so a sibling reference is safe; a repository-rooted one is not.
+The same applies to paths. A skill addresses a file it ships with relative to its own directory, never by repository path. `skills/code-review/reviewer-prompt.md` names nothing in the project a skill runs against; "the `reviewer-prompt.md` in the same directory as this SKILL.md" resolves everywhere, and a sibling skill is reached as `../<skill-name>/<file>`. The plugin layout `skills/<name>/` is stable across Claude Code, Cursor, Codex, and Gemini, so a sibling reference is safe; a repository-rooted one is not.
 
 State the contract inside the skill and keep the rationale here. Shared content stays identical across copies because `tests/` asserts it verbatim, not because a skill tells the reader where the content came from. The one legitimate mention of `AGENTS.md` in a shipped skill is as one of the *target project's* convention files, listed beside `CLAUDE.md`, which means the user's own file and is the intended reading. The same applies to repository-only paths: `tests/`, `triage_shared/`, `docs/`, and `scripts/` do not exist in the project a skill is invoked against. `tests/test_distribution_boundary.py` enforces both rules.
 
 ## Skills
 
-Never duplicate a skill into a harness-specific subtree. All three harnesses auto-discover `skills/<name>/SKILL.md`. The `model` frontmatter key is honored by Claude Code and ignored by Codex and Gemini.
+Never duplicate a skill into a harness-specific subtree. Claude Code, Cursor, Codex, and Gemini auto-discover `skills/<name>/SKILL.md`. The `model` frontmatter key is honored by Claude Code and ignored by Cursor, Codex, and Gemini.
 
 ## Dogfooding skills locally
 
@@ -28,7 +28,7 @@ This boundary is load-bearing for the triage skills' rejection-learning loop: wh
 
 ## User-only skills
 
-Skills that should only be triggered by the user (not autonomously by the model) declare `disable-model-invocation: true` in frontmatter. This prevents the model from invoking the skill on its own initiative; the user must type the slash command explicitly. It does not restrict what the model does during execution. Currently honored by Claude Code, tolerated by Codex and Gemini. Apply to skills with side effects or timing sensitivity where the user controls when they run: `pr`, `ship`, and `convert-worktree`. Add the key to any future skill the user should invoke deliberately rather than the model triggering automatically.
+Skills that should only be triggered by the user (not autonomously by the model) declare `disable-model-invocation: true` in frontmatter. This prevents the model from invoking the skill on its own initiative; the user must type the slash command explicitly. It does not restrict what the model does during execution. Currently honored by Claude Code and Cursor, tolerated by Codex and Gemini. Apply to skills with side effects or timing sensitivity where the user controls when they run: `pr`, `ship`, and `convert-worktree`. Add the key to any future skill the user should invoke deliberately rather than the model triggering automatically.
 
 ## Branch lifecycle
 
@@ -86,11 +86,11 @@ Reviewing skills append three alternations after the shared literal: bare `token
 
 ## Capability glossary for public skills
 
-Public skills are distributed to Claude Code, Codex, and Gemini. Skill prose may use harness-specific tool names where they read naturally (`Task tool`, `WebSearch`, `Agent tool`); other harnesses generally infer the equivalent. This is a **glossary**, not a required vocabulary, that names recurring capabilities so future skills and adapter docs have a shared lexicon to reach for.
+Public skills are distributed to Claude Code, Cursor, Codex, and Gemini. Skill prose may use harness-specific tool names where they read naturally (`Task tool`, `WebSearch`, `Agent tool`); other harnesses generally infer the equivalent. This is a **glossary**, not a required vocabulary, that names recurring capabilities so future skills and adapter docs have a shared lexicon to reach for.
 
 | Capability | What it provides |
 | --- | --- |
-| `project.instructions` | The project's own contributor instructions, found in `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md` depending on harness. |
+| `project.instructions` | The project's own contributor instructions, found in `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/`, or `GEMINI.md` depending on harness. |
 | `ticket.read` | Read access to the project's ticket system (GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, etc.). |
 | `ticket.write` | Create, update, comment on, or close tickets in the project's ticket system. |
 | `subagent.dispatch` | Dispatch one isolated subagent with a fresh context, given a single prompt as its full instructions. |
@@ -100,7 +100,7 @@ Public skills are distributed to Claude Code, Codex, and Gemini. Skill prose may
 
 Two things *are* enforced in public skill bodies because they are concrete failure modes, not stylistic ones, and because untested abstraction would be a bigger regression risk than the current prose. The validator in `tests/test_capability_vocabulary.py` checks both:
 
-- The literal Claude API parameter shape `subagent_type` and its value `general-purpose` must not appear. They are meaningless on Codex and Gemini, where no such parameter exists.
+- The literal Claude API parameter shape `subagent_type` and its value `general-purpose` must not appear. They are meaningless on Cursor, Codex, and Gemini, where no such parameter exists.
 - Generated PR or commit output must not brand a single harness (no `Generated with [Claude Code]` trailer in PR body templates).
 
 Frontmatter keys (`model:`, `disable-model-invocation:`) are allowed to stay harness-specific.
@@ -117,7 +117,7 @@ Ported skills require an `ATTRIBUTIONS.md` next to `SKILL.md` with the source pr
 
 ## Triage skills share one source
 
-The `triage-architecture`, `triage-bugs`, and `triage-product` SKILL.md files are generated from `triage_shared/template.md` plus per-skill inputs in `triage_shared/skills.py`. The generated public files stay standalone so all three harnesses still discover `skills/<name>/SKILL.md`, but maintainers edit the shared mechanics (ticket-system detection, two-tier cache, untrusted-content boundary, cross-cluster notes, post-processing, cleanup, planner-state updates) in one place.
+The `triage-architecture`, `triage-bugs`, and `triage-product` SKILL.md files are generated from `triage_shared/template.md` plus per-skill inputs in `triage_shared/skills.py`. The generated public files stay standalone so Claude Code, Cursor, Codex, and Gemini still discover `skills/<name>/SKILL.md`, but maintainers edit the shared mechanics (ticket-system detection, two-tier cache, untrusted-content boundary, cross-cluster notes, post-processing, cleanup, planner-state updates) in one place.
 
 Do not hand-edit `skills/triage-architecture/SKILL.md`, `skills/triage-bugs/SKILL.md`, or `skills/triage-product/SKILL.md`. Edit `triage_shared/template.md` for shared mechanics or `triage_shared/skills.py` for per-skill policy, then run `python3 -m triage_shared.generate` to regenerate the public files. The `tests/test_triage_shared_source.py` validator refuses merges that bypass that flow.
 

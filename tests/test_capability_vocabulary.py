@@ -1,15 +1,15 @@
 """Concrete-leak validator for public skills.
 
-Public skills are distributed to multiple harnesses (Claude Code, Codex,
-Gemini). Most prose may legitimately use harness-specific tool names; the
-narrow contract this test enforces covers only the failure modes that are
+Public skills are distributed to multiple harnesses (Claude Code, Cursor,
+Codex, Gemini). Most prose may legitimately use harness-specific tool names;
+the narrow contract this test enforces covers only the failure modes that are
 concrete and untested abstractions cannot fix:
 
 1. AGENTS.md documents the capability glossary so future skills and adapter
    docs have a shared lexicon to reach for.
 2. Public skill bodies do not contain the literal Claude API parameter shape
    `subagent_type` or its value `general-purpose`. Those tokens are
-   meaningless on Codex and Gemini, where no such parameter exists.
+   meaningless on Cursor, Codex, and Gemini, where no such parameter exists.
 3. Generated PR or commit output does not brand a single harness, since the
    output is user-visible on every harness that runs the skill.
 
@@ -87,9 +87,9 @@ class CapabilityVocabularyTest(unittest.TestCase):
                         token,
                         body,
                         f"{skill_name}: token {token!r} is a literal Claude "
-                        "API parameter shape that has no meaning on Codex or "
-                        "Gemini. Reword to describe the behavior, not the "
-                        "parameter.",
+                        "API parameter shape that has no meaning on Cursor, "
+                        "Codex, or Gemini. Reword to describe the behavior, "
+                        "not the parameter.",
                     )
 
     def test_public_skill_bodies_do_not_brand_generated_output(self):

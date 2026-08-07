@@ -1,6 +1,6 @@
 # Agentic Toolkit
 
-A collection of skills for agentic coding tools, including [Claude Code](https://claude.ai/code), [Codex](https://openai.com/codex/), and [Gemini CLI](https://github.com/google-gemini/gemini-cli).
+A collection of skills for agentic coding tools, including [Claude Code](https://claude.ai/code), [Cursor](https://cursor.com), [Codex](https://openai.com/codex/), and [Gemini CLI](https://github.com/google-gemini/gemini-cli).
 
 | | Skill | Command | What it does |
 |---|-------|---------|-------------|
@@ -22,7 +22,7 @@ A collection of skills for agentic coding tools, including [Claude Code](https:/
 
 ## Installation
 
-> Installation differs by platform. All three platforms consume the same `skills/<name>/SKILL.md` format, so one install gets you every skill.
+> Installation differs by platform. Claude Code, Cursor, Codex, and Gemini CLI consume the same `skills/<name>/SKILL.md` format, so one install gets you every skill.
 
 <details>
 <summary>Claude Code</summary>
@@ -33,6 +33,19 @@ Register the marketplace, then install the plugin:
 /plugin marketplace add adamcaviness/agentic-marketplace
 /plugin install agentic-toolkit@agentic-marketplace
 ```
+
+</details>
+
+<details>
+<summary>Cursor</summary>
+
+Import the marketplace as a Team Marketplace, then install the plugin:
+
+1. Open **Dashboard → Plugins → Team Marketplaces** (or **Customize → Plugins**).
+2. Import `https://github.com/adamcaviness/agentic-marketplace`.
+3. Install **agentic-toolkit** at user or project scope.
+
+Skills appear under `/` in the Agents window (for example `/pr`, `/triage-bugs`). Open **Customize → Skills** to confirm discovery.
 
 </details>
 
@@ -76,7 +89,12 @@ for skill in ~/opensource/agentic-toolkit/skills/*/; do
   ln -s "$skill" ~/.claude/skills/"$(basename "$skill")"
 done
 
-# Codex (user-level)
+# Cursor (user-level)
+for skill in ~/opensource/agentic-toolkit/skills/*/; do
+  ln -s "$skill" ~/.cursor/skills/"$(basename "$skill")"
+done
+
+# Codex (user-level); Cursor also discovers ~/.agents/skills/
 for skill in ~/opensource/agentic-toolkit/skills/*/; do
   ln -s "$skill" ~/.agents/skills/"$(basename "$skill")"
 done
@@ -84,7 +102,7 @@ done
 
 For a single skill: `ln -s ~/opensource/agentic-toolkit/skills/next-ticket ~/.claude/skills/next-ticket`.
 
-For project-level install, symlink into `.claude/skills/` or `.agents/skills/` inside the project root.
+For project-level install, symlink into `.claude/skills/`, `.cursor/skills/`, or `.agents/skills/` inside the project root.
 
 </details>
 
