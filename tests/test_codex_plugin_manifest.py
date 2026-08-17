@@ -41,7 +41,7 @@ class TestCodexPluginManifest(unittest.TestCase):
             for path in (REPO_ROOT / "skills").iterdir()
             if path.is_dir() and (path / "SKILL.md").is_file()
         ]
-        self.assertGreaterEqual(len(skill_dirs), 1)
+        self.assertEqual(len(skill_dirs), 13)
 
     def test_release_please_bumps_codex_plugin_version(self) -> None:
         config = json.loads(

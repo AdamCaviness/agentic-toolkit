@@ -2,6 +2,12 @@
 
 Install from [agentic-marketplace](https://github.com/adamcaviness/agentic-marketplace). Codex loads the plugin (all 13 skills) from `.codex-plugin/plugin.json`. Use **exactly one** path, or skills appear twice.
 
+If you previously cloned this repo and symlinked `skills/` into `~/.agents/skills/agentic-toolkit`, remove that link before installing from the marketplace (desktop or CLI):
+
+```bash
+rm ~/.agents/skills/agentic-toolkit
+```
+
 ## 1. ChatGPT desktop (recommended)
 
 1. Open **Plugins** → **Add plugin marketplace**.
@@ -10,12 +16,6 @@ Install from [agentic-marketplace](https://github.com/adamcaviness/agentic-marke
 4. Sparse paths: leave empty.
 5. Add the marketplace, then install **agentic-toolkit**.
 6. Restart ChatGPT / Codex if the plugin does not appear, then start a new chat.
-
-If you previously cloned this repo and symlinked `skills/` into `~/.agents/skills/agentic-toolkit`, remove that link before installing from the marketplace:
-
-```bash
-rm ~/.agents/skills/agentic-toolkit
-```
 
 ## 2. Codex CLI (optional)
 
