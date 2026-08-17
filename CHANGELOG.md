@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.1.0...v1.2.0) (2026-08-17)
+
+
+### Features
+
+* add a native Codex plugin install path ([#108](https://github.com/AdamCaviness/agentic-toolkit/issues/108)) ([e54ab54](https://github.com/AdamCaviness/agentic-toolkit/commit/e54ab54389e2077d13fd2b60893b28b4d6b33851))
+
 ## [1.1.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.0.2...v1.1.0) (2026-08-07)
 
 
