@@ -50,17 +50,20 @@ Use exactly one path, or every skill appears twice.
 </details>
 
 <details>
-<summary>Codex</summary>
+<summary>Codex / ChatGPT desktop</summary>
 
-See [.codex/INSTALL.md](.codex/INSTALL.md). Short version:
+See [.codex/INSTALL.md](.codex/INSTALL.md) for the full matrix. Short version:
+
+In ChatGPT desktop: **Plugins → Add plugin marketplace**. Source `adamcaviness/agentic-marketplace`, Git ref `main`, Sparse paths empty. Then install **agentic-toolkit**.
+
+CLI:
 
 ```bash
-git clone https://github.com/adamcaviness/agentic-toolkit.git ~/.codex/agentic-toolkit
-mkdir -p ~/.agents/skills
-ln -s ~/.codex/agentic-toolkit/skills ~/.agents/skills/agentic-toolkit
+codex plugin marketplace add adamcaviness/agentic-marketplace --ref main
+codex plugin add agentic-toolkit@agentic-marketplace
 ```
 
-Restart Codex to discover the skills.
+Use exactly one path. If you already symlinked `skills/` into `~/.agents/skills/`, remove that link before marketplace-installing.
 
 </details>
 
@@ -78,7 +81,7 @@ Update with `gemini extensions update agentic-toolkit`.
 <details>
 <summary>Manual (any platform)</summary>
 
-If you prefer not to use a plugin/extension system, clone the repo and symlink the skill directories. Pick **one** discovery location per harness. For Cursor, prefer [.cursor/INSTALL.md](.cursor/INSTALL.md) (Claude Code marketplace reuse, or `~/.cursor/plugins/local`) instead of stacking multiple roots.
+If you prefer not to use a plugin/extension system, clone the repo and symlink the skill directories. Pick **one** discovery location per harness. For Cursor, prefer [.cursor/INSTALL.md](.cursor/INSTALL.md) (Claude Code marketplace reuse, or `~/.cursor/plugins/local`) instead of stacking multiple roots. For Codex, prefer [.codex/INSTALL.md](.codex/INSTALL.md) (marketplace install) instead of stacking a `~/.agents/skills/` symlink on top of a plugin install.
 
 ```bash
 git clone https://github.com/adamcaviness/agentic-toolkit.git ~/opensource/agentic-toolkit
