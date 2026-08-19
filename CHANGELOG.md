@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.1...v1.2.2) (2026-08-19)
+
+
+### Bug Fixes
+
+* name create-ticket on installer marketplace cards ([#132](https://github.com/AdamCaviness/agentic-toolkit/issues/132)) ([b5822e5](https://github.com/AdamCaviness/agentic-toolkit/commit/b5822e52f32ce59cf730e0f1ff44cef50edc39c8)), closes [#110](https://github.com/AdamCaviness/agentic-toolkit/issues/110)
+
 ## [1.2.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.0...v1.2.1) (2026-08-19)
 
 
