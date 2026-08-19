@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.0...v1.2.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* stop Gemini from injecting maintainer AGENTS.md ([#130](https://github.com/AdamCaviness/agentic-toolkit/issues/130)) ([587228b](https://github.com/AdamCaviness/agentic-toolkit/commit/587228b392b584e1cfc258985a7523bdcf29db39))
+
 ## [1.2.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.1.0...v1.2.0) (2026-08-17)
 
 
