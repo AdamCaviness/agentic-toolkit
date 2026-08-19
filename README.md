@@ -70,11 +70,13 @@ Use exactly one path. If you already symlinked `skills/` into `~/.agents/skills/
 <details>
 <summary>Gemini CLI</summary>
 
+See [.gemini/INSTALL.md](.gemini/INSTALL.md) for install, update, uninstall, and what the extension injects into the session. Short version:
+
 ```bash
 gemini extensions install https://github.com/adamcaviness/agentic-toolkit
 ```
 
-Update with `gemini extensions update agentic-toolkit`.
+Update with `gemini extensions update agentic-toolkit`. After install, start a new Gemini session in your project and try `/next-ticket`.
 
 </details>
 
