@@ -1,7 +1,7 @@
 {
   "name": "agentic-toolkit",
   "version": "1.2.1",
-  "description": "A collection of skills for agentic coding tools: next-ticket, get-it-right, code-review, apply-review, pr, ship, convert-worktree, triage-bugs, triage-product, triage-architecture, update-deps, compress-markdown",
+  "description": "A collection of skills for agentic coding tools: create-ticket, next-ticket, get-it-right, code-review, apply-review, pr, ship, convert-worktree, triage-bugs, triage-product, triage-architecture, update-deps, compress-markdown",
   "author": {
     "name": "Adam Caviness"
   },
@@ -22,7 +22,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Agentic Toolkit",
-    "shortDescription": "Ticket triage, code review, and branch shipping",
+    "shortDescription": "Ticket creation, triage, code review, and branch shipping",
     "longDescription": "Skills for creating and implementing tickets, reviewing code, shipping branches, and triaging bugs, architecture, and product gaps.",
     "developerName": "Adam Caviness",
     "category": "Productivity",
