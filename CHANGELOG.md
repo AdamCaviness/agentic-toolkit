@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.3...v1.2.4) (2026-08-20)
+
+
+### Bug Fixes
+
+* align /pr and /ship picker copy with README pairing ([#136](https://github.com/AdamCaviness/agentic-toolkit/issues/136)) ([da7023b](https://github.com/AdamCaviness/agentic-toolkit/commit/da7023be96781f06aad784d8a14e7b72b4b58cb0)), closes [#111](https://github.com/AdamCaviness/agentic-toolkit/issues/111)
+
 ## [1.2.3](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.2...v1.2.3) (2026-08-20)
 
 
