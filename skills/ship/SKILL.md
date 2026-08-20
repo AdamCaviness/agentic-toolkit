@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Commit, push, create/merge PR, sync local default branch, delete branch. The standard "I'm done with this branch" workflow.
+description: Commit, push, create/merge PR, sync local default branch, delete branch. The optimistic "I'm done completely": merges and cleans up.
 disable-model-invocation: true
 ---
 
