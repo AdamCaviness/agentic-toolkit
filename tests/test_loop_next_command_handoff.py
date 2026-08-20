@@ -72,6 +72,20 @@ class LoopNextCommandHandoffTest(unittest.TestCase):
         )
         self.assertIn("Never push, create PRs, or merge.", block)
 
+    def test_update_deps_publish_handoff_follows_either_headline(self):
+        block = step_block(
+            skill_text("update-deps"), "## Step 9: Cleanup and Summary"
+        )
+        bullets = block.split("Final summary template:", 1)[0]
+        self.assertIn("/pr", bullets)
+        self.assertIn("/ship", bullets)
+        self.assertRegex(
+            bullets.lower(),
+            r"after whichever headline|always print",
+            "success-path close must instruct the publish line after either headline, "
+            "not only under the WARNING example in the template",
+        )
+
     def test_get_it_right_playbook_names_pr(self):
         text = skill_text("get-it-right")
         match = re.search(
