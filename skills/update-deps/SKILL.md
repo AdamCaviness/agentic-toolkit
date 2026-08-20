@@ -62,18 +62,30 @@ If no manifests match the requested scope, tell the user and stop.
 
 ## Step 2: Check Open PRs for Automated CVE Patches
 
-Using whatever CLI is available (e.g., `gh pr list`), fetch open PRs authored by known dependency bots: `dependabot`, `renovate`, `snyk-bot`, `greenkeeper`.
-
-**Important**: `gh pr list --author` accepts only a single value. You MUST run a separate query per bot and merge the results. Note that `dependabot`, `renovate`, and `greenkeeper` are GitHub Apps (use the `app/` prefix), while `snyk-bot` is a regular GitHub user account (no prefix).
+CVE-PR discovery uses the GitHub CLI. Verify it before treating an empty bot list as real:
 
 ```bash
+command -v gh >/dev/null || { printf 'gh is not installed. Install the GitHub CLI (https://cli.github.com/) to discover Dependabot/Renovate CVE PRs, or confirm you want to skip this check.\n' >&2; exit 1; }
+gh auth status || { printf 'gh is not authenticated. Run: gh auth login\n' >&2; exit 1; }
+```
+
+If `gh` is missing, unauthenticated, or either check fails, tell the operator that CVE-PR discovery failed and what to install or how to re-auth. Do not continue as if the bot list were empty unless they explicitly confirm skipping that check.
+
+Using `gh pr list`, fetch open PRs authored by known dependency bots: `dependabot`, `renovate`, `snyk-bot`, `greenkeeper`.
+
+**Important**: `gh pr list --author` accepts only a single value. You MUST run a separate query per bot and merge the results. Note that `dependabot`, `renovate`, and `greenkeeper` are GitHub Apps (use the `app/` prefix), while `snyk-bot` is a regular GitHub user account (no prefix). Do not redirect stderr to `/dev/null`; a failing query must surface.
+
+```bash
+set -o pipefail
 (
-  gh pr list --author "app/dependabot" --state open --json number,title,author,body 2>/dev/null
-  gh pr list --author "app/renovate" --state open --json number,title,author,body 2>/dev/null
-  gh pr list --author "snyk-bot" --state open --json number,title,author,body 2>/dev/null
-  gh pr list --author "app/greenkeeper" --state open --json number,title,author,body 2>/dev/null
+  gh pr list --author "app/dependabot" --state open --json number,title,author,body
+  gh pr list --author "app/renovate" --state open --json number,title,author,body
+  gh pr list --author "snyk-bot" --state open --json number,title,author,body
+  gh pr list --author "app/greenkeeper" --state open --json number,title,author,body
 ) | jq -s 'add // []'
 ```
+
+If any `gh pr list` returns non-zero, CVE-PR discovery failed: tell the operator, show the error, and stop (or continue only after they confirm skipping the check). A successful run that returns `[]` means there are no bot PRs.
 
 For each bot PR:
 
@@ -437,6 +449,8 @@ Never push, create PRs, or merge. The user reviews first.
 **No outdated deps**: If discovery finds nothing to update and no bot PRs exist, tell the user and stop. Do not create a branch.
 
 **No bot PRs but outdated deps exist**: Proceed normally. The CVE-required list is empty.
+
+**CVE-PR discovery failed** (`gh` missing, not authenticated, or `gh pr list` non-zero): Tell the operator what failed and how to install or re-auth. Do not treat this as an empty bot list. Continue only if they confirm skipping the check.
 
 **Mixed CVE and major flag**: If a CVE-required dep also appears on the all-majors list, process it once, with CVE noted in the commit message.
 
