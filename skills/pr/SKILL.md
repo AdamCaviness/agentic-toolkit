@@ -2,13 +2,13 @@
 name: pr
 model: sonnet
 effort: high
-description: Format, lint, test, commit, push, and create a pull request. The single "I'm done" command.
+description: Format, lint, test, commit, push, and create a pull request. The cautious "I'm done": opens a PR and stops for CI/review.
 disable-model-invocation: true
 ---
 
 # PR: Format, Lint, Test, Commit, Push, Create Pull Request
 
-Single command to go from "I'm done" to "PR is open."
+Go from "I'm done" to "PR is open." Stops there; use /ship when you also want to merge and clean up.
 
 ## Workflow
 
