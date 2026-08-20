@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.5](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.4...v1.2.5) (2026-08-20)
+
+
+### Bug Fixes
+
+* **get-it-right:** stop on a dirty tree until leftover is confirmed ([#138](https://github.com/AdamCaviness/agentic-toolkit/issues/138)) ([ad226fa](https://github.com/AdamCaviness/agentic-toolkit/commit/ad226fa9c3356a55083aee51626185be38da80a5)), closes [#123](https://github.com/AdamCaviness/agentic-toolkit/issues/123)
+
 ## [1.2.4](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.3...v1.2.4) (2026-08-20)
 
 
