@@ -94,7 +94,7 @@ Auto-pick fetches in two phases so the model never pulls full bodies for tickets
 - Azure Boards: `az boards work-item list` with a WIQL filter using `@Me`, `[System.AssignedTo] = ''`, and `[System.State]` restricted to the actionable states.
 - Other: Use whatever is available. If no tool is found, tell the user what to install and stop.
 
-If zero actionable tickets, tell the user and stop.
+If zero actionable tickets, tell the user and stop. Point them at `/create-ticket` to file work.
 
 ### Normalized shape
 
@@ -380,6 +380,8 @@ Top issues:
   ...
 
 To test in the UI: <one sentence describing the specific UI action that exercises this change>
+
+When you are ready to publish, run /pr (opens a PR and stops) or /ship (merges and cleans up). Review locally first.
 ```
 
 If the reviewer found zero issues, replace the two Review lines with `Review: clean | Verdict: Yes`. If review failed or was skipped per Step 9.5's failure mode, replace them with `Review: skipped (<reason>)`. The `Top issues:` block is omitted when there are no captured issues.

@@ -442,6 +442,8 @@ Bot PRs that should auto-close:
   #92 (dependabot: lodash)
 
 WARNING: 1 CVE update(s) NOT applied. See above.
+
+When you are ready to publish, run /pr (opens a PR and stops) or /ship (merges and cleans up). Review locally first.
 ```
 
 Never push, create PRs, or merge. The user reviews first.

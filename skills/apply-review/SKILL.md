@@ -257,6 +257,8 @@ Invalid feedback (<N> threads):
   <file>:<line>  <reason> (@reviewer)
 
 Skipped: <N> already resolved, <N> praise/approval
+
+Once CI is green, run /ship to merge and clean up. Wait for CI before shipping.
 ```
 
 Omit any section with zero entries. The "Invalid feedback" section surfaces which review comments were wrong and why.
