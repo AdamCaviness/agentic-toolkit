@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.6](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.5...v1.2.6) (2026-08-20)
+
+
+### Bug Fixes
+
+* **update-deps:** fail loud when CVE-PR discovery cannot run ([#140](https://github.com/AdamCaviness/agentic-toolkit/issues/140)) ([295de43](https://github.com/AdamCaviness/agentic-toolkit/commit/295de43f67ac95cfddf711cb61fe82fbe0d9b5b7))
+
 ## [1.2.5](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.4...v1.2.5) (2026-08-20)
 
 
