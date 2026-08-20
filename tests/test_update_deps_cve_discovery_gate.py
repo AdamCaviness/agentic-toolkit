@@ -33,6 +33,16 @@ class UpdateDepsCveDiscoveryGateTest(unittest.TestCase):
             "gh pr list must not redirect stderr to /dev/null",
         )
 
+    def test_step_2_bot_query_block_aborts_on_any_failed_query(self):
+        block = self._step_2()
+        # pipefail alone is not enough: a subshell of `gh; gh; …` exits with
+        # the last status, so an early failure can still look like success.
+        self.assertRegex(
+            block,
+            r"set -e|gh pr list[^\n]*&&\s*gh pr list",
+            "bot queries must abort on first failure (set -e or &&)",
+        )
+
     def test_step_2_requires_gh_availability_or_auth_before_empty_bot_list(self):
         block = self._step_2().lower()
         self.assertRegex(

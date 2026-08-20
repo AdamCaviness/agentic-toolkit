@@ -78,12 +78,14 @@ Using `gh pr list`, fetch open PRs authored by known dependency bots: `dependabo
 ```bash
 set -o pipefail
 (
+  set -e
   gh pr list --author "app/dependabot" --state open --json number,title,author,body
   gh pr list --author "app/renovate" --state open --json number,title,author,body
   gh pr list --author "snyk-bot" --state open --json number,title,author,body
   gh pr list --author "app/greenkeeper" --state open --json number,title,author,body
 ) | jq -s 'add // []'
 ```
+Any failed query must abort the whole discovery block (`set -e` inside the subshell, or `&&` between queries). Do not use bare `;` between `gh pr list` calls: an early failure with a later success would look like a clean (possibly empty) bot list.
 
 If any `gh pr list` returns non-zero, CVE-PR discovery failed: tell the operator, show the error, and stop (or continue only after they confirm skipping the check). A successful run that returns `[]` means there are no bot PRs.
 
