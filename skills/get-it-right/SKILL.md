@@ -33,10 +33,15 @@ if [ -z "$BASE_BRANCH" ]; then
 fi
 ```
 
-Determine what work is being done on the current branch:
+Run `git status --porcelain`. If the working tree has uncommitted changes, list the paths and stop. Do not treat those paths as leftover from an earlier run of this skill, and do not enter Step 2 or auto-implement until the operator responds.
+
+- If the paths are leftover from a previous `/get-it-right` on this branch, the operator says proceed. Include them in the scope below.
+- If they are work from another task, tell the operator to commit, stash, or discard them first. This is the same dirty-tree stop as `apply-review` and `update-deps`. `/get-it-right` only rewrites the branch's intended footprint.
+
+Then determine what work is being done on the current branch:
 - `git log "$BASE_REF"..HEAD --oneline`, all commits on this branch
 - `git diff "$BASE_REF"...HEAD --stat`, all changed files
-- `git status --porcelain`, uncommitted work this skill may have left from an earlier run
+- `git status --porcelain`, uncommitted work the operator confirmed as leftover, or a clean tree
 - If issue number is in branch name, read the GitHub issue for original intent
 
 When all three are empty the branch has no work to re-architect. Stop here and report it, then ask the user which branch or change set to target. Do not enter Step 2 with an empty scope: every later step, the retrospective, the plan, and the footprint guard's percentage, is undefined against a zero-file footprint.
@@ -129,6 +134,8 @@ When the guard holds, print a one-line summary (original count, planned count, n
 
 ### 5. Auto-Implement
 
+Do not start this step while uncommitted paths remain unconfirmed. The Step 1 dirty-tree gate is the stop.
+
 Execute the plan without user interaction:
 - Make all changes across the codebase
 - Run format and lint (check CLAUDE.md for project commands)
@@ -150,5 +157,6 @@ After implementation, output a brief playbook the user follows in the running ap
 - **Fewer abstractions > more abstractions.** Every indirection layer must earn its keep.
 - **Tests are the constraint.** All existing behavior must be preserved. Tests must pass.
 - **Stay within the branch's footprint.** Re-architecture that adds files the branch does not already touch needs the user's confirmation before auto-implementing. The footprint guard in Step 4.5 defines the allowance and the stop point.
+- **Don't rewrite a dirty tree.** Uncommitted paths are not leftover until the operator says so. Stop, list the paths, and wait. Align with `apply-review` / `update-deps` so this skill only rewrites the branch's intended footprint.
 - **Don't commit.** The user reviews everything before any git operations.
-- **Don't ask.** Auto-implement unaided when the footprint guard holds. The testing playbook is how the user validates.
+- **Don't ask.** Auto-implement unaided when the dirty-tree gate and the footprint guard both hold. The testing playbook is how the user validates.
