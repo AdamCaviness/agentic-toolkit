@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.2...v1.2.3) (2026-08-20)
+
+
+### Bug Fixes
+
+* **next-ticket:** require a clean working tree before claim ([#134](https://github.com/AdamCaviness/agentic-toolkit/issues/134)) ([2188c6a](https://github.com/AdamCaviness/agentic-toolkit/commit/2188c6a3a5ca41ba083a9b201fec136824ee728b))
+
 ## [1.2.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.1...v1.2.2) (2026-08-19)
 
 
