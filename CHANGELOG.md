@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.7](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.6...v1.2.7) (2026-08-21)
+
+
+### Bug Fixes
+
+* name the next command at each ticket-to-PR loop seam ([#143](https://github.com/AdamCaviness/agentic-toolkit/issues/143)) ([951db93](https://github.com/AdamCaviness/agentic-toolkit/commit/951db93280dcedaef74a3b6de5b3cd2ddaf1e5d3))
+
 ## [1.2.6](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.5...v1.2.6) (2026-08-20)
 
 
