@@ -309,6 +309,7 @@ Print confirmation:
 Filed: <ticket-id> - "<ticket title>"
 Labels: <type>, <severity>
 URL: <ticket-url>
+To pick it up, run /next-ticket <ticket-id>.
 ```
 
 If the idea was decomposed in Step 1 or Step 6, remind the user:

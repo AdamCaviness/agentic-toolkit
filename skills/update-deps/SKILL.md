@@ -415,6 +415,8 @@ The closing headline is conditional on the same list:
 - If the reverted-CVE list is empty, print `All tests passing. Ready for review.`
 - If the reverted-CVE list has one or more entries, print `WARNING: <N> CVE update(s) NOT applied. See above.` instead. Never print the success line when any CVE was reverted.
 
+After whichever headline, always print: `When you are ready to publish, run /pr (opens a PR and stops) or /ship (merges and cleans up). Review locally first.`
+
 Final summary template:
 
 ```
@@ -442,6 +444,8 @@ Bot PRs that should auto-close:
   #92 (dependabot: lodash)
 
 WARNING: 1 CVE update(s) NOT applied. See above.
+
+When you are ready to publish, run /pr (opens a PR and stops) or /ship (merges and cleans up). Review locally first.
 ```
 
 Never push, create PRs, or merge. The user reviews first.

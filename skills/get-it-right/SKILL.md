@@ -150,6 +150,8 @@ After implementation, output a brief playbook the user follows in the running ap
 - Be specific: what to do, what to expect
 - Keep it short. 3-6 items max, not an exhaustive checklist.
 
+Do not commit. After the playbook, tell the user: when the checks pass, run `/pr`. Review the unstaged diff first.
+
 ## Key Principles
 
 - **The current implementation is your teacher.** Understand why it was built this way before changing it.
