@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.8](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.7...v1.2.8) (2026-08-22)
+
+
+### Bug Fixes
+
+* quote /pr and /ship descriptions so YAML stays valid ([#145](https://github.com/AdamCaviness/agentic-toolkit/issues/145)) ([c7a8f47](https://github.com/AdamCaviness/agentic-toolkit/commit/c7a8f476562f9a0478fb340398dff8523995ee66))
+
 ## [1.2.7](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.6...v1.2.7) (2026-08-21)
 
 
