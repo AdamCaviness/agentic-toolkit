@@ -14,12 +14,9 @@ generated output easy to diff and review.
 ARCHITECTURE = {
     # frontmatter
     "description": (
-        "Audits a codebase for bugs, security vulnerabilities, missing "
-        "error handling, race conditions, architectural gaps, DRY "
-        "violations, naming inconsistencies, incomplete implementations, "
-        "and robustness issues. Caches tickets to disk, then spawns 4 "
-        "parallel sub-agents (one per focus cluster) to scrutinize and "
-        "file tickets."
+        "Use when auditing a codebase for structural and safety issues. "
+        "Caches tickets to disk, then spawns 4 parallel sub-agents (one "
+        "per focus cluster) to scrutinize and file tickets."
     ),
     "title": "Triage Architecture",
     # orchestrator preamble (sentence after "You are an **orchestrator**.")
@@ -296,11 +293,11 @@ ARCHITECTURE = {
 # triage-bugs data
 BUGS = {
     "description": (
-        "Investigates a codebase for proven defects using adversarial "
-        "4-pass analysis (frame, trace, falsify, prove). Caches tickets "
-        "to disk, then spawns 4 parallel sub-agents (one per bug "
-        "category) to find, prove, and document bugs with enough rigor "
-        "that a skeptical maintainer could fix each from the report alone."
+        "Use when hunting proven defects. Adversarial 4-pass analysis "
+        "(frame, trace, falsify, prove). Caches tickets to disk, then "
+        "spawns 4 parallel sub-agents (one per bug category) to find, "
+        "prove, and document bugs with enough rigor that a skeptical "
+        "maintainer could fix each from the report alone."
     ),
     "title": "Triage Bugs",
     "orchestrator_role": (
@@ -663,12 +660,9 @@ BUGS = {
 # triage-product data
 PRODUCT = {
     "description": (
-        "Audits a project for UX gaps, broken workflows, missing states, "
-        "confusing terminology, visual inconsistency, navigation/state "
-        "issues, destructive action safety, data presentation, "
-        "accessibility issues, and competitive table stakes. Caches "
-        "tickets to disk, then spawns 4 parallel sub-agents (one per "
-        "focus cluster) to scrutinize and file tickets."
+        "Use when auditing product UX and workflows. Caches tickets to "
+        "disk, then spawns 4 parallel sub-agents (one per focus cluster) "
+        "to scrutinize and file tickets."
     ),
     "title": "Triage Product",
     "orchestrator_role": (

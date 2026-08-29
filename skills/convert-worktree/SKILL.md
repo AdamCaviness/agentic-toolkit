@@ -1,6 +1,6 @@
 ---
 name: convert-worktree
-description: Convert a git worktree into a local branch. Rebase onto latest default branch, clean up project resources, remove worktree, checkout branch in main workspace. Use when finishing work in a worktree.
+description: Use when finishing work in a git worktree. Rebases onto default branch, cleans up resources, removes the worktree, and checks out the branch in the main workspace.
 disable-model-invocation: true
 ---
 

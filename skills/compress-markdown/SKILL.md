@@ -2,10 +2,9 @@
 name: compress-markdown
 model: sonnet
 description: >
-  Compress markdown files into concise prose to save input tokens. Default mode reduces
+  Use when markdown files need compressing to save tokens. Default mode reduces
   verbosity without losing information. With deep, verifies each section against the
   codebase first, removing stale or incorrect content before compressing.
-  Trigger: /compress-markdown [deep] <filepath>
 ---
 
 # Compress Markdown

@@ -1,6 +1,6 @@
 ---
 name: triage-bugs
-description: Investigates a codebase for proven defects using adversarial 4-pass analysis (frame, trace, falsify, prove). Caches tickets to disk, then spawns 4 parallel sub-agents (one per bug category) to find, prove, and document bugs with enough rigor that a skeptical maintainer could fix each from the report alone.
+description: Use when hunting proven defects. Adversarial 4-pass analysis (frame, trace, falsify, prove). Caches tickets to disk, then spawns 4 parallel sub-agents (one per bug category) to find, prove, and document bugs with enough rigor that a skeptical maintainer could fix each from the report alone.
 argument-hint: "[create | refine [<duration>]]"
 ---
 

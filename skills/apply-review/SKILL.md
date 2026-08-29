@@ -1,6 +1,6 @@
 ---
 name: apply-review
-description: Read PR review comments, validate against code, fix valid ones, push, resolve addressed threads, and explain unresolved ones.
+description: Use when a PR has review comments to address. Validates feedback against code, fixes valid items, pushes, and resolves threads.
 argument-hint: "[<pr-number>]"
 ---
 

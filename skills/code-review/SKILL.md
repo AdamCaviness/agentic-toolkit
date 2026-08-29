@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
+description: Use when finishing a task or before merge. Dispatches an isolated reviewer subagent on all branch work (committed and uncommitted).
 ---
 
 # Code Review

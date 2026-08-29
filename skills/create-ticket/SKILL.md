@@ -1,6 +1,6 @@
 ---
 name: create-ticket
-description: Craft a well-researched, well-structured ticket from a user-provided idea. Explores project context when available, researches prior art, asks clarifying questions only when options are too nuanced to auto-resolve, deduplicates against the existing backlog, and files one world-class ticket. Works for new or mature codebases.
+description: Use when you have an idea to file. Researches context and prior art, dedupes the backlog, and files one well-structured ticket.
 argument-hint: "[idea]"
 ---
 

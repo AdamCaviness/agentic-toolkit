@@ -1,6 +1,6 @@
 ---
 name: triage-architecture
-description: Audits a codebase for bugs, security vulnerabilities, missing error handling, race conditions, architectural gaps, DRY violations, naming inconsistencies, incomplete implementations, and robustness issues. Caches tickets to disk, then spawns 4 parallel sub-agents (one per focus cluster) to scrutinize and file tickets.
+description: Use when auditing a codebase for structural and safety issues. Caches tickets to disk, then spawns 4 parallel sub-agents (one per focus cluster) to scrutinize and file tickets.
 argument-hint: "[create | refine [<duration>]]"
 ---
 

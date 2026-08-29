@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Commit, push, create/merge PR, sync local default branch, delete branch. The optimistic \"I'm done completely\": merges and cleans up."
+description: "Use when work is done and ready to land. Commits, pushes, create/merge PR, syncs default branch, and deletes the branch. The optimistic \"I'm done completely\": merges and cleans up."
 disable-model-invocation: true
 ---
 
