@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.10](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.9...v1.2.10) (2026-08-29)
+
+
+### Bug Fixes
+
+* **skills:** require Use when prefix on skill descriptions ([#149](https://github.com/AdamCaviness/agentic-toolkit/issues/149)) ([c44cd6d](https://github.com/AdamCaviness/agentic-toolkit/commit/c44cd6dded39d10a0453b3a2594490552df0ebbb))
+
 ## [1.2.9](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.8...v1.2.9) (2026-08-29)
 
 
