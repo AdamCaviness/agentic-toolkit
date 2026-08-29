@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.9](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.8...v1.2.9) (2026-08-29)
+
+
+### Bug Fixes
+
+* **code-review:** close with a publish handoff after fixes ([#147](https://github.com/AdamCaviness/agentic-toolkit/issues/147)) ([bac7fd0](https://github.com/AdamCaviness/agentic-toolkit/commit/bac7fd0fe912739ab452d927dd26a9b38d768b6a)), closes [#122](https://github.com/AdamCaviness/agentic-toolkit/issues/122)
+
 ## [1.2.8](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.7...v1.2.8) (2026-08-22)
 
 
