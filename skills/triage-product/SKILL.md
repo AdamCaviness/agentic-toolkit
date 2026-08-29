@@ -1,6 +1,6 @@
 ---
 name: triage-product
-description: Audits a project for UX gaps, broken workflows, missing states, confusing terminology, visual inconsistency, navigation/state issues, destructive action safety, data presentation, accessibility issues, and competitive table stakes. Caches tickets to disk, then spawns 4 parallel sub-agents (one per focus cluster) to scrutinize and file tickets.
+description: Use when auditing product UX and workflows. Caches tickets to disk, then spawns 4 parallel sub-agents (one per focus cluster) to scrutinize and file tickets.
 argument-hint: "[create | refine [<duration>]]"
 ---
 

@@ -2,7 +2,7 @@
 name: pr
 model: sonnet
 effort: high
-description: "Format, lint, test, commit, push, and create a pull request. The cautious \"I'm done\": opens a PR and stops for CI/review."
+description: "Use when work is done but you want review first. Formats, lints, tests, commits, pushes, and opens a PR. The cautious \"I'm done\": stops for CI/review."
 disable-model-invocation: true
 ---
 

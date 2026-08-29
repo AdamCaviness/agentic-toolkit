@@ -1,6 +1,6 @@
 ---
 name: update-deps
-description: Updates project dependencies. Checks open bot PRs for CVE patches, applies safe minor/patch updates, and researches/fixes breaking changes for major bumps. Optional scope (frontend|backend|infra|all) and major flag.
+description: Use when dependencies need updating. Checks bot PRs for CVEs, applies safe minor/patch bumps, and researches major breaking changes. Optional scope and major flag.
 argument-hint: "[<scope>[|<scope>...]] [major]"
 ---
 
