@@ -3,6 +3,10 @@
 Issue #114: /create-ticket, /next-ticket, /pr, /ship, and /apply-review form a
 loop in the README, but the implement and empty-state skills stop without
 naming the follow-on. Keep the never-auto-push rule; add the handoff.
+
+Issue #122: /code-review is in that same loop after implementation and before
+/pr or /ship, and must close with the same publish handoff rather than
+stopping after fixes.
 """
 
 import re
@@ -104,6 +108,34 @@ class LoopNextCommandHandoffTest(unittest.TestCase):
     def test_apply_review_summary_names_ship(self):
         block = step_block(skill_text("apply-review"), "## Step 10: Summary")
         self.assertIn("/ship", block)
+
+    def test_code_review_wrap_up_names_pr_and_ship(self):
+        block = step_block(skill_text("code-review"), "## How to Request")
+        self.assertIn("/pr", block)
+        self.assertIn("/ship", block)
+        self.assertIn("Review locally first", block)
+
+    def test_code_review_wrap_up_is_closing_script_not_second_review(self):
+        block = step_block(skill_text("code-review"), "## How to Request")
+        lower = block.lower()
+        self.assertIn("wrap up", lower)
+        self.assertRegex(
+            lower,
+            r"not a second review|do not dispatch the reviewer again|end of the skill",
+        )
+
+    def test_code_review_wrap_up_does_not_auto_publish(self):
+        block = step_block(skill_text("code-review"), "## How to Request")
+        lower = block.lower()
+        self.assertRegex(
+            lower,
+            r"do not push|never push",
+        )
+        self.assertNotRegex(
+            lower,
+            r"run /pr now|then run /pr|proceed to /pr",
+            "handoff names /pr; it must not collapse code-review into publishing",
+        )
 
 
 if __name__ == "__main__":
