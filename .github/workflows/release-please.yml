@@ -30,6 +30,26 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           pr_number=$(jq -r '.number' <<< "$RELEASE_PR_JSON")
+          pr_sha=$(gh pr view "$pr_number" --repo "$REPO" --json headRefOid --jq '.headRefOid')
+
+          # The release PR is opened by github-actions[bot], so GitHub holds its
+          # `pull_request` runs (test, pr-release-prefix) as `action_required`, and
+          # merging at once deleted the branch under them, leaving failed runs and an
+          # untested release. Approve the held runs, then wait for the checks before
+          # merging. `gh pr checks` exit codes: 0 all passed, 8 some pending, 4 none yet.
+          for _ in $(seq 1 24); do
+            held=$(gh api "repos/$REPO/actions/runs?event=pull_request&head_sha=$pr_sha" \
+              --jq '.workflow_runs[] | select(.conclusion == "action_required") | .id')
+            for run_id in $held; do
+              gh api -X POST "repos/$REPO/actions/runs/$run_id/approve"
+            done
+            rc=0
+            gh pr checks "$pr_number" --repo "$REPO" >/dev/null 2>&1 || rc=$?
+            [ -z "$held" ] && { [ "$rc" -eq 0 ] || [ "$rc" -eq 8 ]; } && break
+            sleep 5
+          done
+          gh pr checks "$pr_number" --watch --fail-fast --repo "$REPO"
+
           gh pr merge "$pr_number" --squash --repo "$REPO"
 
           # Confirm main reflects the squash commit before dispatching, so
