@@ -79,7 +79,7 @@ establishes component discovery, not an end-to-end model session.
 | Route | Version | Evidence |
 | --- | --- | --- |
 | Claude module registration | 2.1.288 | Manifest and module validation pass with no warnings; only `session.start`, `command.run`, and Bash `tool.check` are registered. Native behavioral tests cover off and enforce. |
-| Claude diagnostic command | 2.1.288 | `--plugin-dir` loads the real module and `/ship-gate` returns off status without a model call. |
+| Claude diagnostic command | 2.1.288 | `--plugin-dir` loads the real module and `/ship-gate` returns off and enforce status with temporary settings, without a model call. |
 | Minimum Claude runtime | 2.1.287 | Native manifest and custom-path module validation pass. |
 | Earlier Claude runtime | 2.1.286 | Native manifest and module validation also pass; the documented minimum remains 2.1.287. |
 | Codex native plugin | 0.160.0 | Real app-server `plugin/read` discovers 13 skills and an empty hooks list in a temporary marketplace. |

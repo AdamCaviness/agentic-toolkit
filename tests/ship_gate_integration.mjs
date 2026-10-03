@@ -92,3 +92,29 @@ test('actual push configuration cannot redirect to upstream', async t => {
   const f = fixture(t); f.git('config','remote.pushDefault','upstream');
   assert.equal((await f.check('git push')).decision,'deny');
 });
+test('git -C resolves the publication repository explicitly', async t => {
+  const f = fixture(t);
+  assert.equal((await f.check('git -C ' + JSON.stringify(f.cwd) + ' push origin feat/x')).decision,'ask');
+});
+test('an actual linked worktree resolves branch and default-ref evidence', async t => {
+  const f = fixture(t); const linked = join(f.cwd,'..','linked');
+  f.git('worktree','add','-b','feat/linked',linked);
+  f.api.session.cwd = async () => linked;
+  assert.equal((await f.check('git push origin feat/linked')).decision,'ask');
+});
+test('an actual detached checkout cannot publish', async t => {
+  const f = fixture(t); f.git('checkout','--detach');
+  assert.equal((await f.check('git push origin feat/x')).decision,'deny');
+});
+test('an actual unborn branch fails closed', async t => {
+  const f = fixture(t); f.git('checkout','--orphan','feat/unborn');
+  assert.equal((await f.check('git push origin feat/unborn')).decision,'deny');
+});
+test('missing local and remote default refs cannot appear clean', async t => {
+  const f = fixture(t); f.git('branch','-D','trunk'); f.git('update-ref','-d','refs/remotes/origin/trunk');
+  assert.equal((await f.check('git push origin feat/x')).decision,'deny');
+});
+test('missing origin cannot appear as a valid destination', async t => {
+  const f = fixture(t); f.git('remote','remove','origin');
+  assert.equal((await f.check('git push origin feat/x')).decision,'deny');
+});
