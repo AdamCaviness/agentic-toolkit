@@ -31,3 +31,7 @@ npm-debug.log*
 
 # Local brainstorming / writing-plans artifacts (not shipped)
 docs/superpowers/
+
+# Claude generates local mod declarations and an editor configuration.
+/.claude-plugin/types/
+/tsconfig.json

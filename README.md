@@ -36,6 +36,22 @@ Register the marketplace, then install the plugin:
 
 </details>
 
+### Optional Claude Ship Gate
+
+Claude Code 2.1.287 and later can run an additional publication gate inside this plugin. It defaults to **off**. Cursor, Codex, Gemini, and manual skill-only installations continue using the shared skills; they do not register the Claude module.
+
+In Claude's `/config`, select **Ship Gate**, then **enforce**. `/ship-gate` shows the mode, verification configuration, and most recent verdict. Return the mode to **off** to disable the gate while keeping the skills available.
+
+The gate checks direct Git pushes, GitHub PR creation and merging, and remote branch cleanup. It checks the repository, default branch, origin destination, working tree, PR head, merge eligibility, and secret-shaped paths. High-risk paths require approval for that one action. Native Claude permission denials and prompts still apply.
+
+**Ship Gate verification commands** accepts JSON argument arrays, for example `[["npm","test"],["npm","run","lint"]]`. Commands run sequentially in the target repository without shell expansion, before each push, PR creation, or merge. This configuration applies across projects using the plugin, so configure only commands you intend to run in all of them. With `[]`, status says **verification not configured**; it does not certify passing tests. Remote cleanup does not run verification commands.
+
+Publication commands must be separate, with literal arguments. Use `git push -u origin <current-branch>` when Git's implicit push destination is ambiguous. For GitHub, use `--repo <origin-owner/repository>` and explicit `--head` and `--base` on PR creation when defaults point elsewhere. Merge requires an explicit allowed strategy, such as `--squash`. Forced pushes, administrator merges, and publishing additional refs are rejected.
+
+The gate covers supported Claude Bash calls while the mod is enabled and loaded. Publication hidden in scripts, aliases, MCP tools, or other mods is outside its coverage. It screens filenames, not file contents, and cannot prevent another process changing the repository after its last check. It does not replace the shared skill safeguards, host branch protections, or a content secret scanner.
+
+The module lives in `claude-mods/` and is referenced only by the Claude manifest. There is no default `hooks/hooks.json`, classic shell-hook fallback, additional plugin, telemetry, or persistent transcript. See [verification details](docs/claude-ship-gate-verification.md) for test commands and compatibility evidence.
+
 <details>
 <summary>Cursor</summary>
 
