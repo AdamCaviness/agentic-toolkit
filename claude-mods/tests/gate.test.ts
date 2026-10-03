@@ -35,12 +35,12 @@ test('unrelated commands preserve native permissions', async ($, on) => {
   expect((await $.tool.check({tool:'Bash',input:{command:'git status'}})).decision).toBe('ask');
 });
 
-function repository(on: any, options: {paths?: string; dirty?: boolean; changes?: boolean; checkExit?: number; ghDefault?: string; gitConfig?: Record<string,string>; truncatedPaths?: boolean; pr?: unknown; ghExit?: number} = {}) {
+function repository(on: any, options: {paths?: string; dirty?: boolean; changes?: boolean; checkExit?: number; checkError?: string; ghDefault?: string; gitConfig?: Record<string,string>; truncatedPaths?: boolean; pr?: unknown; ghExit?: number; inferredPR?: unknown} = {}) {
   let snapshots = 0;
   on('session.cwd', () => ({value:'/session'}));
   on('process.run', (_$: any, e: any) => {
     const args = [...e.argv];
-    if (args[0] === 'check') return {value:{exitCode:options.checkExit ?? 0,stdout:'',stderr:''}};
+    if (args[0] === 'check') return {value:{exitCode:options.checkExit ?? 0,stdout:'',stderr:options.checkError ?? ''}};
     const gitIndex = args.indexOf('rev-parse');
     if (gitIndex >= 0 && args[gitIndex + 1] === '--show-toplevel') { snapshots++; return {value:{exitCode:0,stdout:'/repo\n',stderr:''}}; }
     const key = args.slice(1).join(' ');
@@ -56,7 +56,7 @@ function repository(on: any, options: {paths?: string; dirty?: boolean; changes?
       'status --porcelain=v1 --untracked-files=all':options.dirty ? '?? other.txt\n' : '',
       'diff --name-only -z trunk...HEAD':options.paths ?? 'src/x.ts\0',
     };
-    if (args[0] === 'gh' && args[1] === 'pr') return {value:{exitCode:options.ghExit ?? 0,stdout:JSON.stringify(args[2] === 'list' ? [options.pr] : options.pr),stderr:''}};
+    if (args[0] === 'gh' && args[1] === 'pr') return {value:{exitCode:options.ghExit ?? 0,stdout:JSON.stringify(args[2] === 'list' ? [options.pr] : args[3] === '--repo' ? options.inferredPR ?? options.pr : options.pr),stderr:''}};
     if (args[0] === 'gh' && args[1] === 'repo') return {value:{exitCode:0,stdout:JSON.stringify({url:options.ghDefault ?? 'https://github.com/a/b', defaultBranchRef:{name:'trunk'}, mergeCommitAllowed:true,squashMergeAllowed:true,rebaseMergeAllowed:true}),stderr:''}};
     if (args[0] === 'git' && args[1] === 'config') {
       const v = options.gitConfig?.[args[args.length - 1]];
@@ -147,4 +147,17 @@ test('malformed PR evidence blocks merge', async ($, on) => {
   config(on); repository(on, {pr:{}});
   on('tool.check', () => ({decision:'allow'}));
   expect((await $.tool.check({tool:'Bash',input:{command:'gh pr merge 1 --squash'}})).decision).toBe('deny');
+});
+test('selector-free merging validates the PR GitHub actually infers', async ($, on) => {
+  config(on); repository(on, {pr:readyPR,inferredPR:{...readyPR,headRefName:'other',headRefOid:'other',url:'https://github.com/a/b/pull/2'},gitConfig:{'branch.feat/x.merge':'refs/pull/2/head'}});
+  on('tool.check', () => ({decision:'allow'}));
+  expect((await $.tool.check({tool:'Bash',input:{command:'gh pr merge --squash'}})).decision).toBe('deny');
+});
+test('failed verification returns a bounded diagnostic excerpt', async ($, on) => {
+  config(on, 'enforce', '[["check"]]'); repository(on, {checkExit:1,checkError:'Fixture failure ' + 'x'.repeat(1000)});
+  on('tool.check', () => ({decision:'allow'}));
+  const result = await $.tool.check({tool:'Bash',input:{command:'git push origin feat/x'}});
+  expect(result.decision).toBe('deny');
+  expect('reason' in result && result.reason?.includes('Fixture failure')).toBe(true);
+  expect('reason' in result && (result.reason?.length ?? 0) < 650).toBe(true);
 });

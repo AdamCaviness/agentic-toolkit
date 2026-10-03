@@ -92,7 +92,10 @@ async function inspectPR($: EngineInterface, a: Action, s: Snapshot): Promise<Pu
   if (a.operation !== 'merge' && a.operation !== 'delete') return undefined;
   const fields = 'state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,reviewDecision,url,isCrossRepository';
   if (a.operation === 'merge') {
-    const raw = await run($, ['gh','pr','view',a.selector ?? s.branch,'--repo',s.origin,'--json',fields], s.repository);
+    const argv = ['gh','pr','view'];
+    if (a.selector) argv.push(a.selector);
+    argv.push('--repo',s.origin,'--json',fields);
+    const raw = await run($, argv, s.repository);
     const pr = JSON.parse(raw) as PullRequest;
     const strategies = JSON.parse(await run($, ['gh','repo','view',s.origin,'--json','mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed'], s.repository));
     const field = ({merge:'mergeCommitAllowed',squash:'squashMergeAllowed',rebase:'rebaseMergeAllowed'} as Record<string,string>)[a.explicitStrategy ?? ''];
@@ -137,7 +140,10 @@ export const register: Register = (on, options) => {
     if (action.operation !== 'delete') {
       for (const argv of checks) {
         const result = await $.process.run(argv, { cwd:before.repository, timeoutMs:600000 });
-        if (result.exitCode !== 0) return deny('Verification command ' + argv[0] + ' failed (exit ' + result.exitCode + ').');
+        if (result.exitCode !== 0) {
+          const detail = (result.stderr || result.stdout).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '').trim().slice(0, 512);
+          return deny('Verification command ' + argv[0] + ' failed (exit ' + result.exitCode + ').' + (detail ? '\n' + detail : ''));
+        }
       }
     }
     if (decision.kind === 'confirm-paths') {

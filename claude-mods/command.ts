@@ -44,6 +44,9 @@ function tokenize(command: string): { words: Word[]; unsafe: boolean } {
 }
 
 function isPublication(words: Word[]): boolean {
+  let assignmentCount = 0;
+  while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[assignmentCount]?.text ?? '')) assignmentCount++;
+  if (assignmentCount) return isPublication(words.slice(assignmentCount));
   const exe = words[0]?.text.split('/').pop();
   if (exe === 'git' || exe === 'gh') {
     const valued = exe === 'git' ? ['-C','-c','--git-dir','--work-tree','--namespace','--config-env'] : ['-R','--repo','--hostname'];

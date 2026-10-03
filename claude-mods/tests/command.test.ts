@@ -6,6 +6,12 @@ test('read-only commands with publication words in arguments pass', () => {
     expect(classifyCommand(command).kind).toBe('pass');
   }
 });
+test('assignment-prefixed publication requires a separate direct command', () => {
+  for (const command of ['FOO=bar git push --force', 'FOO="a b" BAR=x gh pr merge 2 --admin']) {
+    expect(classifyCommand(command).kind).toBe('unsupported-publication');
+  }
+  expect(classifyCommand('FOO=bar git status').kind).toBe('pass');
+});
 
 for (const command of ['git push', 'git push -u origin feat/example', 'git -C "a b" push origin feat/example', 'gh pr create --body "A; B && C"', 'gh pr merge 12 --squash', 'git push origin --delete feat/old']) {
   test('recognizes ' + command, () => expect(classifyCommand(command).kind).not.toBe('pass'));
