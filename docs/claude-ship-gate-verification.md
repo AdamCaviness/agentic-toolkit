@@ -55,11 +55,14 @@ ruff check .
 claude plugin validate . --json
 claude plugin test .
 node --test tests/ship_gate_integration.mjs
+claude -p /ship-gate --plugin-dir . --no-session-persistence
 npx --yes --package typescript@5.9.3 tsc -p tsconfig.json --allowImportingTsExtensions
 ```
 
-Claude validation generates ignored declarations and `tsconfig.json`; type
-checking uses these runtime declarations. CI pins Claude Code 2.1.288 and
+Loading `/ship-gate` generates ignored declarations and `tsconfig.json`; static
+validation and native tests do not. Type checking uses these runtime declarations.
+CI runs the diagnostic with temporary settings storage and verifies no model
+turn occurred before checking types. CI pins Claude Code 2.1.288 and
 TypeScript 5.9.3, with Node 24. Native tests need no model or sign-in. Required
 test jobs do not silently skip an unavailable runtime.
 
