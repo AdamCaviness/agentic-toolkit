@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.1...v1.4.2) (2026-10-04)
+
+
+### Bug Fixes
+
+* **skills:** make the cached ticket system correctable and fail fast on access ([#159](https://github.com/AdamCaviness/agentic-toolkit/issues/159)) ([2e0f9a3](https://github.com/AdamCaviness/agentic-toolkit/commit/2e0f9a3d17ad23c50a0b64f36b181d91887a491e)), closes [#121](https://github.com/AdamCaviness/agentic-toolkit/issues/121) [#125](https://github.com/AdamCaviness/agentic-toolkit/issues/125) [#142](https://github.com/AdamCaviness/agentic-toolkit/issues/142)
+
 ## [1.4.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.0...v1.4.1) (2026-10-04)
 
 
