@@ -18,11 +18,10 @@ class ClaudeModDistributionTest(unittest.TestCase):
             self.assertNotIn("ship_gate_mode", json.dumps(manifest))
         self.assertFalse((ROOT / "hooks/hooks.json").exists())
 
-    def test_configuration_defaults_to_off(self):
+    def test_gate_needs_no_activation_setting(self):
         claude = json.loads((ROOT / ".claude-plugin/plugin.json").read_text())
         config = claude.get("userConfig", {})
-        self.assertEqual(config.get("ship_gate_mode", {}).get("default"), "off")
-        self.assertEqual(config["ship_gate_mode"]["options"], ["off", "enforce"])
+        self.assertNotIn("ship_gate_mode", config)
         self.assertEqual(config["ship_gate_checks"]["default"], "[]")
 
     def test_hook_file_contains_only_one_module(self):

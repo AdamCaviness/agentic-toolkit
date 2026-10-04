@@ -36,15 +36,15 @@ Register the marketplace, then install the plugin:
 
 </details>
 
-### Optional Claude Ship Gate
+### Claude Ship Gate
 
-Claude Code 2.1.287 and later can run an additional publication gate inside this plugin. It defaults to **off**. Cursor, Codex, Gemini, and manual skill-only installations continue using the shared skills; they do not register the Claude module.
+Claude Code 2.1.287 and later automatically run Ship Gate when this plugin is enabled and hooks are allowed. Cursor, Codex, Gemini, and manual skill-only installations continue using the shared skills; they do not register the Claude module.
 
-In Claude's `/config`, select **Ship Gate**, then **enforce**. `/ship-gate` shows the mode, verification configuration, and most recent verdict. Return the mode to **off** to disable the gate while keeping the skills available.
+No separate activation or slash command is needed. A transcript notice confirms **Ship Gate active** at startup, and supported publication attempts show **passed** or **blocked** notices. Existing saved `ship_gate_mode` values are ignored. Claude’s native plugin and hook controls, including `disableAllHooks` and safe mode, still apply.
 
 The gate checks direct Git pushes and remote branch cleanup on any repository host, plus GitHub PR creation and merging. Generic Git operations do not require the GitHub CLI or a GitHub login. It checks the repository, default branch, origin destination, working tree, and secret-shaped paths across feature commits, including files removed by a later commit. GitHub PR operations additionally check the PR head and merge eligibility. High-risk paths require approval for that one action. Cleanup checks the target and stable remote head; the workflow skill must confirm through the repository host that the matching PR or MR is merged and the branch has not been reused. Native Claude permission denials and prompts still apply.
 
-**Ship Gate verification commands** accepts JSON argument arrays, for example `[["npm","test"],["npm","run","lint"]]`. Commands run sequentially in the target repository without shell expansion, before each push, PR creation, or merge. This configuration applies across projects using the plugin, so configure only commands you intend to run in all of them. With `[]`, status says **verification not configured**; it does not certify passing tests. Remote cleanup does not run verification commands.
+**Ship Gate verification commands** accepts JSON argument arrays, for example `[["npm","test"],["npm","run","lint"]]`. Commands run sequentially in the target repository without shell expansion, before each push, PR creation, or merge. This configuration applies across projects using the plugin, so configure only commands you intend to run in all of them. With `[]`, the notice says **verification not configured**; it does not certify passing tests. Remote cleanup does not run verification commands.
 
 Publication commands must be separate, with literal arguments. Use `git push -u origin <current-branch>` when Git's implicit push destination is ambiguous. Origin must have one push URL identical to its fetch URL; differing URL spellings are rejected rather than assumed to reach the same repository. For GitHub, use `--repo <origin-owner/repository>` and explicit `--head` and `--base` on PR creation when defaults point elsewhere. Merge requires an explicit allowed strategy, such as `--squash`. Forced pushes, administrator merges, and publishing additional refs are rejected.
 
