@@ -154,7 +154,7 @@ Picks up a ticket from your issue tracker, implements it end-to-end with TDD, an
 **Usage:** `/next-ticket` (auto-pick best ticket) or `/next-ticket 42` (pick up a specific ticket).
 
 > [!NOTE]
-> All ticket skills auto-detect your ticket system: the agent reads repo signals (README, CLAUDE.md, git remotes, commit conventions) to determine which system you use. Supported out of the box: GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs in your session. Detection results are cached so detection only runs once per project. For persistent override, add `ticketSystem: <name>` to your project's CLAUDE.md. The ticket system is independent of the repository host, so a GitLab repository can track work in Jira (see [Workflow Skills](#workflow-skills) for supported hosts).
+> All ticket skills auto-detect your ticket system: the agent reads repo signals (README, CLAUDE.md, git remotes, commit conventions) to determine which system you use. Supported out of the box: GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs in your session. Detection results are cached so detection only runs once per project, and each run prints the cached system in one line; if it is wrong, say so and the skill re-detects. For a persistent override that beats the cache, add `ticketSystem: <name>` to your project's CLAUDE.md. The ticket system is independent of the repository host, so a GitLab repository can track work in Jira (see [Workflow Skills](#workflow-skills) for supported hosts).
 
 ---
 

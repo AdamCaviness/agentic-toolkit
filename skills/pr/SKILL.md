@@ -110,7 +110,7 @@ Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an 
 
 8. **Extract ticket ID from branch name**:
    - Pattern: `<category>/<ticket-id>-<desc>`, where the ID is a bare number (`fix/224-streaming-upload-size-check` → `224`) or a key (`fix/PROJ-224-upload-size` → `PROJ-224`)
-   - Build the closing reference in the syntax the ticket tracker and repository host recognize. The tracker is the one cached for this project root in `next-ticket-config.json` in the system temp directory, or, absent that, the one repo signals indicate:
+   - Build the closing reference in the syntax the ticket tracker and repository host recognize. The tracker is the one declared by `ticketSystem: <name>` in the project's instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`), else the one cached for this project root in `next-ticket-config.json` in the system temp directory, or, absent both, the one repo signals indicate:
      - Tracker is the host's own issues (GitHub Issues, GitLab Issues): `Closes #224`
      - Jira, Linear, or another keyed tracker: the bare key, `PROJ-224`, which those trackers link from PR and commit text
      - Azure Boards: `AB#224` on GitHub; on Azure DevOps Repos, link the work item with `--work-items 224` on `az repos pr create`
@@ -172,10 +172,10 @@ Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an 
     - Extract a ticket identifier from the branch name. The branch follows `<category>/<ticket-id>-<desc>`, where the ticket ID may be a bare number (`42`) or a prefixed key (`PROJ-42`). If no ticket ID is extractable, skip.
     - Read `next-ticket-config.json` from the system temp directory. If the file does not exist or has no ticket-system entry for the current project root, skip.
     - Reconstruct the full ticket identifier for the detected system if needed (e.g., for Jira, if only a bare number was extracted, prepend the project key from the config or repo signals).
-    - Read the project-root entry from the config. If it is a plain string (no `states` key yet) or has no `states.in_review` entry, discover the state. If it has a cached `states.in_review` entry, skip to applying.
+    - Read the project-root entry from the config. If it is a plain string (no `states` key yet) or has no `states.in_review` entry, discover the state. If `states.in_review` holds the unsupported sentinel (`{"unsupported": "<reason>"}`), skip this step silently. If it has any other cached `states.in_review` entry, skip to applying.
       - **Discover (first run only)**: Use whatever CLI, MCP, or API tooling fits the detected ticket system to discover what states or transitions exist. Every system exposes this differently, and teams customize state names extensively, so do not follow a hardcoded recipe. Use model judgment to identify which option represents "awaiting review" (teams call this anything: "In Review", "Review & Test", "Code Review", "QA", etc.). Confirm with the user: "Transition ticket to '<name>'? This choice will be cached for future runs." Migrate the project-root entry from a plain string to the object form (see `next-ticket` Step 4.6 for the schema) if needed, then write the result under `states.in_review`. Store enough system-specific detail to replay mechanically on future runs.
       - **Apply**: Transition the ticket using the cached system-specific details.
-    - On any failure (no config file, no ticket system, no transitions available, API error, permission denied, user declines): log a one-line note and continue. This step never blocks the PR workflow.
+    - On any failure, log a one-line note and continue. This step never blocks the PR workflow. When discovery succeeded and showed the project has no review state to transition to (for example plain GitHub Issues with no project board), also write `{"unsupported": "<reason>"}` under `states.in_review` so later runs skip this step without rediscovering it or repeating the note. Cache nothing for a missing config file, an API error, a permission denial, or the user declining, so the next run tries again.
 
 ## Error Handling
 

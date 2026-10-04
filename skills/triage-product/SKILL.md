@@ -23,14 +23,15 @@ Usage: `/triage-product`, `/triage-product refine`, or `/triage-product refine 5
 
 Determine which ticket system this project uses. Check in this order:
 
-1. **Cached config (always wins)**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip the rest of detection. Never re-detect when the cache has an answer.
-2. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
-3. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
-4. **Confirm with the user.** Tell them what you concluded and where the evidence came from, e.g., "Detected ticket system: GitHub Issues (github.com remote). Correct?" If they confirm, cache it. If they correct, cache the correction.
+1. **Project override (always wins)**: If the project's instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) declare `ticketSystem: <name>`, use that system and skip the rest of detection. When the cached entry for this project root names a different system, replace that entry with the plain string `"<name>"` and say so in one line. The replaced entry's `states` described the old system's workflow, so they go with it.
+2. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip the rest of detection. Never re-detect when the cache has an answer, except through the correction below.
+3. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
+4. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
+5. **Confirm with the user.** Tell them what you concluded and where the evidence came from, e.g., "Detected ticket system: GitHub Issues (github.com remote). Correct?" If they confirm, cache it. If they correct, cache the correction.
 
 Cache writes go to `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries; never overwrite unrelated keys. The cache write happens **after** the user confirms or corrects, so the cached value reflects the operator's verdict, not the auto-detection guess.
 
-> **Tip**: If auto-detect consistently gets it wrong for a project (e.g., a GitHub-hosted repo that uses Jira), add `ticketSystem: jira` to the project's CLAUDE.md to skip detection.
+**Correcting the ticket system.** Whenever the system comes from the cache, print it in one line before using it, so a wrong cached answer is visible on every run: `Ticket system: <name> (cached for <project root>). If this is wrong, say so and it will be re-detected.` When the operator says the cached system is wrong, delete this project root's entry from `next-ticket-config.json`, keep every other key including `__user__`, and run detection again from the step after the cached-config check. Deleting the whole entry also drops any cached `states`, which describe the old system's workflow. If the correction arrives after later steps have already used the old system, stop the current step, re-detect, and restart this skill from the top. Never ask the operator to find or edit the cache file by hand.
 
 ## Step 1: Cache to Disk
 
@@ -38,7 +39,7 @@ Cache writes go to `next-ticket-config.json` in the system temp directory, keyed
 
 Verify you're in a git repo. If not, tell the user and stop.
 
-Verify that CLI tools for the detected ticket system are available. If not, tell the user what to install and stop.
+Verify this session can reach the detected ticket system through its CLI (installed and authenticated, for example `gh auth status` for GitHub Issues), an MCP connector, or its REST API. If not, tell the user what to install or which login command to run, and stop.
 
 ### Derive project identity
 

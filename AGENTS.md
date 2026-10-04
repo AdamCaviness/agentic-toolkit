@@ -92,6 +92,14 @@ An unreachable or unauthenticated host is never an empty result. `ship` merges o
 
 `tests/test_repository_host_contract.py` asserts the section is identical across those skills and fails when a skill outside the roster runs `gh pr`, `gh api`, `gh repo`, `glab mr`, `glab api`, or `az repos`, so a new host-touching skill must carry the section.
 
+## Ticket-system cache
+
+`next-ticket`, `create-ticket`, and the triage skills detect the ticket system and cache the answer in `next-ticket-config.json` in the system temp directory, keyed by project root. `pr` and `get-it-right` only read it. Detection order is the same everywhere: a `ticketSystem: <name>` line in the project's instruction files beats the cache, and the cache beats detection. The override sits first because a cache that always wins made the documented override dead once any entry existed.
+
+The detecting skills carry one `**Correcting the ticket system.**` paragraph verbatim. It prints the cached system on every run and lets the operator correct it in conversation, because the cache otherwise lives in a temp file no operator should be asked to find. A correction deletes the whole project-root entry so cached `states`, which describe the old system's workflow, cannot leak into the new one.
+
+A state transition the project structurally cannot make, such as in-progress on plain GitHub Issues with no project board, is cached as `{"unsupported": "<reason>"}` under its `states` key, so later runs skip it silently instead of rediscovering it and repeating the warning. Transient failures and declines are never cached. `tests/test_ticket_system_config_contract.py` enforces the order, the shared paragraph, `create-ticket`'s access gate before research, and the sentinel in `next-ticket` and `pr`.
+
 ## Capability glossary for public skills
 
 Public skills are distributed to Claude Code, Cursor, Codex, and Gemini. Skill prose may use harness-specific tool names where they read naturally (`Task tool`, `WebSearch`, `Agent tool`); other harnesses generally infer the equivalent. This is a **glossary**, not a required vocabulary, that names recurring capabilities so future skills and adapter docs have a shared lexicon to reach for.
