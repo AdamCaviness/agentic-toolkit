@@ -67,8 +67,8 @@ jobs:
         run: claude plugin validate . --json
       - name: Run native mod tests
         run: claude plugin test .
-      - name: Run local Git integration tests
-        run: node --test tests/ship_gate_integration.mjs
+      - name: Run local Git and Bash integration tests
+        run: node --test tests/ship_gate_integration.mjs tests/ship_gate_shell_integration.mjs
       - name: Verify automatic startup and generate runtime declarations
         run: node --test tests/ship_gate_runtime_smoke.mjs
       - name: Check module types

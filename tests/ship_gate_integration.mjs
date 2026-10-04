@@ -143,3 +143,30 @@ test('cleanup checks Git state without a provider CLI', async t => {
   assert.equal(f.processCalls.some(a => a[0] === 'gh'),false);
   assert.equal((await f.check('git push origin --delete trunk')).decision,'deny');
 });
+
+const wrappedPush = 'gh auth status 2>&1 | head -3 && git push origin feat/x 2>&1 | tail -2 && gh pr view feat/x --repo fixture/repo --json number,state 2>&1';
+test('wrapped publication uses actual Git evidence without executing its commands', async t => {
+  const f = fixture(t);
+  assert.equal((await f.check(wrappedPush)).decision, 'ask');
+  assert.equal(f.processCalls.some(a => a[1] === 'push' || a[0] === 'gh' || ['head','tail'].includes(a[0])), false);
+});
+test('wrapped publication retains remote-only base resolution', async t => {
+  const f = fixture(t); f.git('branch','-D','trunk');
+  assert.equal((await f.check(wrappedPush)).decision, 'ask');
+});
+test('wrapped publication refuses actual untracked work', async t => {
+  const f = fixture(t); writeFileSync(join(f.cwd,'untracked.txt'),'untracked');
+  assert.equal((await f.check(wrappedPush)).decision, 'deny');
+});
+test('wrapped publication still confirms actual high-risk commit paths', async t => {
+  const f = fixture(t); writeFileSync(join(f.cwd,'.env'),'fixture');
+  f.git('add','.env'); f.git('commit','-m','fixture path');
+  let asked = false;
+  f.api.ui.ask = async () => { asked = true; return 'Cancel'; };
+  assert.equal((await f.check(wrappedPush)).decision, 'deny');
+  assert.equal(asked, true);
+});
+test('wrapped publication refuses repository changes during checks', async t => {
+  const f = fixture(t); f.setMutation(() => writeFileSync(join(f.cwd,'changed.txt'),'changed'));
+  assert.equal((await f.check(wrappedPush)).decision, 'deny');
+});

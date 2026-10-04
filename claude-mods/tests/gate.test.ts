@@ -251,3 +251,36 @@ test('unrelated commands do not print a gate verdict', async ($, on) => {
   expect((await $.tool.check({tool:'Bash',input:{command:'git status'}})).decision).toBe('ask');
   expect(notices).toEqual([]);
 });
+
+const wrappedPush = 'gh auth status 2>&1 | head -3 && git push -u origin feat/x 2>&1 | tail -2 && gh pr view feat/x --repo a/b --json number,state 2>&1';
+for (const decision of ['allow','ask','deny'] as const) {
+  test('the reported wrapper preserves native ' + decision + ' and the complete input', async ($, on) => {
+    config(on); repository(on);
+    let observed = '';
+    on('tool.check', (_$, e) => { observed = (e.input as {command:string}).command; return {decision,reason:'native'}; });
+    expect(await $.tool.check({tool:'Bash',input:{command:wrappedPush}})).toEqual({decision,reason:'native'});
+    expect(observed).toBe(wrappedPush);
+  });
+}
+for (const options of [
+  {dirty:true}, {changes:true}, {pushOrigin:'https://github.com/other/repo.git'},
+  {paths:'.env\0'}, {checkExit:1}, {truncatedPaths:true},
+]) {
+  test('wrapped publication retains the safeguard for ' + JSON.stringify(options), async ($, on) => {
+    config(on, '[["check"]]'); repository(on, options);
+    on('tool.check', () => ({decision:'allow'}));
+    on('tool.call', {tool:'AskUserQuestion'}, (_$, e: any) => ({result:{answers:{[e.questions[0].question]:'Cancel'}}}));
+    expect((await $.tool.check({tool:'Bash',input:{command:wrappedPush}})).decision).toBe('deny');
+  });
+}
+test('wrapped merging refuses a mismatched PR head', async ($, on) => {
+  config(on); repository(on, {pr:{...readyPR,headRefOid:'stale'}});
+  on('tool.check', () => ({decision:'allow'}));
+  expect((await $.tool.check({tool:'Bash',input:{command:'gh pr merge 1 --squash 2>&1 | tail -2'}})).decision).toBe('deny');
+});
+test('wrapped publication refuses settings changed during checks', async ($, on) => {
+  let reads = 0;
+  on('config.list', () => ({value:[{key:'agentic-toolkit.ship_gate_checks',value:++reads === 1 ? '[]' : '[["check"]]'}]}));
+  repository(on); on('tool.check', () => ({decision:'allow'}));
+  expect((await $.tool.check({tool:'Bash',input:{command:wrappedPush}})).decision).toBe('deny');
+});
