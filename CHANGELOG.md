@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.2...v1.4.3) (2026-10-04)
+
+
+### Bug Fixes
+
+* **mods:** allow validated publication command wrappers ([#161](https://github.com/AdamCaviness/agentic-toolkit/issues/161)) ([6d62a8d](https://github.com/AdamCaviness/agentic-toolkit/commit/6d62a8db915b15b54f88a809cb8c684cb3db6d25))
+
 ## [1.4.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.1...v1.4.2) (2026-10-04)
 
 
