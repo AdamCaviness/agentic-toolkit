@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.5](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.4...v1.4.5) (2026-10-04)
+
+
+### Bug Fixes
+
+* **convert-worktree:** preflight destination and retain recovery state ([040e55a](https://github.com/AdamCaviness/agentic-toolkit/commit/040e55a01cbccb412c52b06c30d96ca1492ec851))
+* **worktree:** confirm conversion before mutation and preserve recovery ([#170](https://github.com/AdamCaviness/agentic-toolkit/issues/170)) ([040e55a](https://github.com/AdamCaviness/agentic-toolkit/commit/040e55a01cbccb412c52b06c30d96ca1492ec851))
+
 ## [1.4.4](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.3...v1.4.4) (2026-10-04)
 
 
