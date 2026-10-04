@@ -80,7 +80,7 @@ Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an 
    BASE_REF="$BASE_BRANCH"
    git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
    git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
-     printf 'base branch "%s" resolves neither locally nor on origin, cannot run the pre-push gate\n' "$BASE_BRANCH" >&2
+     printf 'default branch "%s" resolves neither locally nor on origin, cannot run the pre-push gate\n' "$BASE_BRANCH" >&2
      exit 1
    }
    printf -- '--- commits ahead of %s ---\n' "$BASE_REF"
@@ -96,7 +96,7 @@ Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an 
 
    Read each labeled section:
 
-   - **A non-zero exit means the gate never ran.** Stop and report the unresolved base branch. Never treat the absent output as a clean result. An unset base would reduce the range to `...HEAD`, comparing HEAD with itself, and a base naming a branch this repository does not have would make `git diff` fail into the same empty output. Both read as a clean inventory. The screen ends in `|| [ $? -eq 1 ]` rather than `|| true` for the same reason: `grep` exits 1 for "no matches", which is clean, and 2 for a failure such as an invalid pattern, which is not. `|| true` flattened both to success and handed back the same empty output. The base is checked locally first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push.
+   - **A non-zero exit means the gate never ran.** Stop and report the unresolved default branch. Never treat the absent output as a clean result. An unset base would reduce the range to `...HEAD`, comparing HEAD with itself, and a base naming a branch this repository does not have would make `git diff` fail into the same empty output. Both read as a clean inventory. The screen ends in `|| [ $? -eq 1 ]` rather than `|| true` for the same reason: `grep` exits 1 for "no matches", which is clean, and 2 for a failure such as an invalid pattern, which is not. `|| true` flattened both to success and handed back the same empty output. The base is checked locally first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push.
    - **commits ahead**: if zero, stop and report "nothing to publish". This is the only valid no-op exit.
    - **working tree**: must be empty. If anything remains, stop and report which paths are still uncommitted. The skill never pushes a branch while staged, unstaged, or untracked work remains.
    - **publication inventory**: every committed path the push will publish. Read this list.
