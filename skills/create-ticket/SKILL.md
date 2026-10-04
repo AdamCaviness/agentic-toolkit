@@ -14,14 +14,21 @@ The user provides the idea. You research it, shape it, draft it, get approval, a
 
 Determine which ticket system this project uses. Check in this order:
 
-1. **Cached config (always wins)**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip the rest of detection. Never re-detect when the cache has an answer.
-2. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards). If not in a git repo, skip to step 3.
-3. **Ask the user**: If auto-detect fails or there is no repo, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
-4. **Confirm with the user.** Tell them what you concluded and where the evidence came from. If they confirm, cache it. If they correct, cache the correction.
+1. **Project override (always wins)**: If the project's instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) declare `ticketSystem: <name>`, use that system and skip the rest of detection. When the cached entry for this project root names a different system, replace that entry with the plain string `"<name>"` and say so in one line. The replaced entry's `states` described the old system's workflow, so they go with it.
+2. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip the rest of detection. Never re-detect when the cache has an answer, except through the correction below.
+3. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards). If not in a git repo, skip to step 4.
+4. **Ask the user**: If auto-detect fails or there is no repo, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
+5. **Confirm with the user.** Tell them what you concluded and where the evidence came from. If they confirm, cache it. If they correct, cache the correction.
 
 Cache writes go to `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries; never overwrite unrelated keys. The cache write happens **after** the user confirms or corrects.
 
-> **Tip**: If auto-detect consistently gets it wrong, add `ticketSystem: jira` to the project's CLAUDE.md.
+**Correcting the ticket system.** Whenever the system comes from the cache, print it in one line before using it, so a wrong cached answer is visible on every run: `Ticket system: <name> (cached for <project root>). If this is wrong, say so and it will be re-detected.` When the operator says the cached system is wrong, delete this project root's entry from `next-ticket-config.json`, keep every other key including `__user__`, and run detection again from the step after the cached-config check. Deleting the whole entry also drops any cached `states`, which describe the old system's workflow. If the correction arrives after later steps have already used the old system, stop the current step, re-detect, and restart this skill from the top. Never ask the operator to find or edit the cache file by hand.
+
+## Step 0b: Verify Ticket-System Access
+
+Before any research, confirm this session can reach the detected ticket system, since Step 4 dedups against it and Step 8 files into it. Any working path counts: the system's CLI, an MCP connector, or its REST API with credentials already present. For a CLI, check authentication, not only installation: `gh auth status` for GitHub Issues, `glab auth status` for GitLab Issues, `az account show` plus the `azure-devops` extension for Azure Boards, `jira me` for the Jira CLI. An MCP connector counts when its tools are present in this session and one lightweight read, such as listing a single ticket, succeeds.
+
+If no path works, stop before Step 1. Name what is missing and the exact fix, either the tool to install or the login command to run (for example `gh auth login`), and tell the operator to rerun `/create-ticket` with the same idea afterward. Do not research, draft, or skip dedup against a system this run cannot reach.
 
 ## Step 1: Understand the Idea
 
@@ -97,7 +104,7 @@ Using the detected ticket system's CLI tools, MCP tools, or APIs. **Request only
 - **Refile of a rejected ticket**: Tell the user what was rejected and why. Ask whether they want to proceed with a different framing or drop it.
 - **Related but distinct**: Note the related ticket(s) for cross-reference in the new ticket body.
 
-If the ticket system CLI is unavailable or there are no existing tickets (new project), skip dedup and proceed.
+If the backlog is empty (new project), there is nothing to dedup against; proceed. A failed fetch is not an empty backlog. Step 0b already verified access, so retry a failed fetch once, then stop and report the error rather than continue without a dedup check.
 
 ## Untrusted Content Boundary
 
@@ -301,7 +308,7 @@ Iterate on feedback. The user may adjust scope, reword sections, change severity
 
 ## Step 8: File
 
-Create the ticket using the detected system's CLI tools, MCP tools, or APIs.
+Create the ticket using the detected system's CLI tools, MCP tools, or APIs. If the create call fails, print the approved draft in full so the work is not lost, name the error and its fix, and stop.
 
 Print confirmation:
 

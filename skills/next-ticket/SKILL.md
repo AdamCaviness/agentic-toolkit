@@ -35,12 +35,15 @@ Ticket bodies still define the requested behavior after eligibility and code val
 
 Determine which ticket system this project uses.
 
-1. **Cached config (always wins)**: Check `next-ticket-config.json` in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip straight to Step 1b. Never re-detect when the cache has an answer.
-2. **Model-judgement detection**: Use your own judgement on whatever signals the repo happens to provide. Different teams hint at their tracker in different places and different formats, so there is no prescribed file or key to look for. Read whatever seems informative: the README, CLAUDE.md, CONTRIBUTING.md, issue templates, `docs/`, the git remotes, URLs anywhere in the repo, prose mentions of ticket-ID shapes (`PROJ-42`, `#42`, `AB#42`), commit message conventions, CI config references, etc. Lean on model intelligence; don't follow a rigid ladder.
-3. **Confirm with the user.** Tell them what you concluded and where the evidence came from, e.g., "Detected ticket system: Jira (acme.atlassian.net link in README.md). Correct?" If they confirm, cache it. If they correct, cache the correction.
-4. **Can't tell?** Ask plainly: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut"), then cache.
+1. **Project override (always wins)**: If the project's instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) declare `ticketSystem: <name>`, use that system and skip straight to Step 1b. When the cached entry for this project root names a different system, replace that entry with the plain string `"<name>"` and say so in one line. The replaced entry's `states` described the old system's workflow, so they go with it.
+2. **Cached config**: Check `next-ticket-config.json` in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip straight to Step 1b. Never re-detect when the cache has an answer, except through the correction below.
+3. **Model-judgement detection**: Use your own judgement on whatever signals the repo happens to provide. Different teams hint at their tracker in different places and different formats, so there is no prescribed file or key to look for. Read whatever seems informative: the README, CLAUDE.md, CONTRIBUTING.md, issue templates, `docs/`, the git remotes, URLs anywhere in the repo, prose mentions of ticket-ID shapes (`PROJ-42`, `#42`, `AB#42`), commit message conventions, CI config references, etc. Lean on model intelligence; don't follow a rigid ladder.
+4. **Confirm with the user.** Tell them what you concluded and where the evidence came from, e.g., "Detected ticket system: Jira (acme.atlassian.net link in README.md). Correct?" If they confirm, cache it. If they correct, cache the correction.
+5. **Can't tell?** Ask plainly: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut"), then cache.
 
 Cache writes go to `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries; never overwrite unrelated keys.
+
+**Correcting the ticket system.** Whenever the system comes from the cache, print it in one line before using it, so a wrong cached answer is visible on every run: `Ticket system: <name> (cached for <project root>). If this is wrong, say so and it will be re-detected.` When the operator says the cached system is wrong, delete this project root's entry from `next-ticket-config.json`, keep every other key including `__user__`, and run detection again from the step after the cached-config check. Deleting the whole entry also drops any cached `states`, which describe the old system's workflow. If the correction arrives after later steps have already used the old system, stop the current step, re-detect, and restart this skill from the top. Never ask the operator to find or edit the cache file by hand.
 
 After run 1, the cached value makes detection effectively 100% reliable on subsequent runs. Teams are not forced to adopt any particular file, key, or format.
 
@@ -201,11 +204,15 @@ Before branching or writing code, self-assign the selected ticket in the source 
 
 Move the ticket to an active-work state so the board reflects that implementation has started. This entire step is non-blocking: if anything fails, log a one-line note and continue to Step 5.
 
-1. **Check cache.** Read the project-root entry in `next-ticket-config.json`. If it has a `states.in_progress` key, skip to sub-step 4 (Apply).
+1. **Check cache.** Read the project-root entry in `next-ticket-config.json`. If `states.in_progress` holds the unsupported sentinel (`{"unsupported": "<reason>"}`), skip this entire step without discovering, applying, or printing anything, and continue to Step 5. If it holds any other value, skip to sub-step 4 (Apply).
 2. **Discover available states.** Use whatever CLI, MCP, or API tooling fits the detected ticket system to find the ticket's available statuses, transitions, or board columns. Every ticket system exposes this differently, and teams customize state names extensively, so do not follow a hardcoded recipe. Use model judgment to explore the system's API, CLI, or MCP surface, discover what states exist, and identify which one represents "actively being worked on." Examples of names teams use: "In Progress", "In Development", "Doing", "Active", "Started", "Working", etc., but the real name could be anything.
 3. **Confirm and cache.** On first discovery, confirm with the user: "Transition ticket to '<name>'? This choice will be cached for future runs." Migrate the project-root entry from a plain string to the object form shown below (if not already an object), then write the discovered state under `states.in_progress`. Store whatever system-specific detail (IDs, labels, parameters) the system needs to replay the transition mechanically on future runs without rediscovery.
 4. **Apply the transition** using the cached details and whatever tooling fits the system.
-5. **On any failure** (no project board, no statuses discoverable, API error, permission denied, user declines): log one line (e.g., "Could not transition to in-progress: <reason>") and continue to Step 5 (Create Branch).
+5. **On any failure**, log one line and continue to Step 5 (Create Branch). What gets cached depends on the cause:
+   - **Structural**: discovery succeeded and showed the project has nothing to transition, for example plain GitHub Issues with no project board, or a board with no status field. Write `{"unsupported": "<reason>"}` under `states.in_progress` (migrating the entry to the object form if needed) and log "Could not transition to in-progress: <reason>. Cached; future runs skip this step." Later runs stay silent.
+   - **Transient or declined**: an API error, a permission denial, a network failure, a missing tool, or the user declining the proposed state. Log "Could not transition to in-progress: <reason>" and cache nothing, so the next run tries again.
+
+   When the operator says the project now has in-progress states (for example, a project board was added), delete `states.in_progress` so the next run rediscovers it.
 
 When a project-root entry gains `states`, it migrates from a plain string to an object. Both forms are valid; read the string form as `{"system": "<value>"}` with no states yet. The evolved shape:
 
@@ -230,7 +237,7 @@ When a project-root entry gains `states`, it migrates from a plain string to an 
 }
 ```
 
-The `states` values are opaque to other skills. Each entry stores whatever the ticket system needs (field IDs, transition IDs, option IDs, label names) so future runs can replay the transition without rediscovery. A project-root entry without `states` (plain string or object without the key) simply means no state transitions have been discovered yet.
+The `states` values are opaque to other skills. Each entry stores whatever the ticket system needs (field IDs, transition IDs, option IDs, label names) so future runs can replay the transition without rediscovery. A project-root entry without `states` (plain string or object without the key) simply means no state transitions have been discovered yet. A transition key holding `{"unsupported": "<reason>"}` is the opposite case: discovery ran and found that the project has no such state, so every skill that reads the key skips that transition without rediscovering it.
 
 ## Step 5: Create Branch
 
