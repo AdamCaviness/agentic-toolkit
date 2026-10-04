@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.6](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.5...v1.4.6) (2026-10-04)
+
+
+### Bug Fixes
+
+* **triage:** coordinate run budgets and timezone-aware timestamps ([#168](https://github.com/AdamCaviness/agentic-toolkit/issues/168)) ([258d29c](https://github.com/AdamCaviness/agentic-toolkit/commit/258d29c90b57d34b28f9852a45cfb994f4dd9363))
+
 ## [1.4.5](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.4...v1.4.5) (2026-10-04)
 
 
