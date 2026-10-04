@@ -33,17 +33,15 @@ class ConvertWorktreeUntrackedReviewGateTest(unittest.TestCase):
 
     def test_skill_stashes_untracked_files_outside_history(self):
         self.assertIn("git ls-files --others --exclude-standard", self.text)
-        self.assertRegex(
-            self.text,
-            r"git stash push --include-untracked.*convert-worktree:untracked",
-        )
+        self.assertIn('git stash push --include-untracked -m "$STASH_LABEL"', self.text)
+        self.assertIn("convert-worktree:untracked:<branch>:<run-id>", self.text)
 
-    def test_skill_pops_untracked_stash_after_main_workspace_checkout(self):
-        match = re.search(r'git checkout "\$BRANCH"', self.text)
+    def test_skill_applies_exact_stash_after_main_workspace_checkout(self):
+        match = re.search(r'git -C "\$MAIN_WORKTREE" checkout --no-overwrite-ignore "\$BRANCH"', self.text)
         self.assertIsNotNone(match, "skill must checkout branch in main workspace")
         tail = self.text[match.end():]
-        self.assertIn("git stash pop", tail)
-        self.assertIn("STASHED_UNTRACKED", tail)
+        self.assertIn('stash apply "$STASH_OID"', tail)
+        self.assertNotIn("STASHED_UNTRACKED", tail)
 
     def test_skill_drops_misleading_gitignore_safety_claim(self):
         self.assertNotIn(
@@ -60,7 +58,7 @@ class ConvertWorktreeUntrackedReviewGateTest(unittest.TestCase):
     def test_skill_report_surfaces_preserved_untracked_paths(self):
         self.assertRegex(
             self.lower,
-            r"untracked.*popped from stash",
+            r"untracked.*restored from stash",
         )
 
 
