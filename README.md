@@ -277,12 +277,13 @@ The optimistic "I'm done completely." Commits, pushes, creates or updates a PR o
 
 Converts a git worktree into a regular local branch:
 
-- Commits any uncommitted work as a WIP commit
+- Checks the source and main workspace, then confirms conversion before changing either checkout
+- Commits tracked modifications and explicitly staged files as a WIP commit, preserves unstaged untracked files in a named recovery stash
 - Runs project cleanup (e.g., `make dev-stop`) while still in the worktree so project-specific variables resolve correctly
-- Rebases onto the latest base branch, auto-resolving lockfile conflicts and aborting on code conflicts
-- Checks the main workspace for uncommitted changes before removing the worktree and checking out the branch
+- Rebases onto the latest default branch, auto-resolving lockfile conflicts and aborting on code conflicts
+- Checks out the branch and restores preserved files in the main workspace before removing the source worktree without force
 
-Never blocks on failures: rebase conflicts, cleanup errors, and lockfile conflicts produce warnings, not errors.
+Cleanup errors and safely aborted rebase conflicts produce warnings. A dirty destination, preservation failure, or failed checkout or restoration stops conversion with the source and recovery record retained. The report lists preserved paths and exact recovery commands.
 
 **Usage:** `/convert-worktree` (from inside a worktree)
 
