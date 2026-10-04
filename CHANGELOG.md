@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.10...v1.3.0) (2026-10-04)
+
+
+### Features
+
+* **mods:** add optional Claude-only Ship Gate ([#152](https://github.com/AdamCaviness/agentic-toolkit/issues/152)) ([8e262b0](https://github.com/AdamCaviness/agentic-toolkit/commit/8e262b08eb79e3b1b61c3ea410a05a05dc67c403))
+
 ## [1.2.10](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.9...v1.2.10) (2026-08-29)
 
 
