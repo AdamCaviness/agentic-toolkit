@@ -25,3 +25,7 @@ for (const command of ['npm test && git push', 'cd repo; git push', 'git push "$
 test('a quoted body preserves literal punctuation', () => {
   expect(classifyCommand('gh pr create --body "A; B"').argv).toEqual(['gh','pr','create','--body','A; B']);
 });
+
+for (const command of ['git \\'+ '\n' + 'push --force origin feat/x', 'g\\'+ '\n' + 'it push origin feat/x', 'gh pr \\'+ '\n' + 'merge 1 --admin', '"g\\'+ '\n' + 'it" push --force']) {
+  test('shell continuations cannot hide publication ' + JSON.stringify(command), () => expect(classifyCommand(command).kind).toBe('unsupported-publication'));
+}

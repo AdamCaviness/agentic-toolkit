@@ -45,7 +45,7 @@ export function evaluatePublication(s: Snapshot, a: Action, pr?: PullRequest): D
   if (a.remote && a.remote !== 'origin') return deny('Use origin as the publication destination.');
   if (a.operation === 'delete') {
     if (!a.branch || a.branch === s.baseBranch) return deny('The default branch cannot be deleted.');
-    if (!pr || pr.state !== 'MERGED' || pr.headRefName !== a.branch || pr.isCrossRepository !== false || pr.baseRefName !== s.baseBranch || prRepository(pr.url) !== s.origin || s.remoteHead !== pr.headRefOid) return deny('Cleanup requires an origin branch whose matching PR is merged and whose head has not changed.');
+    if (!s.remoteHead) return deny('Cleanup requires an existing remote feature branch.');
     return { kind: 'pass' };
   }
   if (!s.branch || s.branch === s.baseBranch) return deny('Publication requires a feature branch.');
@@ -54,10 +54,11 @@ export function evaluatePublication(s: Snapshot, a: Action, pr?: PullRequest): D
   if (a.head && a.head !== s.branch) return deny('The PR head must be the current branch.');
   if (a.base && a.base !== s.baseBranch) return deny('The PR base must be the default branch.');
   if (a.operation !== 'merge' && s.commitsAhead === 0) return deny('There are no feature commits to publish.');
-  if (a.repo && a.repo.toLowerCase() !== s.origin && a.repo.toLowerCase() !== s.origin.split('/').slice(1).join('/')) return deny('The PR must target origin.');
+  const github = a.operation === 'create' || a.operation === 'merge' ? githubRepository(s.origin) : undefined;
+  if (a.repo && a.repo.toLowerCase() !== github && a.repo.toLowerCase() !== github?.split('/').slice(1).join('/')) return deny('The PR must target origin.');
   if ((a.operation === 'create' || a.operation === 'merge') && s.remoteHead !== s.head) return deny('Push the current HEAD to origin before continuing.');
   if (a.operation === 'merge') {
-    if (!pr || pr.state !== 'OPEN' || pr.isDraft !== false || pr.isCrossRepository !== false || pr.baseRefName !== s.baseBranch || pr.headRefName !== s.branch || pr.headRefOid !== s.head || prRepository(pr.url) !== s.origin) return deny('The selected PR does not match this feature branch and origin.');
+    if (!pr || pr.state !== 'OPEN' || pr.isDraft !== false || pr.isCrossRepository !== false || pr.baseRefName !== s.baseBranch || pr.headRefName !== s.branch || pr.headRefOid !== s.head || prRepository(pr.url) !== github) return deny('The selected PR does not match this feature branch and origin.');
     if (pr.mergeStateStatus !== 'CLEAN' || !['', 'APPROVED'].includes(pr.reviewDecision ?? 'unknown')) return deny('Required checks and review must permit merging.');
     if (a.matchHead && a.matchHead !== s.head) return deny('The requested merge head does not match local HEAD.');
     if (!a.explicitStrategy) return deny('Specify one allowed merge strategy.');

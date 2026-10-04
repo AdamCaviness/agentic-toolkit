@@ -22,13 +22,15 @@ function tokenize(command: string): { words: Word[]; unsafe: boolean } {
       if (c === quote) { quote = ''; continue; }
       if (quote === '"' && (c === '$' || c === '`')) unsafe = true;
       if (quote === '"' && c === '\\' && /[\"\\$`\n]/.test(command[i + 1] ?? '')) {
+        if (command[i + 1] === '\n') { unsafe = true; i++; continue; }
         text += command[++i]!; continue;
       }
       text += c; continue;
     }
     if (c === '"' || c === "'") { quote = c; quoted = true; started = true; continue; }
     if (c === '\\') {
-      if (i + 1 === command.length || command[i + 1] === '\n') unsafe = true;
+      if (command[i + 1] === '\n') { unsafe = true; i++; continue; }
+      if (i + 1 === command.length) unsafe = true;
       else { started = true; text += command[++i]!; }
       continue;
     }

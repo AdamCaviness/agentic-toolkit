@@ -42,8 +42,8 @@ async function collect($: EngineInterface, a: Action): Promise<Snapshot> {
   if (base.exitCode !== 0 || !base.stdout.trim()) throw new Error('The default branch does not resolve locally or on origin.');
   const fetchUrl = (await git(['remote', 'get-url', 'origin'])).trim();
   const pushUrls = (await git(['remote', 'get-url', '--push', '--all', 'origin'])).trim().split('\n');
-  const origin = githubRepository(fetchUrl);
-  if (pushUrls.length !== 1 || githubRepository(pushUrls[0]!) !== origin) throw new Error('Origin has an ambiguous or different push destination.');
+  const origin = fetchUrl;
+  if (pushUrls.length !== 1 || pushUrls[0] !== origin) throw new Error('Origin has an ambiguous or different push destination.');
   if (a.operation === 'push') {
     const mirror = (await git(['config','--bool','--get','remote.origin.mirror'], true)).trim();
     const tags = (await git(['config','--bool','--get','push.followTags'], true)).trim();
@@ -71,17 +71,19 @@ async function collect($: EngineInterface, a: Action): Promise<Snapshot> {
     repository, branch, head, baseBranch, baseRef, baseCommit:base.stdout.trim(), origin,
     clean: (await git(['status','--porcelain=v1','--untracked-files=all'])).length === 0,
     commitsAhead:count,
-    paths:(await git(['diff','--name-only','-z',baseRef + '...HEAD'])).split('\0').filter(Boolean),
+    paths:[...new Set((await git(['log','--format=','--name-only','-z','--no-renames','--diff-merges=separate',baseRef + '..HEAD'])).split('\0').filter(Boolean))],
     remoteHead:remoteLines[0]?.split(/\s/)[0],
   };
 }
 async function inspectPR($: EngineInterface, a: Action, s: Snapshot): Promise<PullRequest | undefined> {
+  if (a.operation !== 'create' && a.operation !== 'merge') return undefined;
+  const origin = githubRepository(s.origin);
   if (a.operation === 'create' || a.operation === 'merge') {
     const argv = ['gh','repo','view'];
     if (a.repo) argv.push(a.repo);
     argv.push('--json','url,defaultBranchRef');
     const target = JSON.parse(await run($, argv, s.repository));
-    if (githubRepository(target.url) !== s.origin || target.defaultBranchRef?.name !== s.baseBranch) throw new Error('GitHub inferred a different repository or default branch. Specify origin with --repo and its default branch with --base.');
+    if (githubRepository(target.url) !== origin || target.defaultBranchRef?.name !== s.baseBranch) throw new Error('GitHub inferred a different repository or default branch. Specify origin with --repo and its default branch with --base.');
     if (a.operation === 'create') {
       const configuredBase = (await run($, ['git','config','--get','branch.' + s.branch + '.gh-merge-base'], s.repository, true)).trim();
       const upstreamRemote = (await run($, ['git','config','--get','branch.' + s.branch + '.remote'], s.repository, true)).trim();
@@ -89,23 +91,20 @@ async function inspectPR($: EngineInterface, a: Action, s: Snapshot): Promise<Pu
       if ((!a.base && configuredBase && configuredBase !== s.baseBranch) || (!a.head && (upstreamRemote && upstreamRemote !== 'origin' || upstreamBranch && upstreamBranch !== 'refs/heads/' + s.branch))) throw new Error('Specify the current branch with --head and the default branch with --base.');
     }
   }
-  if (a.operation !== 'merge' && a.operation !== 'delete') return undefined;
+  if (a.operation !== 'merge') return undefined;
   const fields = 'state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,reviewDecision,url,isCrossRepository';
   if (a.operation === 'merge') {
     const argv = ['gh','pr','view'];
     if (a.selector) argv.push(a.selector);
-    argv.push('--repo',s.origin,'--json',fields);
+    argv.push('--repo',origin,'--json',fields);
     const raw = await run($, argv, s.repository);
     const pr = JSON.parse(raw) as PullRequest;
-    const strategies = JSON.parse(await run($, ['gh','repo','view',s.origin,'--json','mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed'], s.repository));
+    const strategies = JSON.parse(await run($, ['gh','repo','view',origin,'--json','mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed'], s.repository));
     const field = ({merge:'mergeCommitAllowed',squash:'squashMergeAllowed',rebase:'rebaseMergeAllowed'} as Record<string,string>)[a.explicitStrategy ?? ''];
     if (!field || strategies[field] !== true) throw new Error('Specify a merge strategy allowed by origin.');
     return pr;
   }
-  const raw = await run($, ['gh','pr','list','--repo',s.origin,'--head',a.branch ?? '', '--base',s.baseBranch,'--state','merged','--json',fields,'--limit','100'], s.repository);
-  const prs = JSON.parse(raw);
-  if (!Array.isArray(prs)) throw new Error('Merged PR evidence is malformed.');
-  return prs.find((pr: PullRequest) => pr.headRefOid === s.remoteHead);
+  return undefined;
 }
 
 export const register: Register = (on, options) => {
@@ -119,7 +118,7 @@ export const register: Register = (on, options) => {
     let checks: string;
     try { const count = parseChecks(config.checks).length; checks = count ? count + ' verification commands' : 'verification not configured'; }
     catch { checks = 'invalid verification configuration'; }
-    return { text:'Ship Gate: ' + config.mode + ', ' + checks + '. Covers direct Git push and GitHub PR create/merge/cleanup. ' + last };
+    return { text:'Ship Gate: ' + config.mode + ', ' + checks + '. Checks direct Git push and cleanup on any host, plus GitHub PR create/merge. Hosted merge confirmation for cleanup belongs to the workflow skill. ' + last };
   });
   on('tool.check', { tool:'Bash' }, async ($, e, next) => {
     const input = e.input as { command?: unknown };

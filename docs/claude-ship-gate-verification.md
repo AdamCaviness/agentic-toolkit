@@ -2,8 +2,8 @@
 
 Ship Gate is an optional Claude module in the existing agentic-toolkit plugin.
 The Claude manifest names `./claude-mods/hooks.json`, resolved from the plugin
-root. Other
-manifests do not register it. The shared 13 skills are unchanged.
+root. Other manifests do not register it. All harnesses discover the same 13 shared
+skills, with a host-neutral cleanup instruction in `ship`.
 
 ## Configuration and coverage
 
@@ -19,14 +19,25 @@ projects. Empty `[]` means **verification not configured**, never tests passed.
 
 The gate checks supported Bash calls for direct `git push`, `gh pr create`,
 `gh pr merge`, and `git push origin --delete <branch>`. Publication requires a
-clean feature branch and a verified default branch and origin. PR operations
+clean feature branch and a verified default branch and origin. Generic Git
+operations accept GitLab subgroup, Azure DevOps, Bitbucket, self-hosted, and
+local remote layouts without a GitHub CLI or login. Origin must have one push
+URL identical to its fetch URL. Different transport or path spellings are
+rejected instead of assuming equivalent destinations. GitHub PR operations
 verify the host repository, base, head branch, and head commit. Merge requires
 one explicit allowed strategy and host evidence that checks and reviews permit
-it. Cleanup requires a matching merged PR and an unchanged remote branch head;
-cleanup skips verification commands. Implicit pushes are accepted only when
+it. Cleanup checks the target branch and an unchanged remote branch head, and
+skips verification commands. The `ship` skill must separately confirm through
+the repository host that the matching PR or MR is merged and its recorded head
+matches the current remote branch. The runtime does not prove merged state for
+cleanup. Non-GitHub PR and MR commands rely on skill instructions and host
+protections; they have no runtime merge-policy check. Cross-provider workflow
+adaptation remains tracked in #118. Implicit pushes are accepted only when
 Git configuration identifies a single current-branch destination on origin.
 
-The canonical filename screen is shared with the publishing skills. Matching
+The canonical filename screen is shared with the publishing skills. Inventory
+comes from every feature commit, including paths removed by later commits,
+with NUL-delimited names and merge diffs. Matching
 paths need exact **Proceed once** confirmation. Native permission decisions,
 including **ask**, remain in force. Failed checks, failed evidence collection,
 truncated inventories, missing confirmation, and changed repository snapshots
@@ -68,7 +79,8 @@ test jobs do not silently skip an unavailable runtime.
 
 Native tests exercise command parsing, the complete canonical path corpus,
 policy decisions, permission preservation, verification failure, approval,
-GitHub target inference, merge evidence, cleanup, and configuration changes.
+GitHub target inference and merge evidence, host-neutral Git cleanup, shell
+line continuations, intermediate commit paths, and configuration changes.
 Process calls and human answers are stubbed through Claude's own test runner.
 Local Git integration tests use disposable repositories and bare origins,
 including newline-containing filenames and remote-only default refs. They do
@@ -89,14 +101,15 @@ establishes component discovery, not an end-to-end model session.
 | Codex Claude-manifest fallback | 0.160.0 | Removing the Codex and Cursor manifests from the temporary copy still discovers 13 skills and an empty hooks list. |
 | Codex manual skills | 0.160.0 | Real app-server extra-root skill discovery finds the 13 shared skills with no errors. |
 | Gemini extension | 0.62.0 | Native `extensions validate` accepts the full plugin tree without modifying the installed extension. |
-| Cursor native and Claude import | 3.23.12 | Manifest isolation is covered by automated validators. Desktop loading remains unverified because the Mac was locked during the check. |
+| Cursor native and Claude import | 3.23.12 | Real desktop component discovery loads all 13 skills from temporary native and Claude-manifest-only local copies. Only skills appear in plugin details. The Claude-import hook inventory contains no Ship Gate hook, and its commands inventory is empty, with the test Claude default set to enforce. |
 | Manual skill-only copies | Shared files | No skill file changes or module references; only copying `skills/` cannot install the module. |
 
-Before claiming full Cursor runtime compatibility, test temporary copies in
+To reproduce Cursor component discovery, test temporary copies in
 `~/.cursor/plugins/local/`, first with `.cursor-plugin/plugin.json`, then with
 only `.claude-plugin/plugin.json`. Verify all 13 skills, no Ship Gate hook or
-command, and no loader errors with Claude configuration set to enforce. Remove
-only the temporary copies afterward. Do not change the operator's installed
+command, and no loader errors with Claude configuration set to enforce. The verification used unique test plugin names and removed
+only the temporary copies afterward; it did not run a model or publication. Remove
+only your temporary copies afterward. Do not change the operator's installed
 marketplace plugin or test publication against unrelated hosted branches.
 
 References: [Claude mod testing](https://code.claude.com/docs/en/plugins/mods/test),

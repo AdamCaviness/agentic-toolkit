@@ -43,7 +43,7 @@ function fixture(t) {
       processCalls.push(argv);
       const actual = [...argv];
       if (argv[0] === 'git' && argv[1] === 'ls-remote') actual[3] = bare;
-      if (mutate && argv[1] === 'diff') { mutate(); mutate = undefined; }
+      if (mutate && argv[1] === 'log') { mutate(); mutate = undefined; }
       return command(actual, init?.cwd ?? cwd);
     }},
     ui:{ask:async () => 'Cancel'},
@@ -117,4 +117,30 @@ test('missing local and remote default refs cannot appear clean', async t => {
 test('missing origin cannot appear as a valid destination', async t => {
   const f = fixture(t); f.git('remote','remove','origin');
   assert.equal((await f.check('git push origin feat/x')).decision,'deny');
+});
+
+test('a high-risk file removed in a later commit still requires approval', async t => {
+  const f = fixture(t);
+  writeFileSync(join(f.cwd,'.env'),'fixture, not a real secret');
+  f.git('add','.env'); f.git('commit','-m','temporary high-risk path');
+  f.git('rm','.env'); f.git('commit','-m','remove temporary path');
+  let asked = false;
+  f.api.ui.ask = async () => {asked=true; return 'Cancel';};
+  assert.equal((await f.check('git push origin feat/x')).decision,'deny');
+  assert.equal(asked,true);
+});
+
+test('a local Git remote works without a hosted repository identity', async t => {
+  const f = fixture(t);
+  f.git('remote','set-url','origin',join(f.cwd,'..','origin.git'));
+  assert.equal((await f.check('git push origin feat/x')).decision,'ask');
+  assert.equal(f.processCalls.some(a => a[0] === 'gh'),false);
+});
+
+test('cleanup checks Git state without a provider CLI', async t => {
+  const f = fixture(t);
+  f.git('remote','set-url','origin',join(f.cwd,'..','origin.git'));
+  assert.equal((await f.check('git push origin --delete feat/x')).decision,'ask');
+  assert.equal(f.processCalls.some(a => a[0] === 'gh'),false);
+  assert.equal((await f.check('git push origin --delete trunk')).decision,'deny');
 });

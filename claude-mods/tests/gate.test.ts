@@ -35,7 +35,7 @@ test('unrelated commands preserve native permissions', async ($, on) => {
   expect((await $.tool.check({tool:'Bash',input:{command:'git status'}})).decision).toBe('ask');
 });
 
-function repository(on: any, options: {paths?: string; dirty?: boolean; changes?: boolean; checkExit?: number; checkError?: string; ghDefault?: string; gitConfig?: Record<string,string>; truncatedPaths?: boolean; pr?: unknown; ghExit?: number; inferredPR?: unknown} = {}) {
+function repository(on: any, options: {paths?: string; dirty?: boolean; changes?: boolean; checkExit?: number; checkError?: string; ghDefault?: string; gitConfig?: Record<string,string>; truncatedPaths?: boolean; pr?: unknown; ghExit?: number; inferredPR?: unknown; origin?: string; pushOrigin?: string; remoteChanges?: boolean} = {}) {
   let snapshots = 0;
   on('session.cwd', () => ({value:'/session'}));
   on('process.run', (_$: any, e: any) => {
@@ -49,12 +49,12 @@ function repository(on: any, options: {paths?: string; dirty?: boolean; changes?
       'rev-parse --verify HEAD': options.changes && snapshots > 1 ? 'new\n' : 'abc\n',
       'symbolic-ref refs/remotes/origin/HEAD':'refs/remotes/origin/trunk\n',
       'rev-parse --verify trunk':'base\n',
-      'remote get-url origin':'https://github.com/a/b.git\n',
-      'remote get-url --push --all origin':'git@github.com:a/b.git\n',
-      'ls-remote --heads origin refs/heads/feat/x':'abc\trefs/heads/feat/x\n',
+      'remote get-url origin':(options.origin ?? 'https://github.com/a/b.git') + '\n',
+      'remote get-url --push --all origin':(options.pushOrigin ?? options.origin ?? 'https://github.com/a/b.git') + '\n',
+      'ls-remote --heads origin refs/heads/feat/x':(options.remoteChanges && snapshots > 1 ? 'new' : 'abc') + '\trefs/heads/feat/x\n',
       'rev-list --count trunk..HEAD':'1\n',
       'status --porcelain=v1 --untracked-files=all':options.dirty ? '?? other.txt\n' : '',
-      'diff --name-only -z trunk...HEAD':options.paths ?? 'src/x.ts\0',
+      'log --format= --name-only -z --no-renames --diff-merges=separate trunk..HEAD':options.paths ?? 'src/x.ts\0',
     };
     if (args[0] === 'gh' && args[1] === 'pr') return {value:{exitCode:options.ghExit ?? 0,stdout:JSON.stringify(args[2] === 'list' ? [options.pr] : args[3] === '--repo' ? options.inferredPR ?? options.pr : options.pr),stderr:''}};
     if (args[0] === 'gh' && args[1] === 'repo') return {value:{exitCode:0,stdout:JSON.stringify({url:options.ghDefault ?? 'https://github.com/a/b', defaultBranchRef:{name:'trunk'}, mergeCommitAllowed:true,squashMergeAllowed:true,rebaseMergeAllowed:true}),stderr:''}};
@@ -62,7 +62,7 @@ function repository(on: any, options: {paths?: string; dirty?: boolean; changes?
       const v = options.gitConfig?.[args[args.length - 1]];
       return {value:{exitCode:v === undefined ? 1 : 0,stdout:v ?? '',stderr:''}};
     }
-    if (key in values) return {value:{exitCode:0,stdout:values[key],stderr:'',isStdoutTruncated:options.truncatedPaths && args[1] === 'diff'}};
+    if (key in values) return {value:{exitCode:0,stdout:values[key],stderr:'',isStdoutTruncated:options.truncatedPaths && args[1] === 'log'}};
     throw new Error('Unexpected process: ' + args.join(' '));
   });
 }
@@ -160,4 +160,33 @@ test('failed verification returns a bounded diagnostic excerpt', async ($, on) =
   expect(result.decision).toBe('deny');
   expect('reason' in result && result.reason?.includes('Fixture failure')).toBe(true);
   expect('reason' in result && (result.reason?.length ?? 0) < 650).toBe(true);
+});
+
+for (const origin of ['https://gitlab.com/team/subgroup/repo.git','git@gitlab.example:team/subgroup/repo.git','https://dev.azure.com/org/project/_git/repo','git@ssh.dev.azure.com:v3/org/project/repo','https://bitbucket.org/team/repo.git','/tmp/local-origin.git']) {
+  test('Git push does not require GitHub for ' + origin, async ($, on) => {
+    config(on); repository(on, {origin,ghExit:127});
+    on('tool.check', () => ({decision:'ask'}));
+    expect((await $.tool.check({tool:'Bash',input:{command:'git push origin feat/x'}})).decision).toBe('ask');
+  });
+  test('Git cleanup does not require GitHub for ' + origin, async ($, on) => {
+    config(on); repository(on, {origin,ghExit:127});
+    on('tool.check', () => ({decision:'ask'}));
+    expect((await $.tool.check({tool:'Bash',input:{command:'git push origin --delete feat/x'}})).decision).toBe('ask');
+  });
+}
+test('cleanup refuses a remote head changed during collection', async ($, on) => {
+  config(on); repository(on, {pr:{...readyPR,state:'MERGED'},remoteChanges:true});
+  on('tool.check', () => ({decision:'allow'}));
+  expect((await $.tool.check({tool:'Bash',input:{command:'git push origin --delete feat/x'}})).decision).toBe('deny');
+});
+test('different fetch and push destinations are refused', async ($, on) => {
+  config(on); repository(on, {origin:'https://gitlab.com/team/subgroup/repo.git',pushOrigin:'https://gitlab.com/other/repo.git'});
+  on('tool.check', () => ({decision:'allow'}));
+  expect((await $.tool.check({tool:'Bash',input:{command:'git push origin feat/x'}})).decision).toBe('deny');
+});
+
+test('relative SCP and absolute SSH paths cannot share destination evidence', async ($, on) => {
+  config(on); repository(on, {origin:'git@server:repo.git',pushOrigin:'ssh://git@server/repo.git'});
+  on('tool.check', () => ({decision:'allow'}));
+  expect((await $.tool.check({tool:'Bash',input:{command:'git push origin feat/x'}})).decision).toBe('deny');
 });
