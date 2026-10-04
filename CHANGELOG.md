@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.4](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.3...v1.4.4) (2026-10-04)
+
+
+### Bug Fixes
+
+* **ship:** require complete passing GitHub CI before merging ([#167](https://github.com/AdamCaviness/agentic-toolkit/issues/167)) ([fd000dc](https://github.com/AdamCaviness/agentic-toolkit/commit/fd000dc69efffee7e1da43eb171847fc216815e4))
+
 ## [1.4.3](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.2...v1.4.3) (2026-10-04)
 
 
