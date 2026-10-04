@@ -79,6 +79,48 @@ class TriageRunCoordinationTest(unittest.TestCase):
                     "stable candidate IDs", section(text, "## Step 3.7:", "## Step 4:")
                 )
 
+    def test_new_mode_cannot_bypass_pending_create_disposition(self):
+        for name in SKILLS:
+            text = (ROOT / "skills" / name / "SKILL.md").read_text()
+            with self.subTest(skill=name):
+                stale = section(
+                    text, "### Destroy stale cache", "### Timestamp contract"
+                )
+                self.assertIn("stored run mode", stale)
+                self.assertIn("requested mode differs", stale)
+                self.assertIn("do not dispatch refine", stale)
+                self.assertIn("missing or invalid mode metadata", stale)
+                filing = section(text, "## Step 3.7:", "## Step 4:")
+                self.assertIn('`mode: "create"`', filing)
+                cleanup = text.split("## Step 4:", 1)[1]
+                self.assertIn("regardless of the requested mode", cleanup)
+                self.assertIn("unsettled candidates or unresolved creations", cleanup)
+                self.assertLess(
+                    cleanup.index("unsettled candidates"),
+                    cleanup.index("Delete the cache"),
+                )
+
+    def test_create_is_journaled_before_request_and_reconciled_before_budget(self):
+        for name in SKILLS:
+            text = (ROOT / "skills" / name / "SKILL.md").read_text()
+            with self.subTest(skill=name):
+                filing = section(text, "## Step 3.7:", "## Step 4:")
+                self.assertIn("pre-request ticket IDs", filing)
+                self.assertIn("in-flight", filing)
+                self.assertIn("count exactly once", filing)
+                self.assertIn("never reset", filing)
+                self.assertLess(
+                    filing.index("Reconcile in-flight"),
+                    filing.index("File sequentially"),
+                )
+                create = filing.split("File sequentially", 1)[1]
+                self.assertLess(
+                    create.index("persist an in-flight"),
+                    create.index("Send the create request"),
+                )
+                self.assertIn("cannot uniquely identify", filing)
+                self.assertIn("stop without spending another slot", filing)
+
     def test_refine_skips_filing_and_preserves_close_guard(self):
         for name in SKILLS:
             text = (ROOT / "skills" / name / "SKILL.md").read_text()
@@ -92,7 +134,9 @@ class TriageRunCoordinationTest(unittest.TestCase):
 
     def test_bug_ledger_does_not_require_unfiled_ticket_ids(self):
         text = (ROOT / "skills" / "triage-bugs" / "SKILL.md").read_text()
-        ledger = section(text, "## Rejection Ledger", "The rejection list is not filler.")
+        ledger = section(
+            text, "## Rejection Ledger", "The rejection list is not filler."
+        )
         self.assertIn("candidate_id", ledger)
         self.assertIn("In refine mode", ledger)
         self.assertIn(
