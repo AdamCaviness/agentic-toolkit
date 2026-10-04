@@ -35,7 +35,6 @@ function fixture(t) {
   const api = {
     plugin:{name:'agentic-toolkit'},
     config:{list:async () => [
-      {key:'agentic-toolkit.ship_gate_mode',value:'enforce'},
       {key:'agentic-toolkit.ship_gate_checks',value:'[]'},
     ]},
     session:{cwd:async () => cwd},
@@ -46,7 +45,7 @@ function fixture(t) {
       if (mutate && argv[1] === 'log') { mutate(); mutate = undefined; }
       return command(actual, init?.cwd ?? cwd);
     }},
-    ui:{ask:async () => 'Cancel'},
+    ui:{ask:async () => 'Cancel',log:async () => {}},
   };
   register((event, matcher, callback) => {
     if (event === 'tool.check') handler = callback;

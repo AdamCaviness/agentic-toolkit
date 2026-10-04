@@ -1,7 +1,7 @@
 name: test
 
 # Python validators keep shared skill contracts consistent. Claude's native
-# test runner and TypeScript checks validate the optional Claude module.
+# test runner and TypeScript checks validate the Claude module.
 
 # `main` is written literally here on purpose. The AGENTS.md rule against
 # hardcoding a default branch governs `skills/`, which run inside arbitrary
@@ -69,9 +69,7 @@ jobs:
         run: claude plugin test .
       - name: Run local Git integration tests
         run: node --test tests/ship_gate_integration.mjs
-      - name: Load diagnostic and generate runtime declarations
-        run: |
-          CLAUDE_CONFIG_DIR="$RUNNER_TEMP/ship-gate-claude" claude -p /ship-gate --plugin-dir . --setting-sources '' --no-session-persistence --output-format json > "$RUNNER_TEMP/ship-gate-status.json"
-          node -e 'const r = require(process.argv[1]); if (r.is_error || r.num_turns !== 0 || !r.result.includes("Ship Gate: off") || Object.keys(r.modelUsage ?? {}).length) process.exit(1)' "$RUNNER_TEMP/ship-gate-status.json"
+      - name: Verify automatic startup and generate runtime declarations
+        run: node --test tests/ship_gate_runtime_smoke.mjs
       - name: Check module types
         run: npx --yes --package typescript@5.9.3 tsc -p tsconfig.json --allowImportingTsExtensions

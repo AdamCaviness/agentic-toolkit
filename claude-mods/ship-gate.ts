@@ -7,9 +7,7 @@ import type { Snapshot, PullRequest } from './policy.ts';
 async function configuration($: EngineInterface, options: PluginOptions) {
   const rows = await $.config.list();
   const value = (key: string) => rows.find(row => row.key === $.plugin.name + '.' + key)?.value ?? options[key];
-  const mode = value('ship_gate_mode') ?? 'off';
-  if (mode !== 'off' && mode !== 'enforce') throw new Error('Invalid Ship Gate mode.');
-  return { mode, checks: value('ship_gate_checks') ?? '[]' };
+  return { checks: value('ship_gate_checks') ?? '[]' };
 }
 async function run($: EngineInterface, argv: string[], cwd: string, optional = false) {
   const result = await $.process.run(argv, { cwd, timeoutMs: 30000 });
@@ -107,18 +105,21 @@ async function inspectPR($: EngineInterface, a: Action, s: Snapshot): Promise<Pu
   return undefined;
 }
 
+async function notice($: EngineInterface, text: string) {
+  try { await $.ui.log(text); }
+  catch { /* Display failures must not change permission decisions. */ }
+}
+
 export const register: Register = (on, options) => {
-  let last = 'No publication checked in this session.';
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name:'ship-gate', description:'Show Claude Ship Gate status' });
+    let verification: string;
+    try {
+      const config = await configuration($, options);
+      const count = parseChecks(config.checks).length;
+      verification = count ? count + ' verification command' + (count === 1 ? '' : 's') + ' configured' : 'verification not configured';
+    } catch { verification = 'verification configuration unavailable or invalid, publication will be blocked'; }
+    await notice($, 'Ship Gate active: ' + verification + '.');
     return next(e);
-  });
-  on('command.run', { command:'ship-gate' }, async ($) => {
-    const config = await configuration($, options);
-    let checks: string;
-    try { const count = parseChecks(config.checks).length; checks = count ? count + ' verification commands' : 'verification not configured'; }
-    catch { checks = 'invalid verification configuration'; }
-    return { text:'Ship Gate: ' + config.mode + ', ' + checks + '. Checks direct Git push and cleanup on any host, plus GitHub PR create/merge. Hosted merge confirmation for cleanup belongs to the workflow skill. ' + last };
   });
   on('tool.check', { tool:'Bash' }, async ($, e, next) => {
     const input = e.input as { command?: unknown };
@@ -126,10 +127,15 @@ export const register: Register = (on, options) => {
     const action = classifyCommand(input.command);
     if (action.kind === 'pass') return next(e);
     const config = await configuration($, options);
-    if (config.mode === 'off') return next(e);
     const native = await next(e);
-    if (native.decision === 'deny') return native;
-    const deny = (reason: string) => { last = 'Blocked: ' + reason; return { decision:'deny' as const, reason:'Ship Gate: ' + reason }; };
+    if (native.decision === 'deny') {
+      await notice($, 'Ship Gate blocked: native permissions denied publication.');
+      return native;
+    }
+    const deny = async (reason: string) => {
+      await notice($, 'Ship Gate blocked: ' + reason);
+      return { decision:'deny' as const, reason:'Ship Gate: ' + reason };
+    };
     if (action.kind === 'unsupported-publication') return deny('Use a separate direct publication command with literal arguments, no force/admin options or unsupported flags.');
     const checks = parseChecks(config.checks);
     const before = await collect($, action);
@@ -152,16 +158,18 @@ export const register: Register = (on, options) => {
     const after = await collect($, action);
     if (!sameSnapshot(before, after)) return deny('Repository or destination changed during checks. Retry with fresh evidence.');
     const finalConfig = await configuration($, options);
-    if (finalConfig.mode !== config.mode || finalConfig.checks !== config.checks) return deny('Ship Gate configuration changed during checks. Retry with fresh settings.');
+    if (finalConfig.checks !== config.checks) return deny('Ship Gate configuration changed during checks. Retry with fresh settings.');
     const finalPR = await inspectPR($, action, after);
     const finalDecision = evaluatePublication(after, action, finalPR);
     if (finalDecision.kind === 'deny') return deny(finalDecision.reason);
-    last = 'Passed: publication checks' + (checks.length ? ' and configured verification.' : ', verification not configured.');
+    await notice($, action.operation === 'delete'
+      ? 'Ship Gate passed: cleanup checks, verification skipped.'
+      : 'Ship Gate passed: publication checks' + (checks.length ? ' and configured verification.' : ', verification not configured.'));
     return native;
-  }).catch(async (_$, e, next) => {
+  }).catch(async ($, e, next) => {
     const command = (e.input as { command?: unknown })?.command;
     if (typeof command === 'string' && classifyCommand(command).kind !== 'pass') {
-      last = 'Blocked: evidence collection, verification, or confirmation failed.';
+      await notice($, 'Ship Gate blocked: evidence collection, verification, or confirmation failed.');
       return { decision:'deny', reason:'Ship Gate: evidence collection, verification, or confirmation failed. No publication was permitted.' };
     }
     if (!next.called) return next(e);
