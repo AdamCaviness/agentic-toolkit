@@ -1,12 +1,34 @@
 ---
 name: ship
-description: "Use when work is done and ready to land. Commits, pushes, create/merge PR, syncs default branch, and deletes the branch. The optimistic \"I'm done completely\": merges and cleans up."
+description: "Use when work is done and ready to land. Commits, pushes, create/merge PR or MR, syncs default branch, and deletes the branch. The optimistic \"I'm done completely\": merges and cleans up."
 disable-model-invocation: true
 ---
 
 # Ship
 
 Complete the current branch by committing, pushing, merging, and cleaning up.
+
+## Repository Host
+
+The repository host is where the branch is pushed and where its pull request (PR) or merge request (MR) lives. It is independent of the ticket tracker: a GitLab repository can track work in Jira. Resolve the host before the first host command, from `git remote get-url origin`:
+
+| Origin host | Repository host | Project path |
+| --- | --- | --- |
+| `github.com`, or a GitHub Enterprise host | GitHub | `owner/repo` |
+| `gitlab.com`, or a self-hosted GitLab host | GitLab | the full namespace, every subgroup included |
+| `dev.azure.com`, `ssh.dev.azure.com`, or `<org>.visualstudio.com` | Azure DevOps Repos | organization, project, and repository |
+| `bitbucket.org` | Bitbucket Cloud | `workspace/repo_slug` |
+
+Examples: `git@github.com:acme/api.git` is GitHub `acme/api`. `git@gitlab.com:acme/platform/api.git` is GitLab project `acme/platform/api`, never `platform/api`. `https://dev.azure.com/acme/Platform/_git/api` is organization `acme`, project `Platform`, repository `api`. `https://git.acme.dev/acme/platform/api.git` names no provider, so decide from project signals: `.gitlab-ci.yml`, `.github/workflows/`, `azure-pipelines.yml`, `bitbucket-pipelines.yml`, the project instructions, or which CLI reports that host as authenticated (`glab auth status --hostname <host>`, `gh auth status --hostname <host>`). If the signals are absent or disagree, ask the user once.
+
+Use whichever interface this session already reaches, in this order: the host's CLI (`gh` for GitHub, `glab` for GitLab, `az repos` from the `azure-devops` extension for Azure DevOps Repos; Bitbucket Cloud has no first-party CLI), an MCP connector for that host, or the host's REST API with credentials the session already holds. Confirm the interface authenticates against this host with one read-only call before relying on it. Never require `gh` on a host that is not GitHub. If no interface works, stop and name what to install or which credential to supply. An unreachable or unauthenticated host is never an empty result.
+
+Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an MR on GitLab. Always target origin's project; when origin is a fork, never open or merge on upstream. Find the open PR or MR for a branch, or create one against the default branch, with:
+
+- **GitHub**: `gh pr view <branch> --json number,url,state,headRefOid` (only `OPEN` counts), and `gh pr create --base <base> --head <branch> --title <title> --body <body>`. Pass `--repo <owner/repo>` from origin so a fork never targets upstream.
+- **GitLab**: `glab mr list --source-branch <branch>`, and `glab mr create --source-branch <branch> --target-branch <base> --title <title> --description <body> --yes`. `glab` reads the host and full project path from origin, so subgroups and self-hosted instances need no extra flags once `glab auth login --hostname <host>` has run. Through the REST API, address the project as `https://<host>/api/v4/projects/<url-encoded full path>`.
+- **Azure DevOps Repos**: `az repos pr list --source-branch <branch> --status active`, and `az repos pr create --source-branch <branch> --target-branch <base> --title <title> --description <body>`. `az` detects organization, project, and repository from origin.
+- **Bitbucket Cloud**: authenticate REST calls with an Atlassian API token and the account email. `GET https://api.bitbucket.org/2.0/repositories/<workspace>/<repo_slug>/pullrequests?q=source.branch.name="<branch>" AND state="OPEN"`, and `POST` to the same collection with `title`, `description`, `source.branch.name`, and `destination.branch.name`.
 
 ## Steps
 
@@ -47,23 +69,47 @@ Complete the current branch by committing, pushing, merging, and cleaning up.
    - **publication inventory**: every committed path the push will publish. Read this list.
    - **high-risk paths**: every skill that publishes or reviews carries this same screen verbatim. Stop and report every matched path. The user must remove the path, add it to `.gitignore`, or explicitly confirm before push continues.
 4. **Push**: Push the current branch to origin with `-u` flag if not already pushed.
-5. **Create PR** (if none exists): Create a PR using `gh pr create`. Use commit messages to generate the title and body. For forked repos, use `--repo` targeting the user's fork (origin), never upstream.
-6. **Resolve merge strategy**: Read cached repository policy from `$(git rev-parse --git-dir)/agents/repo-policy.json` if present and fresh. If missing, stale, invalid, or for a different repository, refresh it with `gh repo view --json nameWithOwner,mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed,deleteBranchOnMerge` and write the result back to the cache.
-7. **Merge PR**: Choose the first allowed strategy in this order: `--merge` when `mergeCommitAllowed` is true, else `--squash` when `squashMergeAllowed` is true, else `--rebase` when `rebaseMergeAllowed` is true. Merge with `gh pr merge <strategy>`. For forked repos, use `--repo` targeting the fork. If no strategy is allowed, stop and report the repository merge policy.
-8. **Sync default branch**: `git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"`
-9. **Clean up**: Delete the merged branch locally (`git branch -D`). Only delete the remote branch (`git push origin --delete`) if it still exists. First verify through the repository host that the matching PR or MR is merged and its recorded head commit matches the current remote branch head. If evidence is unavailable or the branch has been reused, stop and report it instead of deleting. Some repos auto-delete branches on merge.
-10. **Report**: Confirm done with the merged PR URL.
+5. **Create PR or MR** (if none exists) against `$BASE_BRANCH` with the find and create commands from the Repository Host section. Use commit messages to generate the title and body. A failed or unauthenticated lookup is an error, not "no PR"; report it and stop.
+6. **Read merge evidence** after the final push. Evidence counts only when it names the PR or MR head commit and that commit equals `git rev-parse HEAD`; evidence for any other commit is stale.
+   - **GitHub**: `gh pr view <number> --json headRefOid,state,mergeStateStatus,reviewDecision` and `gh pr checks <number> --required` (exit 0 passed, 8 pending, any other non-zero failed or unreadable). Ready when `mergeStateStatus` is `CLEAN`, `HAS_HOOKS`, or `UNSTABLE` (only non-required checks failing) and `reviewDecision` is neither `CHANGES_REQUESTED` nor `REVIEW_REQUIRED`.
+   - **GitLab**: `glab api projects/:fullpath/merge_requests/<iid>` for `sha`, `state`, and `detailed_merge_status`. Only `mergeable` is ready; `checking`, `unchecked`, `preparing`, `approvals_syncing`, and `ci_still_running` are pending; every other value blocks.
+   - **Azure DevOps Repos**: `az repos pr show --id <id>` for `lastMergeSourceCommit.commitId`, `status`, and `mergeStatus` (`succeeded` is ready, `queued` is pending), plus `az repos pr policy list --id <id>`: every evaluation whose `configuration.isBlocking` is true must be `approved` or `notApplicable`; `queued` and `running` are pending.
+   - **Bitbucket Cloud**: the PR's `source.commit.hash` and `state`, its `/statuses` (`SUCCESSFUL` is ready, `INPROGRESS` is pending), and `GET .../pullrequests/<id>/mergeability/checks`, every check of which must allow the merge.
+
+   Classify the evidence before merging:
+   - **Ready**: merge.
+   - **Pending**: poll every 30 seconds. After 10 minutes, ask the user whether to keep waiting or stop.
+   - **Failed** (failed or required checks, rejected policy, missing approval, conflict, draft, or any other blocking status): stop and report what blocks the merge.
+   - **Inaccessible** (command missing, permission denied, API error, or an expected field absent): stop and report it. Never read missing evidence as approval.
+   - **Stale**: confirm the push landed and read once more. If the head still differs, stop.
+7. **Resolve merge strategy**: Read cached repository policy from `$(git rev-parse --git-dir)/agents/repo-policy.json` if present, fresh, and for the same host and project. Otherwise refresh it and write the result back to the cache:
+   - **GitHub**: `gh repo view --json nameWithOwner,mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed,deleteBranchOnMerge`. Choose `--merge` when `mergeCommitAllowed` is true, else `--squash` when `squashMergeAllowed` is true, else `--rebase` when `rebaseMergeAllowed` is true.
+   - **GitLab**: the project's `merge_method` and `squash_option` from `glab api projects/:fullpath`. Squash when `squash_option` requires or defaults it on; otherwise merge by the project's `merge_method`.
+   - **Azure DevOps Repos**: the merge-strategy policy on `$BASE_BRANCH` from `az repos policy list --branch <base>`. Without one, every strategy is allowed; prefer `noFastForward`, then `squash`, `rebaseMerge`, `rebase`.
+   - **Bitbucket Cloud**: the PR's `destination.branch.default_merge_strategy`, which must appear in `destination.branch.merge_strategies`.
+
+   If no strategy is allowed, stop and report the repository merge policy.
+8. **Merge**, pinned to the evidenced head commit wherever the host supports it:
+   - **GitHub**: `gh pr merge <number> <strategy> --match-head-commit <sha>`.
+   - **GitLab**: `glab mr merge <iid> --sha <sha> --auto-merge=false --yes`, adding `--squash` or `--rebase` per policy.
+   - **Azure DevOps Repos**: `PATCH` the pull request through the REST API (`az devops invoke` or the session's credentials) with `status: completed`, `lastMergeSourceCommit.commitId: <sha>`, and `completionOptions.mergeStrategy`. `az repos pr update --id <id> --status completed --squash <true|false>` is acceptable for `squash` and `noFastForward`, after re-reading the head. Never pass `--bypass-policy`.
+   - **Bitbucket Cloud**: re-read `source.commit.hash`, then `POST .../pullrequests/<id>/merge` with `merge_strategy`.
+
+   Then re-read the PR or MR. Only a merged state counts: `MERGED` on GitHub and Bitbucket Cloud, `merged` on GitLab, `completed` on Azure DevOps Repos. A scheduled auto-merge or auto-complete is not a merge: report it and stop before cleanup.
+9. **Sync default branch**: `git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"`, then `git fetch origin` and confirm local `$BASE_BRANCH` matches `origin/$BASE_BRANCH`. If the sync fails, stop before cleanup.
+10. **Clean up**: Delete the merged branch locally (`git branch -D`). Only delete the remote branch (`git push origin --delete`) if it still exists. First verify through the repository host that the matching PR or MR is merged and its recorded head commit matches the current remote branch head. If evidence is unavailable or the branch has been reused, stop and report it instead of deleting. Some repos auto-delete branches on merge.
+11. **Report**: Confirm done with the merged PR or MR URL.
 
 ## Repository Policy Cache
 
 - Cache repository-local operational policy in the Git directory at `$(git rev-parse --git-dir)/agents/repo-policy.json`. Do not assume `.git` is a directory; always resolve it with `git rev-parse --git-dir` so worktrees are handled correctly.
 - This cache is local, uncommitted, shared by coding agents, and disposable.
-- For GitHub merge policy, cache this shape:
+- Cache merge policy under a key named for the provider (`github`, `gitlab`, `azure`, or `bitbucket`), holding whatever the host reported. For GitHub, cache this shape:
 
 ```json
 {
   "schemaVersion": 1,
-  "repository": "owner/name",
+  "repository": "github.com/owner/name",
   "github": {
     "mergePolicy": {
       "mergeCommitAllowed": false,
@@ -76,14 +122,16 @@ Complete the current branch by committing, pushing, merging, and cleaning up.
 }
 ```
 
+- For GitLab, cache `"gitlab": {"mergePolicy": {"mergeMethod": "merge", "squashOption": "default_off", "fetchedAt": "..."}}` with `repository` set to the host plus full project path, such as `gitlab.acme.dev/acme/platform/api`.
 - Treat the cache as fresh for 30 days. If a merge command fails with a repository policy error, refresh the cache once and retry only with an allowed strategy. Do not retry other merge failures.
 
 ## Rules
 
-- For forked repos (where origin and upstream differ), NEVER create or merge PRs on the upstream repo. Always target the user's fork (origin).
+- For forked repos (where origin and upstream differ), NEVER create or merge PRs or MRs on the upstream repo. Always target the user's fork (origin).
 - If the branch has no commits ahead of `$BASE_BRANCH` and no uncommitted changes, warn and stop.
 - If there's an open PR already, push any new commits to update it, then merge it.
 - If the merge fails due to stale repository policy cache, refresh the cache once and retry only with an allowed strategy.
 - If the merge fails for any other reason, report the error. Don't retry or force.
-- Do not bypass failing required checks, conflicts, review requirements, or permissions errors.
+- Do not bypass failing required checks, conflicts, review requirements, or permissions errors. Never use administrator merges, `--bypass-policy`, or any other host override.
+- Never merge on pending, failed, inaccessible, or stale evidence.
 - If on the default branch, warn and stop. Ship only works on feature branches.

@@ -31,6 +31,12 @@ BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|ref
 if [ -z "$BASE_BRANCH" ]; then
   git rev-parse --verify main >/dev/null 2>&1 && BASE_BRANCH=main || BASE_BRANCH=master
 fi
+BASE_REF="$BASE_BRANCH"
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
+  printf 'base branch "%s" resolves neither locally nor on origin\n' "$BASE_BRANCH" >&2
+  exit 1
+}
 ```
 
 Run `git status --porcelain`. If the working tree has uncommitted changes, list the paths and stop. Do not treat those paths as leftover from an earlier run of this skill, and do not enter Step 2 or auto-implement until the operator responds.
@@ -42,7 +48,7 @@ Then determine what work is being done on the current branch:
 - `git log "$BASE_REF"..HEAD --oneline`, all commits on this branch
 - `git diff "$BASE_REF"...HEAD --stat`, all changed files
 - `git status --porcelain`, uncommitted work the operator confirmed as leftover, or a clean tree
-- If issue number is in branch name, read the GitHub issue for original intent
+- If the branch name carries a ticket ID (`<category>/<ticket-id>-<desc>`, where the ID is a bare number such as `42` or a key such as `PROJ-42`), read that ticket from the project's ticket tracker for original intent. The tracker is independent of the repository host: a GitLab repository can track work in Jira. Use the tracker cached for this project root in `next-ticket-config.json` in the system temp directory when present, otherwise judge it from repo signals (project instructions, README links, commit conventions, remotes). If the ticket cannot be read, say so in one line and continue from the commits and diff.
 
 When all three are empty the branch has no work to re-architect. Stop here and report it, then ask the user which branch or change set to target. Do not enter Step 2 with an empty scope: every later step, the retrospective, the plan, and the footprint guard's percentage, is undefined against a zero-file footprint.
 

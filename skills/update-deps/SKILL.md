@@ -1,6 +1,6 @@
 ---
 name: update-deps
-description: Use when dependencies need updating. Checks bot PRs for CVEs, applies safe minor/patch bumps, and researches major breaking changes. Optional scope and major flag.
+description: Use when dependencies need updating. Checks bot PRs or MRs for CVEs, applies safe minor/patch bumps, and researches major breaking changes. Optional scope and major flag.
 argument-hint: "[<scope>[|<scope>...]] [major]"
 ---
 
@@ -32,6 +32,28 @@ Verify you are in a git repo. If not, tell the user and stop.
 
 Note the current branch. Branch creation happens after Step 3 once we know there is work to do.
 
+## Repository Host
+
+The repository host is where the branch is pushed and where its pull request (PR) or merge request (MR) lives. It is independent of the ticket tracker: a GitLab repository can track work in Jira. Resolve the host before the first host command, from `git remote get-url origin`:
+
+| Origin host | Repository host | Project path |
+| --- | --- | --- |
+| `github.com`, or a GitHub Enterprise host | GitHub | `owner/repo` |
+| `gitlab.com`, or a self-hosted GitLab host | GitLab | the full namespace, every subgroup included |
+| `dev.azure.com`, `ssh.dev.azure.com`, or `<org>.visualstudio.com` | Azure DevOps Repos | organization, project, and repository |
+| `bitbucket.org` | Bitbucket Cloud | `workspace/repo_slug` |
+
+Examples: `git@github.com:acme/api.git` is GitHub `acme/api`. `git@gitlab.com:acme/platform/api.git` is GitLab project `acme/platform/api`, never `platform/api`. `https://dev.azure.com/acme/Platform/_git/api` is organization `acme`, project `Platform`, repository `api`. `https://git.acme.dev/acme/platform/api.git` names no provider, so decide from project signals: `.gitlab-ci.yml`, `.github/workflows/`, `azure-pipelines.yml`, `bitbucket-pipelines.yml`, the project instructions, or which CLI reports that host as authenticated (`glab auth status --hostname <host>`, `gh auth status --hostname <host>`). If the signals are absent or disagree, ask the user once.
+
+Use whichever interface this session already reaches, in this order: the host's CLI (`gh` for GitHub, `glab` for GitLab, `az repos` from the `azure-devops` extension for Azure DevOps Repos; Bitbucket Cloud has no first-party CLI), an MCP connector for that host, or the host's REST API with credentials the session already holds. Confirm the interface authenticates against this host with one read-only call before relying on it. Never require `gh` on a host that is not GitHub. If no interface works, stop and name what to install or which credential to supply. An unreachable or unauthenticated host is never an empty result.
+
+Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an MR on GitLab. Always target origin's project; when origin is a fork, never open or merge on upstream. Find the open PR or MR for a branch, or create one against the default branch, with:
+
+- **GitHub**: `gh pr view <branch> --json number,url,state,headRefOid` (only `OPEN` counts), and `gh pr create --base <base> --head <branch> --title <title> --body <body>`. Pass `--repo <owner/repo>` from origin so a fork never targets upstream.
+- **GitLab**: `glab mr list --source-branch <branch>`, and `glab mr create --source-branch <branch> --target-branch <base> --title <title> --description <body> --yes`. `glab` reads the host and full project path from origin, so subgroups and self-hosted instances need no extra flags once `glab auth login --hostname <host>` has run. Through the REST API, address the project as `https://<host>/api/v4/projects/<url-encoded full path>`.
+- **Azure DevOps Repos**: `az repos pr list --source-branch <branch> --status active`, and `az repos pr create --source-branch <branch> --target-branch <base> --title <title> --description <body>`. `az` detects organization, project, and repository from origin.
+- **Bitbucket Cloud**: authenticate REST calls with an Atlassian API token and the account email. `GET https://api.bitbucket.org/2.0/repositories/<workspace>/<repo_slug>/pullrequests?q=source.branch.name="<branch>" AND state="OPEN"`, and `POST` to the same collection with `title`, `description`, `source.branch.name`, and `destination.branch.name`.
+
 ## Branch Naming
 
 Branch name: `chore/update-deps` for all-scope runs, `chore/update-deps-<scope>` for a single named scope (e.g., `chore/update-deps-frontend`). For multi-scope runs, use `chore/update-deps`.
@@ -62,7 +84,9 @@ If no manifests match the requested scope, tell the user and stop.
 
 ## Step 2: Check Open PRs for Automated CVE Patches
 
-CVE-PR discovery uses the GitHub CLI. Verify it before treating an empty bot list as real:
+CVE-PR discovery lists open PRs or MRs on the repository host resolved in the Repository Host section. Verify the interface before treating an empty bot list as real.
+
+**GitHub**: discovery uses the GitHub CLI.
 
 ```bash
 command -v gh >/dev/null || { printf 'gh is not installed. Install the GitHub CLI (https://cli.github.com/) to discover Dependabot/Renovate CVE PRs, or confirm you want to skip this check.\n' >&2; exit 1; }
@@ -88,6 +112,13 @@ set -o pipefail
 Any failed query must abort the whole discovery block (`set -e` inside the subshell, or `&&` between queries). Do not use bare `;` between `gh pr list` calls: an early failure with a later success would look like a clean (possibly empty) bot list.
 
 If any `gh pr list` returns non-zero, CVE-PR discovery failed: tell the operator, show the error, and stop (or continue only after they confirm skipping the check). A successful run that returns `[]` means there are no bot PRs.
+
+**GitLab, Azure DevOps Repos, and Bitbucket Cloud**: do not assume Dependabot. Bot accounts differ per instance (a self-hosted Renovate runs as whatever user the operator configured), so list every open PR or MR with its title, author, source branch, and description, then keep the ones that are dependency updates: a source branch starting with `renovate/`, `dependabot/`, or `snyk-`, or an author whose name contains `renovate`, `dependabot`, or `snyk`. Use `glab api --paginate "projects/:fullpath/merge_requests?state=opened"`, `az repos pr list --status active`, or Bitbucket's `GET .../pullrequests?state=OPEN` following `next`. Every page must succeed; a failed page is a failed discovery, not a short list.
+
+On every host, keep three outcomes distinct:
+- **Discovery failed**: no authenticated interface, or a listing call returned an error. Tell the operator what failed and how to install or authenticate. Do not continue as if the bot list were empty unless they explicitly confirm skipping the check.
+- **Unsupported**: the session cannot list open PRs or MRs on this host at all. Say so plainly and continue only after the operator confirms skipping the check.
+- **No bot PRs**: listing succeeded and matched nothing.
 
 For each bot PR:
 
@@ -456,7 +487,9 @@ Never push, create PRs, or merge. The user reviews first.
 
 **No bot PRs but outdated deps exist**: Proceed normally. The CVE-required list is empty.
 
-**CVE-PR discovery failed** (`gh` missing, not authenticated, or `gh pr list` non-zero): Tell the operator what failed and how to install or re-auth. Do not treat this as an empty bot list. Continue only if they confirm skipping the check.
+**CVE-PR discovery failed** (no authenticated interface for the repository host, such as `gh` missing or not authenticated on GitHub, or any listing call failing): Tell the operator what failed and how to install or re-auth. Do not treat this as an empty bot list. Continue only if they confirm skipping the check.
+
+**Listing unsupported on this host**: Say so plainly. Do not treat this as an empty bot list. Continue only if they confirm skipping the check.
 
 **Mixed CVE and major flag**: If a CVE-required dep also appears on the all-majors list, process it once, with CVE noted in the commit message.
 

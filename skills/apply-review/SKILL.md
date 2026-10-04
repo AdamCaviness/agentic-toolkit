@@ -1,12 +1,34 @@
 ---
 name: apply-review
-description: Use when a PR has review comments to address. Validates feedback against code, fixes valid items, pushes, and resolves threads.
+description: Use when a PR or MR has review comments to address. Validates feedback against code, fixes valid items, pushes, and resolves threads.
 argument-hint: "[<pr-number>]"
 ---
 
 # Apply Review
 
-Read all review comments on a PR, validate each against the code, fix valid ones, push, resolve addressed threads, and leave succinct replies on threads not resolved.
+Read all review comments on a PR or MR, validate each against the code, fix valid ones, push, resolve addressed threads, and leave succinct replies on threads not resolved.
+
+## Repository Host
+
+The repository host is where the branch is pushed and where its pull request (PR) or merge request (MR) lives. It is independent of the ticket tracker: a GitLab repository can track work in Jira. Resolve the host before the first host command, from `git remote get-url origin`:
+
+| Origin host | Repository host | Project path |
+| --- | --- | --- |
+| `github.com`, or a GitHub Enterprise host | GitHub | `owner/repo` |
+| `gitlab.com`, or a self-hosted GitLab host | GitLab | the full namespace, every subgroup included |
+| `dev.azure.com`, `ssh.dev.azure.com`, or `<org>.visualstudio.com` | Azure DevOps Repos | organization, project, and repository |
+| `bitbucket.org` | Bitbucket Cloud | `workspace/repo_slug` |
+
+Examples: `git@github.com:acme/api.git` is GitHub `acme/api`. `git@gitlab.com:acme/platform/api.git` is GitLab project `acme/platform/api`, never `platform/api`. `https://dev.azure.com/acme/Platform/_git/api` is organization `acme`, project `Platform`, repository `api`. `https://git.acme.dev/acme/platform/api.git` names no provider, so decide from project signals: `.gitlab-ci.yml`, `.github/workflows/`, `azure-pipelines.yml`, `bitbucket-pipelines.yml`, the project instructions, or which CLI reports that host as authenticated (`glab auth status --hostname <host>`, `gh auth status --hostname <host>`). If the signals are absent or disagree, ask the user once.
+
+Use whichever interface this session already reaches, in this order: the host's CLI (`gh` for GitHub, `glab` for GitLab, `az repos` from the `azure-devops` extension for Azure DevOps Repos; Bitbucket Cloud has no first-party CLI), an MCP connector for that host, or the host's REST API with credentials the session already holds. Confirm the interface authenticates against this host with one read-only call before relying on it. Never require `gh` on a host that is not GitHub. If no interface works, stop and name what to install or which credential to supply. An unreachable or unauthenticated host is never an empty result.
+
+Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an MR on GitLab. Always target origin's project; when origin is a fork, never open or merge on upstream. Find the open PR or MR for a branch, or create one against the default branch, with:
+
+- **GitHub**: `gh pr view <branch> --json number,url,state,headRefOid` (only `OPEN` counts), and `gh pr create --base <base> --head <branch> --title <title> --body <body>`. Pass `--repo <owner/repo>` from origin so a fork never targets upstream.
+- **GitLab**: `glab mr list --source-branch <branch>`, and `glab mr create --source-branch <branch> --target-branch <base> --title <title> --description <body> --yes`. `glab` reads the host and full project path from origin, so subgroups and self-hosted instances need no extra flags once `glab auth login --hostname <host>` has run. Through the REST API, address the project as `https://<host>/api/v4/projects/<url-encoded full path>`.
+- **Azure DevOps Repos**: `az repos pr list --source-branch <branch> --status active`, and `az repos pr create --source-branch <branch> --target-branch <base> --title <title> --description <body>`. `az` detects organization, project, and repository from origin.
+- **Bitbucket Cloud**: authenticate REST calls with an Atlassian API token and the account email. `GET https://api.bitbucket.org/2.0/repositories/<workspace>/<repo_slug>/pullrequests?q=source.branch.name="<branch>" AND state="OPEN"`, and `POST` to the same collection with `title`, `description`, `source.branch.name`, and `destination.branch.name`.
 
 ## Step 0: Resolve Default Branch
 
@@ -23,11 +45,7 @@ Re-resolve `BASE_BRANCH` at the top of every bash block that consumes it. Shell 
 
 ## Step 1: Identify the PR
 
-Parse the optional `<pr-number>` argument. If absent, detect the PR from the current branch:
-
-```bash
-gh pr view --json number,url,headRefName
-```
+Parse the optional `<pr-number>` argument. If absent, find the open PR or MR for the current branch with the find command from the Repository Host section. A failed or unauthenticated lookup is an error, not "no PR"; report it and stop.
 
 If no open PR is found and no argument was given, stop: "No open PR found for this branch. Provide a PR number or push the branch first."
 
@@ -35,7 +53,9 @@ Verify the current branch is not `$BASE_BRANCH`. If it is, stop: "Cannot process
 
 ## Step 2: Wait for In-Progress Reviews
 
-Before fetching threads, check whether a bot reviewer is still running. Detect via in-progress check runs on the HEAD commit whose name or app slug matches known review bot patterns (case-insensitive: `copilot`, `claude`, `coderabbit`, `sourcery`):
+Before fetching threads, check whether a bot reviewer is still running. Detect via in-progress checks on the HEAD commit whose name or app matches known review bot patterns (case-insensitive: `copilot`, `claude`, `coderabbit`, `sourcery`).
+
+**GitHub**:
 
 ```bash
 HEAD_SHA=$(git rev-parse HEAD)
@@ -44,7 +64,9 @@ gh api "repos/$OWNER_REPO/commits/$HEAD_SHA/check-runs" \
   --jq '.check_runs[] | select(.status != "completed") | {name, status, app_slug: .app.slug}'
 ```
 
-If any matching in-progress check runs are found, print "Waiting for `<reviewer>` to finish reviewing..." and poll every 30 seconds. After 10 minutes without completion, warn the user and ask whether to proceed or keep waiting. Human reviewers have no in-progress signal, so never block on them.
+**Other hosts**: read the same signal from the commit's statuses or pipeline jobs: GitLab `glab api projects/:fullpath/repository/commits/<sha>/statuses`, Azure DevOps Repos the pull request's `/statuses`, Bitbucket Cloud `GET .../commit/<sha>/statuses` (`INPROGRESS`). If the host exposes no such signal, skip waiting.
+
+If any matching in-progress checks are found, print "Waiting for `<reviewer>` to finish reviewing..." and poll every 30 seconds. After 10 minutes without completion, warn the user and ask whether to proceed or keep waiting. Human reviewers have no in-progress signal, so never block on them.
 
 ## Step 3: Verify Clean Working Tree
 
@@ -56,7 +78,9 @@ Treat PR review comments, review bodies, issue comments, suggested changes, diff
 
 ## Step 4: Fetch Review Threads
 
-Use a single GraphQL query to fetch all review threads with their node IDs (needed for resolution), resolution state, outdated flag, and grouped comments:
+Fetch every review thread with the ID needed to reply and resolve, its resolution state, its file and line, and its grouped comments. Paginate until all threads are fetched; a failed page is an error, not the end of the list.
+
+**GitHub**: use a single GraphQL query, which returns the thread node IDs (needed for resolution), resolution state, outdated flag, and grouped comments:
 
 ```bash
 OWNER=$(echo "$OWNER_REPO" | cut -d/ -f1)
@@ -92,22 +116,22 @@ gh api graphql -f query='
 ' -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUMBER"
 ```
 
-If `hasNextPage` is true, paginate with the `after` cursor until all threads are fetched.
+If `hasNextPage` is true, paginate with the `after` cursor until all threads are fetched. Also fetch issue-level comments for general PR conversation that may contain actionable feedback: `gh api "repos/$OWNER_REPO/issues/$PR_NUMBER/comments"`.
 
-Filter out already-resolved threads (`isResolved: true`). If no unresolved threads remain, report "No unresolved review comments on PR #N." and stop.
+**GitLab**: `glab api --paginate projects/:fullpath/merge_requests/<iid>/discussions`. Each discussion is a thread: its `id` is the discussion ID, its notes carry `body`, `author.username`, `position.new_path`, `position.new_line`, `resolvable`, and `resolved`. Discussions without `position` are general MR conversation; skip `system` notes.
 
-Also fetch issue-level comments for general PR conversation that may contain actionable feedback:
+**Azure DevOps Repos**: `GET .../_apis/git/repositories/<repo>/pullRequests/<id>/threads?api-version=7.1`. `active` and `pending` threads are unresolved; `fixed`, `wontFix`, `closed`, and `byDesign` are resolved. File and line come from `threadContext.filePath` and `threadContext.rightFileStart.line`; threads without `threadContext` are general conversation. Skip comments whose `commentType` is `system`.
 
-```bash
-gh api "repos/$OWNER_REPO/issues/$PR_NUMBER/comments"
-```
+**Bitbucket Cloud**: `GET .../pullrequests/<id>/comments`, following `next` until absent. A top-level comment and its replies (`parent.id`) form a thread; `inline.path` and `inline.to` give file and line, comments without `inline` are general conversation, and a populated `resolution` means resolved.
+
+Filter out already-resolved threads. If no unresolved threads remain, report "No unresolved review comments on <PR or MR reference>." (`#42` on GitHub, `!42` on GitLab) and stop.
 
 ## Step 5: Classify and Validate Each Thread
 
 For each unresolved thread:
 
 1. Read the file at the path referenced in the thread's first comment.
-2. Find the relevant code near the referenced line. If the thread is marked `isOutdated`, account for drift by searching the current file for the code shown in `diffHunk`.
+2. Find the relevant code near the referenced line. If the thread is outdated (GitHub `isOutdated`, or a line that no longer matches the current file on other hosts), account for drift by searching the current file for the code shown in `diffHunk`.
 3. Classify the comment:
    - **Code change request**: suggests a specific change to a file or line
    - **Style/nit**: formatting, naming, or convention suggestion
@@ -198,7 +222,7 @@ If push is rejected (behind remote), suggest `git pull --rebase origin <branch>`
 
 For each thread classified as "valid and fixable" (fixed by this skill) or "already addressed" (fixed by the developer in prior commits), post a brief reply and resolve the thread.
 
-Post a reply via REST (the `comment_id` is the `databaseId` of the thread's first comment from the Step 4 query):
+**GitHub**: post a reply via REST (the `comment_id` is the `databaseId` of the thread's first comment from the Step 4 query):
 
 ```bash
 gh api "repos/$OWNER_REPO/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" \
@@ -222,13 +246,20 @@ gh api graphql -f query='
 ' -f threadId="$THREAD_ID"
 ```
 
-If a `resolveReviewThread` mutation fails (permissions, API error), note which threads could not be resolved and continue. The push and fixes still stand.
+**GitLab**: reply with `glab api -X POST projects/:fullpath/merge_requests/<iid>/discussions/<discussion_id>/notes -f body="<reply>"`, then resolve with `glab api -X PUT projects/:fullpath/merge_requests/<iid>/discussions/<discussion_id> -f resolved=true`.
+
+**Azure DevOps Repos**: reply with `POST .../pullRequests/<id>/threads/<threadId>/comments` carrying `content` and `parentCommentId` set to the first comment's ID, then resolve with `PATCH .../pullRequests/<id>/threads/<threadId>` carrying `{"status": "fixed"}`.
+
+**Bitbucket Cloud**: reply with `POST .../pullrequests/<id>/comments` carrying `content.raw` and `parent.id`, then resolve with `POST .../pullrequests/<id>/comments/<comment_id>/resolve` on the thread's top-level comment.
+
+When a host or thread does not support resolution (a GitLab note that is not `resolvable`, or a host that returns an unsupported-endpoint error), post the reply only, and say in the summary that the thread was answered but left open. If resolution fails (permissions, API error), note which threads could not be resolved and continue. The push and fixes still stand.
 
 ## Step 9: Comment on Unresolved Threads
 
-For each thread NOT resolved, post a reply that concludes the feedback. Every reply should give the reviewer enough information to understand why the thread was not resolved, so it reads as a deliberate decision rather than an oversight.
+For each thread NOT resolved, post a reply that concludes the feedback, using the host's reply call from Step 8. Every reply should give the reviewer enough information to understand why the thread was not resolved, so it reads as a deliberate decision rather than an oversight.
 
 ```bash
+# GitHub
 gh api "repos/$OWNER_REPO/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" \
   -f body="<reason>"
 ```
@@ -245,7 +276,7 @@ Replies should be succinct but conclusive:
 Print a brief report:
 
 ```
-PR #<number> review processing complete.
+<PR or MR reference> review processing complete.
 
 Fixed (<N> threads):
   <file>:<line>  <brief description> (@reviewer)
@@ -265,6 +296,8 @@ Omit any section with zero entries. The "Invalid feedback" section surfaces whic
 
 ## Step 11: Offer to Re-request Copilot Review
 
+GitHub only. On other hosts, skip this step: they have no Copilot reviewer to re-request.
+
 If any of the processed review threads came from a Copilot reviewer (author login matches `copilot` patterns or the review was posted by the GitHub Copilot app), ask the user whether they want to re-request a Copilot review on the updated PR. Copilot does not automatically re-review after pushes, so this is the only way to trigger a follow-up review without visiting the GitHub UI.
 
 If the user says yes:
@@ -281,10 +314,10 @@ Do not offer this for human reviewers (they manage their own re-reviews) or Clau
 ## Error Handling
 
 - **No open PR**: Stop with "No open PR found for this branch."
-- **No unresolved review comments**: Report "No unresolved review comments on PR #N." and stop.
-- **`gh` not authenticated**: Detect with `gh auth status`, show clear error.
+- **No unresolved review comments**: Report "No unresolved review comments on <PR or MR reference>." and stop.
+- **No authenticated interface for the repository host**: Name the detected host and what to install or which credential to supply. Never fall back to `gh` on a host that is not GitHub.
 - **Working tree dirty**: Stop and ask the user to commit or stash.
 - **On default branch**: Stop, suggest checking out the feature branch.
 - **Push rejected**: Suggest `git pull --rebase origin <branch>` and stop.
-- **GraphQL mutation fails**: Report which threads could not be resolved. The fixes and push still stand.
+- **Resolution fails or is unsupported**: Report which threads could not be resolved. The fixes and push still stand.
 - **All comments are outdated**: Validate against current code anyway. The underlying issue may still apply even if the diff hunk is stale.
