@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.3.0...v1.4.0) (2026-10-04)
+
+
+### Features
+
+* **skills:** support GitLab, Azure DevOps, and Bitbucket in workflow skills ([#155](https://github.com/AdamCaviness/agentic-toolkit/issues/155)) ([f120933](https://github.com/AdamCaviness/agentic-toolkit/commit/f1209335400d3a253f4ad95851b1f52ccb1f0700)), closes [#118](https://github.com/AdamCaviness/agentic-toolkit/issues/118)
+
 ## [1.3.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.2.10...v1.3.0) (2026-10-04)
 
 
