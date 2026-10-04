@@ -161,8 +161,42 @@ class ShipSkillTest(unittest.TestCase):
     def test_github_repo_without_required_checks_is_not_failed(self):
         # `gh pr checks --required` exits 1 when a repository requires no
         # checks. Reading that as a failure stopped /ship on every such repo.
+        # Issue #165, PR #164: no required checks plus UNSTABLE hid three
+        # pending optional checks. Absence of required checks must trigger
+        # an all-checks read, never approval from mergeability alone.
         self.assertIn("no required checks reported", self.text)
         self.assertRegex(self.lower, r"`unknown` is pending")
+        self.assertIn("`gh pr checks <number> --repo <owner/repo>`", self.text)
+        self.assertIn("no checks reported", self.text)
+        self.assertNotIn("let `mergeStateStatus` decide", self.text)
+
+    def test_github_reads_optional_checks_even_when_required_checks_pass(self):
+        self.assertRegex(self.lower, r"always [^.\n]*all checks")
+        self.assertIn("even when required checks passed", self.lower)
+
+    def test_github_classifies_all_checks_before_mergeability(self):
+        self.assertRegex(self.lower, r"exit 8[^.\n]*pending")
+        self.assertRegex(self.lower, r"exit 1[^.\n]*failed check[^.\n]*failed")
+        self.assertIn("failed optional checks block", self.lower)
+        self.assertIn("cancelled checks also block", self.lower)
+        self.assertIn("checks take precedence over pending checks", self.lower)
+        self.assertIn("adding `--json` changes the exit behavior", self.lower)
+        self.assertRegex(self.lower, r"any other error is \*\*inaccessible\*\*")
+        self.assertIn("poll every 30 seconds", self.lower)
+        self.assertIn("after 10 minutes", self.lower)
+
+    def test_github_unstable_is_never_ready(self):
+        self.assertIn("`UNSTABLE` means non-passing commit status", self.text)
+        self.assertIn("Ready only when `mergeStateStatus` is `CLEAN`", self.text)
+        self.assertIn("`UNSTABLE` never approves a merge", self.text)
+        self.assertNotIn("only non-required checks failing", self.text)
+
+    def test_github_rechecks_head_after_reading_checks(self):
+        self.assertIn("Re-read the PR after the checks", self.text)
+        self.assertIn("headRefOid", self.text)
+
+    def test_ship_operator_copy_uses_default_branch(self):
+        self.assertNotIn("base branch", self.lower)
 
     def test_github_commands_target_origin_not_upstream(self):
         for command in re.findall(r"`(gh (?:pr|repo) [^`]*)`", self.text):
@@ -277,6 +311,11 @@ class ReadmeSupportClaimsTest(unittest.TestCase):
 
     def test_ship_gate_no_longer_defers_to_this_ticket(self):
         self.assertNotIn("issues/118", self.text)
+
+    def test_ship_gate_documents_optional_ci_policy(self):
+        gate = section(self.text, "### Claude Ship Gate")
+        self.assertIn("pending or failed optional checks", gate)
+        self.assertIn("`CLEAN`", gate)
 
 
 if __name__ == "__main__":

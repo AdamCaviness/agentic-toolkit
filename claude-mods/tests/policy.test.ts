@@ -13,7 +13,8 @@ for (const command of [{remote:'upstream'}, {branch:'trunk'}, {head:'other'}, {b
 }
 test('paths need confirmation', () => expect(evaluatePublication({...clean,paths:['.env']}, {kind:'publish',argv:[],operation:'push'}).kind).toBe('confirm-paths'));
 test('merge uses PR evidence rather than ahead count', () => expect(evaluatePublication({...clean,commitsAhead:0}, {kind:'publish',argv:[],operation:'merge',explicitStrategy:'squash'}, pr).kind).toBe('pass'));
-for (const change of [{state:'CLOSED'}, {isDraft:true}, {headRefOid:'old'}, {mergeStateStatus:'BLOCKED'}, {reviewDecision:'REVIEW_REQUIRED'}, {url:'https://github.com/other/repo/pull/1'}, {isCrossRepository:true}, {baseRefName:'production'}]) {
+// Issue #165: UNSTABLE also covers pending optional CI with no required checks.
+for (const change of [{state:'CLOSED'}, {isDraft:true}, {headRefOid:'old'}, {mergeStateStatus:'BLOCKED'}, {mergeStateStatus:'UNSTABLE'}, {mergeStateStatus:'HAS_HOOKS'}, {mergeStateStatus:'UNKNOWN'}, {reviewDecision:'REVIEW_REQUIRED'}, {url:'https://github.com/other/repo/pull/1'}, {isCrossRepository:true}, {baseRefName:'production'}]) {
   test('rejects PR ' + JSON.stringify(change), () => expect(evaluatePublication(clean, {kind:'publish',argv:[],operation:'merge',explicitStrategy:'squash'}, {...pr,...change}).kind).toBe('deny'));
 }
 test('merged feature cleanup works from default checkout', () => expect(evaluatePublication({...clean,branch:'trunk'}, {kind:'delete',argv:[],operation:'delete',remote:'origin',branch:'feat/x'}, {...pr,state:'MERGED'}).kind).toBe('pass'));
