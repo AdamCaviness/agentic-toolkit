@@ -53,7 +53,7 @@ Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an 
    BASE_REF="$BASE_BRANCH"
    git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
    git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
-     printf 'base branch "%s" resolves neither locally nor on origin, cannot run the pre-push gate\n' "$BASE_BRANCH" >&2
+     printf 'default branch "%s" resolves neither locally nor on origin, cannot run the pre-push gate\n' "$BASE_BRANCH" >&2
      exit 1
    }
    printf -- '--- publication inventory ---\n'
@@ -65,13 +65,16 @@ Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an 
 
    Read each labeled section:
 
-   - **A non-zero exit means the gate never ran.** Stop and report the unresolved base branch. Never treat the absent output as a clean result. An unset base would reduce the range to `...HEAD`, comparing HEAD with itself, and a base naming a branch this repository does not have would make `git diff` fail into the same empty output. Both read as a clean inventory. The screen ends in `|| [ $? -eq 1 ]` rather than `|| true` for the same reason: `grep` exits 1 for "no matches", which is clean, and 2 for a failure such as an invalid pattern, which is not. `|| true` flattened both to success and handed back the same empty output. The base is checked locally first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push.
+   - **A non-zero exit means the gate never ran.** Stop and report the unresolved default branch. Never treat the absent output as a clean result. An unset base would reduce the range to `...HEAD`, comparing HEAD with itself, and a base naming a branch this repository does not have would make `git diff` fail into the same empty output. Both read as a clean inventory. The screen ends in `|| [ $? -eq 1 ]` rather than `|| true` for the same reason: `grep` exits 1 for "no matches", which is clean, and 2 for a failure such as an invalid pattern, which is not. `|| true` flattened both to success and handed back the same empty output. The base is checked locally first and falls back to `origin/<base>`, because a single-branch clone has the remote-tracking ref without the local one and stopping there would block a legitimate push.
    - **publication inventory**: every committed path the push will publish. Read this list.
    - **high-risk paths**: every skill that publishes or reviews carries this same screen verbatim. Stop and report every matched path. The user must remove the path, add it to `.gitignore`, or explicitly confirm before push continues.
 4. **Push**: Push the current branch to origin with `-u` flag if not already pushed.
 5. **Create PR or MR** (if none exists) against `$BASE_BRANCH` with the find and create commands from the Repository Host section. Use commit messages to generate the title and body. A failed or unauthenticated lookup is an error, not "no PR"; report it and stop.
 6. **Read merge evidence** after the final push. Evidence counts only when it names the PR or MR head commit and that commit equals `git rev-parse HEAD`; evidence for any other commit is stale.
-   - **GitHub**: `gh pr view <number> --repo <owner/repo> --json headRefOid,state,mergeStateStatus,reviewDecision` and `gh pr checks <number> --repo <owner/repo> --required`. The checks command exits 0 when required checks passed and 8 when some are pending. Exit 1 with `no required checks reported` means the repository requires none, which is not a failure; let `mergeStateStatus` decide. Any other non-zero exit is failed or unreadable. Ready when `mergeStateStatus` is `CLEAN`, `HAS_HOOKS`, or `UNSTABLE` (only non-required checks failing) and `reviewDecision` is neither `CHANGES_REQUESTED` nor `REVIEW_REQUIRED`. `UNKNOWN` is pending while GitHub computes mergeability, and so is `BLOCKED` while required checks are pending.
+   - **GitHub**:
+     1. Read `gh pr view <number> --repo <owner/repo> --json headRefOid,state,isDraft,mergeStateStatus,reviewDecision` and `gh pr checks <number> --repo <owner/repo> --required`. Exit 1 with `no required checks reported` means the repository requires none; it is not approval or a failed check. Exit 1 with `no checks reported` means none are reported at all.
+     2. Always read all checks with `gh pr checks <number> --repo <owner/repo>` without `--required`, including when none are required and even when required checks passed. Run each checks command separately and retain its output and exit status. Use the plain output for these exit codes, adding `--json` changes the exit behavior. Exit 8 means **Pending**; exit 1 with a failed check means **Failed**. Failed optional checks block because a merge must not publish known failing CI. Cancelled checks also block; exit 0 alone does not certify success, inspect the reported checks. Exit 1 with `no checks reported` is the only all-checks absence case, proceed to mergeability without inventing CI evidence. Any other error is **Inaccessible**, not an empty check list. Failed or cancelled checks take precedence over pending checks.
+     3. Re-read the PR after the checks and require `headRefOid` to still equal the pushed local head; apply the stale rule below if it changed. Ready only when `mergeStateStatus` is `CLEAN`, the PR is `OPEN`, `isDraft` is false, all reported checks passed or were skipped (or no checks were reported), and `reviewDecision` is empty or `APPROVED`. This matches the Ship Gate's conservative mergeability policy. `UNSTABLE` means non-passing commit status, including pending or failed optional checks; `UNSTABLE` never approves a merge. Pending checks follow the polling rule below regardless of mergeability. `UNKNOWN` is pending while GitHub computes mergeability. With no pending checks, any merge status other than `CLEAN` or `UNKNOWN` blocks, including `UNSTABLE` and `HAS_HOOKS`.
    - **GitLab**: `glab api projects/:fullpath/merge_requests/<iid>` for `sha`, `state`, and `detailed_merge_status`. Only `mergeable` is ready; `checking`, `unchecked`, `preparing`, `approvals_syncing`, and `ci_still_running` are pending; every other value blocks.
    - **Azure DevOps Repos**: `az repos pr show --id <id>` for `lastMergeSourceCommit.commitId`, `status`, and `mergeStatus` (`succeeded` is ready, `queued` is pending), plus `az repos pr policy list --id <id>`: every evaluation whose `configuration.isBlocking` is true must be `approved` or `notApplicable`; `queued` and `running` are pending.
    - **Bitbucket Cloud**: the PR's `source.commit.hash` and `state`, its `/statuses` (`SUCCESSFUL` is ready, `INPROGRESS` is pending), and `GET .../pullrequests/<id>/mergeability/checks`, every check of which must allow the merge.
@@ -79,7 +82,7 @@ Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an 
    Classify the evidence before merging:
    - **Ready**: merge.
    - **Pending**: poll every 30 seconds. After 10 minutes, ask the user whether to keep waiting or stop.
-   - **Failed** (failed or required checks, rejected policy, missing approval, conflict, draft, or any other blocking status): stop and report what blocks the merge.
+   - **Failed** (failed or cancelled checks, rejected policy, missing approval, conflict, draft, or any other blocking status): stop and report what blocks the merge.
    - **Inaccessible** (command missing, permission denied, API error, or an expected field absent): stop and report it. Never read missing evidence as approval.
    - **Stale**: confirm the push landed and read once more. If the head still differs, stop.
 7. **Resolve merge strategy**: Read cached repository policy from `$(git rev-parse --git-dir)/agents/repo-policy.json` if present, fresh, and for the same host and project. Otherwise refresh it and write the result back to the cache:
@@ -132,6 +135,6 @@ Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an 
 - If there's an open PR already, push any new commits to update it, then merge it.
 - If the merge fails due to stale repository policy cache, refresh the cache once and retry only with an allowed strategy.
 - If the merge fails for any other reason, report the error. Don't retry or force.
-- Do not bypass failing required checks, conflicts, review requirements, or permissions errors. Never use administrator merges, `--bypass-policy`, or any other host override.
+- Do not bypass failing checks, conflicts, review requirements, or permissions errors. Never use administrator merges, `--bypass-policy`, or any other host override.
 - Never merge on pending, failed, inaccessible, or stale evidence.
 - If on the default branch, warn and stop. Ship only works on feature branches.
