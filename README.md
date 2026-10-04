@@ -48,7 +48,7 @@ The gate checks direct Git pushes and remote branch cleanup on any repository ho
 
 Publication commands must be separate, with literal arguments. Use `git push -u origin <current-branch>` when Git's implicit push destination is ambiguous. Origin must have one push URL identical to its fetch URL; differing URL spellings are rejected rather than assumed to reach the same repository. For GitHub, use `--repo <origin-owner/repository>` and explicit `--head` and `--base` on PR creation when defaults point elsewhere. Merge requires an explicit allowed strategy, such as `--squash`. Forced pushes, administrator merges, and publishing additional refs are rejected.
 
-The gate covers supported Claude Bash calls while the mod is enabled and loaded. Publication hidden in scripts, aliases, MCP tools, or other mods is outside its coverage. It screens filenames, not file contents, and cannot prevent another process changing the repository after its last check. Other providers' PR and MR commands, such as `glab` and `az repos pr`, rely on the shared skills and host protections rather than runtime merge-policy checks. Cross-provider workflow adaptation is tracked in [#118](https://github.com/AdamCaviness/agentic-toolkit/issues/118). It does not replace the shared skill safeguards, host branch protections, or a content secret scanner.
+The gate covers supported Claude Bash calls while the mod is enabled and loaded. Publication hidden in scripts, aliases, MCP tools, or other mods is outside its coverage. It screens filenames, not file contents, and cannot prevent another process changing the repository after its last check. Other providers' PR and MR commands, such as `glab` and `az repos pr`, rely on the shared skills and host protections rather than runtime merge-policy checks; `/ship` reads each host's merge evidence itself. It does not replace the shared skill safeguards, host branch protections, or a content secret scanner.
 
 The module lives in `claude-mods/` and is referenced only by the Claude manifest. There is no default `hooks/hooks.json`, classic shell-hook fallback, additional plugin, telemetry, or persistent transcript. See [verification details](docs/claude-ship-gate-verification.md) for test commands and compatibility evidence.
 
@@ -154,7 +154,7 @@ Picks up a ticket from your issue tracker, implements it end-to-end with TDD, an
 **Usage:** `/next-ticket` (auto-pick best ticket) or `/next-ticket 42` (pick up a specific ticket).
 
 > [!NOTE]
-> All ticket skills auto-detect your ticket system: the agent reads repo signals (README, CLAUDE.md, git remotes, commit conventions) to determine which system you use. Supported out of the box: GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs in your session. Detection results are cached so detection only runs once per project. For persistent override, add `ticketSystem: <name>` to your project's CLAUDE.md.
+> All ticket skills auto-detect your ticket system: the agent reads repo signals (README, CLAUDE.md, git remotes, commit conventions) to determine which system you use. Supported out of the box: GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs in your session. Detection results are cached so detection only runs once per project. For persistent override, add `ticketSystem: <name>` to your project's CLAUDE.md. The ticket system is independent of the repository host, so a GitLab repository can track work in Jira (see [Workflow Skills](#workflow-skills) for supported hosts).
 
 ---
 
@@ -206,7 +206,7 @@ Dispatches a code-reviewer subagent to evaluate all branch work against requirem
 
 ### [apply-review](skills/apply-review/SKILL.md)
 
-Reads all review comments on the current PR (human, Copilot, Claude, any reviewer), validates each against the actual code, fixes valid comments, pushes, resolves addressed threads via GitHub's API, and leaves succinct replies on threads it did not resolve. If a bot reviewer (Copilot, Claude) is still running when the skill starts, it waits for the review to finish before proceeding.
+Reads all review comments on the current PR (human, Copilot, Claude, any reviewer), validates each against the actual code, fixes valid comments, pushes, resolves addressed threads, and leaves succinct replies on threads it did not resolve. Uses each host's native review threads: GitHub review threads, GitLab discussions, Azure DevOps PR threads, and Bitbucket Cloud PR comments. Threads are resolved only where the host supports it. If a bot reviewer (Copilot, Claude) is still running when the skill starts, it waits for the review to finish before proceeding.
 
 **Usage:** `/apply-review`, `/apply-review 42`
 
@@ -222,15 +222,18 @@ Re-evaluates the current branch's work as if starting from scratch. Deep-reads e
 
 > Skills for the branch lifecycle, from commit to merge.
 
+> [!NOTE]
+> `/pr`, `/ship`, `/apply-review`, and `/update-deps` support GitHub, GitLab (including subgroups and self-hosted instances), Azure DevOps Repos, and Bitbucket Cloud. Each detects the host from the `origin` remote and uses whatever interface your session already reaches: `gh`, `glab`, `az repos` (the `azure-devops` extension), an MCP connector, or the host's REST API. No single CLI is required, but one interface must be authenticated for the detected host; the skills stop with what to install or which credential to supply rather than guessing.
+
 ### [pr](skills/pr/SKILL.md)
 
-The cautious "I'm done." Runs format/lint and tests (skips if already passing with no file changes), commits auto-fixed formatting, pushes, extracts the issue number from the branch name (`fix/224-bug` becomes `Closes #224`), and creates a PR. Stops on any failure. Use `/pr` when you want to wait for CI to pass or collect PR review feedback before merging. Pair with `/apply-review` to pick up that feedback and implement what makes sense.
+The cautious "I'm done." Runs format/lint and tests (skips if already passing with no file changes), commits auto-fixed formatting, pushes, extracts the ticket ID from the branch name (`fix/224-bug` becomes `Closes #224`, or the tracker's own linking syntax such as `PROJ-224` for Jira), and opens a PR, or an MR on GitLab, against the default branch. Stops on any failure. Use `/pr` when you want to wait for CI to pass or collect PR review feedback before merging. Pair with `/apply-review` to pick up that feedback and implement what makes sense.
 
 **Usage:** `/pr`
 
 ### [ship](skills/ship/SKILL.md)
 
-The optimistic "I'm done completely." Commits, pushes, creates or updates a PR, merges, syncs the local default branch, and deletes the branch. If nothing in the VCS blocks the merge, every step happens without delay. Detects your repo's allowed merge strategies (merge, squash, rebase) and caches the policy in `.git/agents/repo-policy.json` with a 30-day freshness window, retrying once on policy errors. For forked repos, PRs always target your fork, never upstream.
+The optimistic "I'm done completely." Commits, pushes, creates or updates a PR or MR, merges, syncs the local default branch, and deletes the branch. Before merging it reads the host's required checks, approvals, and merge policy for the exact commit it pushed; pending checks are waited on, and failed, unreadable, or stale evidence stops the run instead of merging. If nothing on the host blocks the merge, every step happens without delay. Detects the host's allowed merge strategies and caches them in `.git/agents/repo-policy.json` with a 30-day freshness window, retrying once on policy errors. For forked repos, PRs always target your fork, never upstream.
 
 **Usage:** `/ship`
 
@@ -261,7 +264,7 @@ Reduces markdown verbosity to save input tokens, particularly useful for CLAUDE.
 
 ### [update-deps](skills/update-deps/SKILL.md)
 
-Updates project dependencies with CVE-first prioritization. Checks for open Dependabot/Renovate PRs with security patches, applies safe minor/patch updates, and runs tests after each batch (rolling back on failure). With the `major` flag, spawns parallel research sub-agents that search for migration guides and changelogs, scan the codebase for affected code, and produce change plans, then applies each major bump sequentially with test validation.
+Updates project dependencies with CVE-first prioritization. Checks open dependency-bot PRs or MRs (Dependabot, Renovate, Snyk, and similar) for security patches on any supported repository host, applies safe minor/patch updates, and runs tests after each batch (rolling back on failure). With the `major` flag, spawns parallel research sub-agents that search for migration guides and changelogs, scan the codebase for affected code, and produce change plans, then applies each major bump sequentially with test validation.
 
 **Usage:** `/update-deps`, `/update-deps major`, `/update-deps frontend`, `/update-deps backend|infra major`
 

@@ -2,13 +2,35 @@
 name: pr
 model: sonnet
 effort: high
-description: "Use when work is done but you want review first. Formats, lints, tests, commits, pushes, and opens a PR. The cautious \"I'm done\": stops for CI/review."
+description: "Use when work is done but you want review first. Formats, lints, tests, commits, pushes, and opens a PR (an MR on GitLab). The cautious \"I'm done\": stops for CI/review."
 disable-model-invocation: true
 ---
 
 # PR: Format, Lint, Test, Commit, Push, Create Pull Request
 
 Go from "I'm done" to "PR is open." Stops there; use /ship when you also want to merge and clean up.
+
+## Repository Host
+
+The repository host is where the branch is pushed and where its pull request (PR) or merge request (MR) lives. It is independent of the ticket tracker: a GitLab repository can track work in Jira. Resolve the host before the first host command, from `git remote get-url origin`:
+
+| Origin host | Repository host | Project path |
+| --- | --- | --- |
+| `github.com`, or a GitHub Enterprise host | GitHub | `owner/repo` |
+| `gitlab.com`, or a self-hosted GitLab host | GitLab | the full namespace, every subgroup included |
+| `dev.azure.com`, `ssh.dev.azure.com`, or `<org>.visualstudio.com` | Azure DevOps Repos | organization, project, and repository |
+| `bitbucket.org` | Bitbucket Cloud | `workspace/repo_slug` |
+
+Examples: `git@github.com:acme/api.git` is GitHub `acme/api`. `git@gitlab.com:acme/platform/api.git` is GitLab project `acme/platform/api`, never `platform/api`. `https://dev.azure.com/acme/Platform/_git/api` is organization `acme`, project `Platform`, repository `api`. `https://git.acme.dev/acme/platform/api.git` names no provider, so decide from project signals: `.gitlab-ci.yml`, `.github/workflows/`, `azure-pipelines.yml`, `bitbucket-pipelines.yml`, the project instructions, or which CLI reports that host as authenticated (`glab auth status --hostname <host>`, `gh auth status --hostname <host>`). If the signals are absent or disagree, ask the user once.
+
+Use whichever interface this session already reaches, in this order: the host's CLI (`gh` for GitHub, `glab` for GitLab, `az repos` from the `azure-devops` extension for Azure DevOps Repos; Bitbucket Cloud has no first-party CLI), an MCP connector for that host, or the host's REST API with credentials the session already holds. Confirm the interface authenticates against this host with one read-only call before relying on it. Never require `gh` on a host that is not GitHub. If no interface works, stop and name what to install or which credential to supply. An unreachable or unauthenticated host is never an empty result.
+
+Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an MR on GitLab. Always target origin's project; when origin is a fork, never open or merge on upstream. Find the open PR or MR for a branch, or create one against the default branch, with:
+
+- **GitHub**: `gh pr view <branch> --repo <owner/repo> --json number,url,state,headRefOid` (only `OPEN` counts), and `gh pr create --repo <owner/repo> --base <base> --head <branch> --title <title> --body <body>`. Pass `--repo <owner/repo>` from origin on every `gh` call, since `gh` prefers an `upstream` remote and a fork would otherwise read or target upstream.
+- **GitLab**: `glab mr list --source-branch <branch>`, and `glab mr create --source-branch <branch> --target-branch <base> --title <title> --description <body> --yes`. `glab` reads the host and full project path from origin, so subgroups and self-hosted instances need no extra flags once `glab auth login --hostname <host>` has run. Through the REST API, address the project as `https://<host>/api/v4/projects/<url-encoded full path>`.
+- **Azure DevOps Repos**: `az repos pr list --source-branch <branch> --status active`, and `az repos pr create --source-branch <branch> --target-branch <base> --title <title> --description <body>`. `az` detects organization, project, and repository from origin.
+- **Bitbucket Cloud**: authenticate REST calls with an Atlassian API token and the account email, or a workspace or repository access token as a Bearer token. `GET https://api.bitbucket.org/2.0/repositories/<workspace>/<repo_slug>/pullrequests` with the URL-encoded query `q=source.branch.name="<branch>" AND state="OPEN"`, and `POST` to the same collection with `title`, `description`, `source.branch.name`, and `destination.branch.name`.
 
 ## Workflow
 
@@ -24,6 +46,7 @@ Go from "I'm done" to "PR is open." Stops there; use /ship when you also want to
    ```
 
 1. **Verify not on default branch**: if the current branch (from the step 2 preflight read) equals `$BASE_BRANCH`, stop and tell the user to create a feature branch first.
+   Then resolve the repository host and confirm one interface authenticates against it, per the Repository Host section. If none does, stop here, before anything is committed or pushed.
 
 2. **Inventory working tree and commit implementation work**:
    - Gather the read-only preflight in a single shell call rather than one command at a time: current branch (`git branch --show-current`, which also answers step 1), working-tree state (`git status --porcelain`), and the untracked path list (`git ls-files --others --exclude-standard`). Label each section so one call covers steps 1 and 2.
@@ -85,15 +108,18 @@ Go from "I'm done" to "PR is open." Stops there; use /ship when you also want to
    - If existing: `git push`
    - If already up-to-date: skip
 
-8. **Extract issue number from branch name**:
-   - Pattern: `<category>/<number>-<desc>` → `#<number>`
-   - Example: `fix/224-streaming-upload-size-check` → `224`
-   - If no number found: warn "No issue number found in branch name. Add Closes #NNN manually if applicable."
+8. **Extract ticket ID from branch name**:
+   - Pattern: `<category>/<ticket-id>-<desc>`, where the ID is a bare number (`fix/224-streaming-upload-size-check` → `224`) or a key (`fix/PROJ-224-upload-size` → `PROJ-224`)
+   - Build the closing reference in the syntax the ticket tracker and repository host recognize. The tracker is the one cached for this project root in `next-ticket-config.json` in the system temp directory, or, absent that, the one repo signals indicate:
+     - Tracker is the host's own issues (GitHub Issues, GitLab Issues): `Closes #224`
+     - Jira, Linear, or another keyed tracker: the bare key, `PROJ-224`, which those trackers link from PR and commit text
+     - Azure Boards: `AB#224` on GitHub; on Azure DevOps Repos, link the work item with `--work-items 224` on `az repos pr create`
+   - If no ticket ID is found: warn "No ticket ID found in branch name. Add a closing reference manually if applicable."
 
-9. **Create or update PR**:
-   - Check if PR exists: `gh pr view --json number,url 2>/dev/null`
-   - If PR exists: show URL, say "PR updated with latest changes"
-   - If no PR exists:
+9. **Create or update the PR or MR** with the find and create commands from the Repository Host section, always against `$BASE_BRANCH`:
+   - Find the open PR or MR for the current branch. A failed or unauthenticated lookup is an error, not "no PR"; report it and stop.
+   - If one exists: show URL, say "PR updated with latest changes"
+   - If none exists:
      - Understand scope from commit messages and file-level stats, not a re-read of the full content diff: `git log "$BASE_REF"..HEAD` (messages) plus `git diff --stat "$BASE_REF"...HEAD` (changed paths). If the diff content was already captured earlier in this conversation and no commits were added since, reuse it. Read full hunks only for commits whose messages do not explain the change.
      - **Resolve PR template**: if the PR cache (see the PR Cache section below) has a `prTemplatePath` and that file still exists, use it. Otherwise discover it by checking these paths in order, using the first that exists, then write the result to the cache:
 
@@ -105,7 +131,10 @@ Go from "I'm done" to "PR is open." Stops there; use /ship when you also want to
          pull_request_template.md \
          PULL_REQUEST_TEMPLATE.md \
          docs/pull_request_template.md \
-         docs/PULL_REQUEST_TEMPLATE.md; do
+         docs/PULL_REQUEST_TEMPLATE.md \
+         .gitlab/merge_request_templates/Default.md \
+         .azuredevops/pull_request_template.md \
+         .vsts/pull_request_template.md; do
          if [ -f "$candidate" ]; then
            PR_TEMPLATE="$candidate"
            break
@@ -119,7 +148,7 @@ Go from "I'm done" to "PR is open." Stops there; use /ship when you also want to
          - Replace placeholders (HTML comments, blank lines after labels, explicit placeholder text like "Describe your changes") with substantive content derived from the diff, commit messages, and branch context
          - Check or uncheck checkbox items (`- [ ]` / `- [x]`) based on what the branch actually contains (tests added, docs updated, breaking changes present, etc.)
          - If a placeholder asks for information not derivable from the diff or commit history (e.g., Jira ticket URL, Figma link, deployment instructions), leave the original HTML comment in place so the author can fill it after opening the PR
-         - If the issue number from step 8 is present and the filled body does not already reference it, append `Closes #<number>` after the last section
+         - If step 8 built a closing reference and the filled body does not already contain it, append it after the last section
        - **If no template found** (or the template file is empty): Use the default body:
 
          ```
@@ -132,12 +161,12 @@ Go from "I'm done" to "PR is open." Stops there; use /ship when you also want to
          ## Testing
          <What was tested locally>
 
-         Closes #<number>
+         <closing reference from step 8>
          ```
 
      - Concise title (under 70 chars, conventional commit style)
-     - Create PR with `gh pr create` passing the title and built body
-   - Return PR URL to user
+     - Create the PR or MR with the host's create command, passing the title and built body
+   - Return the PR or MR URL to user
 
 10. **Transition ticket to In Review (non-blocking)**:
     - Extract a ticket identifier from the branch name. The branch follows `<category>/<ticket-id>-<desc>`, where the ticket ID may be a bare number (`42`) or a prefixed key (`PROJ-42`). If no ticket ID is extractable, skip.
@@ -157,8 +186,8 @@ Go from "I'm done" to "PR is open." Stops there; use /ship when you also want to
 - **Format/lint fails**: Stop, show errors. Cannot push unlinted code.
 - **Tests fail**: Stop, show failures. Cannot push broken code.
 - **Push rejected (behind remote)**: Suggest `git pull --rebase origin <branch>`
-- **`gh` not authenticated**: Detect with `gh auth status`, show clear error
-- **No issue number in branch**: Warn but continue. Don't block the PR.
+- **No authenticated interface for the repository host**: Stop before pushing. Name the detected host and what to install or which credential to supply. Never fall back to `gh` on a host that is not GitHub.
+- **No ticket ID in branch**: Warn but continue. Don't block the PR.
 - **Ticket state transition fails**: Log the reason and continue. Never block the PR workflow.
 
 ## PR Cache
@@ -187,5 +216,5 @@ Go from "I'm done" to "PR is open." Stops there; use /ship when you also want to
 # Typical workflow:
 # 1. Make changes on feature branch
 # 2. /pr (does everything: inventory, commit, format, lint, test, push, PR)
-# 3. Review PR in GitHub
+# 3. Review the PR or MR on your repository host
 ```

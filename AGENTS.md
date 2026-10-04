@@ -84,6 +84,14 @@ Disposition differs by skill, the pattern set does not. A publishing skill stops
 
 Reviewing skills append three alternations after the shared literal: bare `token` and `key` path components, archives, and `.github/workflows/`. Those stay out of the publishing gate on purpose. A false positive costs a reviewer one glance, while a blocking gate that matches `src/auth/token.ts`, a release tarball, or a routine CI edit prompts the user on every single push. The shared literal still catches a real `server.key` or `id_rsa` through the extension group and the credential components.
 
+## Repository host
+
+`pr`, `ship`, `apply-review`, and `update-deps` talk to the repository host, which is separate from the ticket tracker: a GitLab repository can track work in Jira. Each carries one `## Repository Host` section verbatim: detection from `git remote get-url origin` (GitLab subgroups and self-hosted instances included), interface selection (the host's CLI, an MCP connector, or its REST API, never `gh` on a host that is not GitHub), and the find and create commands for GitHub, GitLab, Azure DevOps Repos, and Bitbucket Cloud. Skill-specific operations, such as merge evidence in `ship` and review threads in `apply-review`, stay in each skill as short per-provider lists rather than provider modules or duplicated skills.
+
+An unreachable or unauthenticated host is never an empty result. `ship` merges only on evidence pinned to the pushed head commit; pending evidence is waited on and failed, inaccessible, or stale evidence stops the run.
+
+`tests/test_repository_host_contract.py` asserts the section is identical across those skills and fails when a skill outside the roster runs `gh pr`, `gh api`, `gh repo`, `glab mr`, `glab api`, or `az repos`, so a new host-touching skill must carry the section.
+
 ## Capability glossary for public skills
 
 Public skills are distributed to Claude Code, Cursor, Codex, and Gemini. Skill prose may use harness-specific tool names where they read naturally (`Task tool`, `WebSearch`, `Agent tool`); other harnesses generally infer the equivalent. This is a **glossary**, not a required vocabulary, that names recurring capabilities so future skills and adapter docs have a shared lexicon to reach for.
