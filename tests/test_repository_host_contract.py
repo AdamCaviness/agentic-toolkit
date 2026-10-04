@@ -117,6 +117,11 @@ class PrSkillTest(unittest.TestCase):
     def setUpClass(cls):
         cls.text = skill_text("pr")
 
+    def test_host_interface_is_confirmed_before_push(self):
+        confirm = self.text.index("confirm one interface authenticates")
+        push = self.text.index("**Push to remote**")
+        self.assertLess(confirm, push)
+
     def test_no_hard_stop_on_gh_for_every_host(self):
         self.assertNotIn("**`gh` not authenticated**", self.text)
 
@@ -127,7 +132,7 @@ class PrSkillTest(unittest.TestCase):
     def test_creates_against_detected_default_branch(self):
         host = section(self.text, "## Repository Host")
         for create in [
-            "gh pr create --base",
+            "gh pr create --repo <owner/repo> --base",
             "glab mr create",
             "--target-branch",
             "az repos pr create",
@@ -145,13 +150,25 @@ class ShipSkillTest(unittest.TestCase):
 
     def test_reads_merge_evidence_per_provider(self):
         for evidence in [
-            "gh pr checks <number> --required",
+            "gh pr checks <number> --repo <owner/repo> --required",
             "detailed_merge_status",
             "az repos pr policy list",
             "/statuses",
         ]:
             with self.subTest(evidence=evidence):
                 self.assertIn(evidence, self.text)
+
+    def test_github_repo_without_required_checks_is_not_failed(self):
+        # `gh pr checks --required` exits 1 when a repository requires no
+        # checks. Reading that as a failure stopped /ship on every such repo.
+        self.assertIn("no required checks reported", self.text)
+        self.assertRegex(self.lower, r"`unknown` is pending")
+
+    def test_github_commands_target_origin_not_upstream(self):
+        for command in re.findall(r"`(gh (?:pr|repo) [^`]*)`", self.text):
+            with self.subTest(command=command):
+                # `gh repo view` takes the repository positionally.
+                self.assertIn("<owner/repo>", command)
 
     def test_evidence_is_pinned_to_current_head(self):
         self.assertIn("git rev-parse HEAD", self.text)

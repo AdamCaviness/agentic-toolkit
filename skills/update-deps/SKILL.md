@@ -49,10 +49,10 @@ Use whichever interface this session already reaches, in this order: the host's 
 
 Call the change a PR on GitHub, Azure DevOps Repos, and Bitbucket Cloud, and an MR on GitLab. Always target origin's project; when origin is a fork, never open or merge on upstream. Find the open PR or MR for a branch, or create one against the default branch, with:
 
-- **GitHub**: `gh pr view <branch> --json number,url,state,headRefOid` (only `OPEN` counts), and `gh pr create --base <base> --head <branch> --title <title> --body <body>`. Pass `--repo <owner/repo>` from origin so a fork never targets upstream.
+- **GitHub**: `gh pr view <branch> --repo <owner/repo> --json number,url,state,headRefOid` (only `OPEN` counts), and `gh pr create --repo <owner/repo> --base <base> --head <branch> --title <title> --body <body>`. Pass `--repo <owner/repo>` from origin on every `gh` call, since `gh` prefers an `upstream` remote and a fork would otherwise read or target upstream.
 - **GitLab**: `glab mr list --source-branch <branch>`, and `glab mr create --source-branch <branch> --target-branch <base> --title <title> --description <body> --yes`. `glab` reads the host and full project path from origin, so subgroups and self-hosted instances need no extra flags once `glab auth login --hostname <host>` has run. Through the REST API, address the project as `https://<host>/api/v4/projects/<url-encoded full path>`.
 - **Azure DevOps Repos**: `az repos pr list --source-branch <branch> --status active`, and `az repos pr create --source-branch <branch> --target-branch <base> --title <title> --description <body>`. `az` detects organization, project, and repository from origin.
-- **Bitbucket Cloud**: authenticate REST calls with an Atlassian API token and the account email. `GET https://api.bitbucket.org/2.0/repositories/<workspace>/<repo_slug>/pullrequests?q=source.branch.name="<branch>" AND state="OPEN"`, and `POST` to the same collection with `title`, `description`, `source.branch.name`, and `destination.branch.name`.
+- **Bitbucket Cloud**: authenticate REST calls with an Atlassian API token and the account email, or a workspace or repository access token as a Bearer token. `GET https://api.bitbucket.org/2.0/repositories/<workspace>/<repo_slug>/pullrequests` with the URL-encoded query `q=source.branch.name="<branch>" AND state="OPEN"`, and `POST` to the same collection with `title`, `description`, `source.branch.name`, and `destination.branch.name`.
 
 ## Branch Naming
 
