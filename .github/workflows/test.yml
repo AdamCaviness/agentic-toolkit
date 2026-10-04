@@ -1,10 +1,7 @@
 name: test
 
-# The tests/ suite is this repository's only enforcement mechanism. The skills
-# are markdown, so nothing compiles and nothing type-checks; the validators are
-# what keep the shared literals, guards, and prose rules from drifting between
-# the copies that carry them. Without this job they run only when someone
-# remembers to run them locally.
+# Python validators keep shared skill contracts consistent. Claude's native
+# test runner and TypeScript checks validate the optional Claude module.
 
 # `main` is written literally here on purpose. The AGENTS.md rule against
 # hardcoding a default branch governs `skills/`, which run inside arbitrary
@@ -54,3 +51,27 @@ jobs:
         run: |
           pip install ruff==0.15.6
           ruff check .
+
+  claude-mods:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install pinned Claude test runtime
+        run: npm install --global @anthropic-ai/claude-code@2.1.288
+      - name: Verify runtime version
+        run: test "$(claude --version)" = '2.1.288 (Claude Code)'
+      - name: Validate Claude module registration
+        run: claude plugin validate . --json
+      - name: Run native mod tests
+        run: claude plugin test .
+      - name: Run local Git integration tests
+        run: node --test tests/ship_gate_integration.mjs
+      - name: Load diagnostic and generate runtime declarations
+        run: |
+          CLAUDE_CONFIG_DIR="$RUNNER_TEMP/ship-gate-claude" claude -p /ship-gate --plugin-dir . --setting-sources '' --no-session-persistence --output-format json > "$RUNNER_TEMP/ship-gate-status.json"
+          node -e 'const r = require(process.argv[1]); if (r.is_error || r.num_turns !== 0 || !r.result.includes("Ship Gate: off") || Object.keys(r.modelUsage ?? {}).length) process.exit(1)' "$RUNNER_TEMP/ship-gate-status.json"
+      - name: Check module types
+        run: npx --yes --package typescript@5.9.3 tsc -p tsconfig.json --allowImportingTsExtensions

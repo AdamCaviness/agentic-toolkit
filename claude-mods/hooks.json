@@ -1,0 +1,6 @@
+{
+  "description": "Claude-only publication checks",
+  "modules": [
+    "./ship-gate.ts"
+  ]
+}

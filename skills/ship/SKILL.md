@@ -51,7 +51,7 @@ Complete the current branch by committing, pushing, merging, and cleaning up.
 6. **Resolve merge strategy**: Read cached repository policy from `$(git rev-parse --git-dir)/agents/repo-policy.json` if present and fresh. If missing, stale, invalid, or for a different repository, refresh it with `gh repo view --json nameWithOwner,mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed,deleteBranchOnMerge` and write the result back to the cache.
 7. **Merge PR**: Choose the first allowed strategy in this order: `--merge` when `mergeCommitAllowed` is true, else `--squash` when `squashMergeAllowed` is true, else `--rebase` when `rebaseMergeAllowed` is true. Merge with `gh pr merge <strategy>`. For forked repos, use `--repo` targeting the fork. If no strategy is allowed, stop and report the repository merge policy.
 8. **Sync default branch**: `git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"`
-9. **Clean up**: Delete the merged branch locally (`git branch -D`). Only delete the remote branch (`git push origin --delete`) if it still exists. Some repos auto-delete branches on merge.
+9. **Clean up**: Delete the merged branch locally (`git branch -D`). Only delete the remote branch (`git push origin --delete`) if it still exists. First verify through the repository host that the matching PR or MR is merged and its recorded head commit matches the current remote branch head. If evidence is unavailable or the branch has been reused, stop and report it instead of deleting. Some repos auto-delete branches on merge.
 10. **Report**: Confirm done with the merged PR URL.
 
 ## Repository Policy Cache

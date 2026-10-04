@@ -18,5 +18,24 @@
     "triage",
     "dependencies",
     "compression"
-  ]
+  ],
+  "hooks": "./claude-mods/hooks.json",
+  "userConfig": {
+    "ship_gate_mode": {
+      "type": "string",
+      "title": "Ship Gate",
+      "description": "Check supported publication commands in Claude Code.",
+      "options": [
+        "off",
+        "enforce"
+      ],
+      "default": "off"
+    },
+    "ship_gate_checks": {
+      "type": "string",
+      "title": "Ship Gate verification commands",
+      "description": "JSON argv arrays run in the target repository, for example [[\"npm\",\"test\"]].",
+      "default": "[]"
+    }
+  }
 }
