@@ -2,11 +2,7 @@
 
 Install from [agentic-marketplace](https://github.com/adamcaviness/agentic-marketplace). Codex loads the plugin (all 13 skills) from `.codex-plugin/plugin.json`. Use **exactly one** path, or skills appear twice.
 
-If you previously cloned this repo and symlinked `skills/` into `~/.agents/skills/agentic-toolkit`, remove that link before installing from the marketplace (desktop or CLI):
-
-```bash
-rm ~/.agents/skills/agentic-toolkit
-```
+If you previously linked the skills into `~/.agents/skills/` (path 3), remove those links before installing from the marketplace (desktop or CLI) with the uninstall steps in the [manual install](../README.md#installation). If `~/.agents/skills/agentic-toolkit` exists as a single link to the whole `skills/` directory, remove it with `rm ~/.agents/skills/agentic-toolkit`.
 
 ## 1. ChatGPT desktop (recommended)
 
@@ -24,25 +20,14 @@ codex plugin marketplace add adamcaviness/agentic-marketplace --ref main
 codex plugin add agentic-toolkit@agentic-marketplace
 ```
 
-List with `codex plugin list --marketplace agentic-marketplace`. Remove with `codex plugin remove agentic-toolkit@agentic-marketplace`.
+The same commands work in PowerShell. List with `codex plugin list --marketplace agentic-marketplace`. Remove with `codex plugin remove agentic-toolkit@agentic-marketplace`.
 
-## 3. Manual fallback (clone and symlink)
+## 3. Manual fallback (clone and link)
 
 Use this only if you cannot add a marketplace. Do **not** combine it with path 1 or 2.
 
-```bash
-git clone https://github.com/adamcaviness/agentic-toolkit.git ~/.codex/agentic-toolkit
-mkdir -p ~/.agents/skills
-ln -s ~/.codex/agentic-toolkit/skills ~/.agents/skills/agentic-toolkit
-```
+Follow the [manual install](../README.md#installation) with the `~/.agents/skills/` root. It covers macOS, Linux, and Windows, plus update and uninstall. Restart Codex afterwards.
 
-**Windows (PowerShell):**
+Codex reads `~/.agents/skills/`. Do not use `~/.codex/skills/`, which Codex has deprecated and still reads, so skills in both places load twice.
 
-```powershell
-New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.agents\skills"
-cmd /c mklink /J "$env:USERPROFILE\.agents\skills\agentic-toolkit" "$env:USERPROFILE\.codex\agentic-toolkit\skills"
-```
-
-Restart Codex. Update with `git -C ~/.codex/agentic-toolkit pull`. Uninstall with `rm ~/.agents/skills/agentic-toolkit`.
-
-> **Also use Cursor?** Cursor can load skills from `~/.agents/skills/` when third-party includes are on. Prefer the Claude Code or Cursor install paths in [.cursor/INSTALL.md](../.cursor/INSTALL.md) for dual Claude Code + Cursor setups, and do not stack a Cursor `~/.cursor/plugins/local` install on top of a Codex symlink for the same skills.
+> **Also use Cursor or Gemini CLI?** Both read `~/.agents/skills/` too, so the manual links already serve them. Do not also install the Cursor plugin or the Gemini extension on top of those links. For dual Claude Code and Cursor setups, prefer the paths in [.cursor/INSTALL.md](../.cursor/INSTALL.md).

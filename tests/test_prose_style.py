@@ -13,7 +13,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # the shared triage source they are generated from, the contributor docs, and
 # these tests.
 CHECKED_TREES = ["skills", "tests", "triage_shared"]
-CHECKED_FILES = ["AGENTS.md", "README.md"]
+CHECKED_FILES = [
+    "AGENTS.md",
+    "README.md",
+    ".cursor/INSTALL.md",
+    ".codex/INSTALL.md",
+    ".gemini/INSTALL.md",
+]
 
 # Written as escapes so this validator does not match its own source.
 DASHES = {"\u2014": "em-dash", "\u2013": "en-dash"}

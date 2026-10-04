@@ -57,8 +57,8 @@ The module lives in `claude-mods/` and is referenced only by the Claude manifest
 
 See [.cursor/INSTALL.md](.cursor/INSTALL.md) for the full matrix. Short version:
 
-- **Also use Claude Code?** Install once with `/plugin marketplace add adamcaviness/agentic-marketplace` then `/plugin install agentic-toolkit@agentic-marketplace`. Cursor picks it up automatically. Do not also install a Cursor local plugin.
-- **Cursor only (Pro)?** `git clone` into `~/.cursor/plugins/local/agentic-toolkit`, then **Developer: Reload Window**.
+- **Also use Claude Code?** Install once with `/plugin marketplace add adamcaviness/agentic-marketplace` then `/plugin install agentic-toolkit@agentic-marketplace`. Cursor picks it up automatically. Do not also install a Cursor plugin.
+- **Cursor only (individual plan: Hobby, Pro, Pro+, or Ultra)?** Run `cursor-agent plugin marketplace add adamcaviness/agentic-marketplace`, then install **agentic-toolkit** from `/plugin` → **Marketplace** in `cursor-agent`. Without the Cursor CLI, `git clone` into `~/.cursor/plugins/local/agentic-toolkit` and run **Developer: Reload Window**.
 - **Teams / Enterprise?** Admins import the marketplace at [cursor.com/dashboard](https://cursor.com/dashboard) → **Plugins** (web admin UI, not the desktop app).
 
 Use exactly one path, or every skill appears twice.
@@ -79,46 +79,82 @@ codex plugin marketplace add adamcaviness/agentic-marketplace --ref main
 codex plugin add agentic-toolkit@agentic-marketplace
 ```
 
-Use exactly one path. If you already symlinked `skills/` into `~/.agents/skills/`, remove that link before marketplace-installing.
+Use exactly one path. If you already linked the skills into `~/.agents/skills/` with the manual install below, remove those links before marketplace-installing.
 
 </details>
 
 <details>
 <summary>Gemini CLI</summary>
 
-See [.gemini/INSTALL.md](.gemini/INSTALL.md) for install, update, uninstall, and what the extension injects into the session. Short version:
+See [.gemini/INSTALL.md](.gemini/INSTALL.md) for install, update, uninstall, installing from a local clone, and what the extension injects into the session. Short version:
 
 ```bash
 gemini extensions install https://github.com/adamcaviness/agentic-toolkit
 ```
 
-Update with `gemini extensions update agentic-toolkit`. After install, start a new Gemini session in your project and try `/next-ticket`.
+Update with `gemini extensions update agentic-toolkit`. After install, start a new Gemini session in your project and try `/next-ticket`. The same commands work in PowerShell and cmd.
 
 </details>
 
 <details>
-<summary>Manual (any platform)</summary>
+<summary>Manual (macOS, Linux, Windows)</summary>
 
-If you prefer not to use a plugin/extension system, clone the repo and symlink the skill directories. Pick **one** discovery location per harness. For Cursor, prefer [.cursor/INSTALL.md](.cursor/INSTALL.md) (Claude Code marketplace reuse, or `~/.cursor/plugins/local`) instead of stacking multiple roots. For Codex, prefer [.codex/INSTALL.md](.codex/INSTALL.md) (marketplace install) instead of stacking a `~/.agents/skills/` symlink on top of a plugin install.
+Use this only when you cannot use the plugin or extension install for your harness. Clone the repo once, then link each skill directory into **one** user-level skills root:
+
+| Root | Read by | Notes |
+|---|---|---|
+| `~/.agents/skills/` | Codex, Cursor, Gemini CLI | One set of links serves all three. Do not also install the Codex plugin, a Cursor plugin, or the Gemini extension, or every skill appears twice. |
+| `~/.claude/skills/` | Claude Code (Cursor also reads it when **Include third-party Plugins, Skills, and other configs** is on) | If you link into both roots, turn that Cursor setting off so Cursor does not list every skill twice. |
+
+`~/.codex/skills/` is a deprecated Codex location; do not link into it.
+
+macOS and Linux:
 
 ```bash
 git clone https://github.com/adamcaviness/agentic-toolkit.git ~/opensource/agentic-toolkit
 
-
-# Claude Code (user-level)
+ROOT=~/.agents/skills   # or ~/.claude/skills for Claude Code
+mkdir -p "$ROOT"
 for skill in ~/opensource/agentic-toolkit/skills/*/; do
-  ln -s "$skill" ~/.claude/skills/"$(basename "$skill")"
-done
-
-# Codex (user-level)
-for skill in ~/opensource/agentic-toolkit/skills/*/; do
-  ln -s "$skill" ~/.agents/skills/"$(basename "$skill")"
+  ln -sfn "${skill%/}" "$ROOT/$(basename "$skill")"
 done
 ```
 
-For a single skill: `ln -s ~/opensource/agentic-toolkit/skills/next-ticket ~/.claude/skills/next-ticket`.
+Windows (PowerShell). Directory junctions need neither Administrator rights nor Developer Mode:
 
-For project-level install, symlink into `.claude/skills/` or `.agents/skills/` inside the project root. For Cursor, see [.cursor/INSTALL.md](.cursor/INSTALL.md); do not combine a project `.cursor/skills/` tree with a Claude Code marketplace install of the same skills.
+```powershell
+git clone https://github.com/adamcaviness/agentic-toolkit.git "$env:USERPROFILE\opensource\agentic-toolkit"
+
+$Root = "$env:USERPROFILE\.agents\skills"   # or "$env:USERPROFILE\.claude\skills" for Claude Code
+New-Item -ItemType Directory -Force -Path $Root | Out-Null
+Get-ChildItem -Directory "$env:USERPROFILE\opensource\agentic-toolkit\skills" | ForEach-Object {
+  New-Item -ItemType Junction -Force -Path (Join-Path $Root $_.Name) -Target $_.FullName | Out-Null
+}
+```
+
+If a harness does not list the skills after a restart, replace `New-Item -ItemType Junction ... -Target` with `Copy-Item -Recurse -Force $_.FullName (Join-Path $Root $_.Name)` and re-run the copy after every update.
+
+Update with `git -C ~/opensource/agentic-toolkit pull` (the links pick up the change), then re-run the link loop so skills added in the new release are linked too.
+
+Uninstall by removing the links before deleting the clone. On macOS and Linux, `rm` on a link removes only the link:
+
+```bash
+for skill in ~/opensource/agentic-toolkit/skills/*/; do
+  rm -f "$ROOT/$(basename "$skill")"
+done
+```
+
+On Windows, `cmd /c rmdir` removes a junction without touching its target. Delete copied folders, if you used the copy fallback, with `Remove-Item -Recurse`:
+
+```powershell
+Get-ChildItem -Directory "$env:USERPROFILE\opensource\agentic-toolkit\skills" | ForEach-Object {
+  cmd /c rmdir (Join-Path $Root $_.Name)
+}
+```
+
+For one skill only, link just that directory, for example `ln -sfn ~/opensource/agentic-toolkit/skills/next-ticket ~/.agents/skills/next-ticket`.
+
+For a project-level install, link into `.agents/skills/` or `.claude/skills/` inside the project root instead. The same one-root rule applies.
 
 </details>
 
