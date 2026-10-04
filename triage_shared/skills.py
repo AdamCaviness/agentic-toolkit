@@ -10,26 +10,55 @@ Block-shaped values are kept as raw multi-line strings to make the
 generated output easy to diff and review.
 """
 
+CANDIDATE_OUTPUT_SECTION = r"""### Candidate Output
+
+Do NOT create tickets. Return all validated candidates to `{CACHE_DIR}/candidates-{CLUSTER_SLUG}.json` as a JSON array, including candidates beyond the orchestrator's run budget. Always write the file, using an empty array when no candidate passed every gate. Exclude existing-ticket duplicates and rejected candidates; in bug triage, the certainty bar also applies and rejected claims stay in the rejection ledger.
+
+Each candidate must contain the complete ticket draft and enough evidence for cross-cluster deduplication and filing without another audit. Use a unique `candidate_id` composed of your cluster slug and a local number. Use the body structure and labels below. Each entry has this shape:
+
+\`\`\`json
+[
+  {
+    "candidate_id": "{CLUSTER_SLUG}:1",
+    "title": "Focused candidate title",
+    "body": "Complete ticket body using the structure below",
+    "labels": ["{TRIAGE_LABEL}", "severity:high"],
+    "severity": "high",
+    "root_cause": "Underlying defect, structural decision, or product gap",
+    "trigger": "Conditions or user action that expose the problem",
+    "effect": "Observable behavior or consequence",
+    "affected_paths": ["path/to/file"],
+    "evidence": "path/to/file:120 and the proof or observed flow",
+    "why": "One line explaining the impact and why fixing it is worthwhile"
+  }
+]
+\`\`\`
+
+Severity must be `high`, `medium`, or `low`; include the matching severity label. Do not truncate the body or omit validated candidates because of the filing budget.
+
+"""
+
+
 # triage-architecture data
 ARCHITECTURE = {
     # frontmatter
     "description": (
         "Use when auditing a codebase for structural and safety issues. "
         "Caches tickets to disk, then spawns 4 parallel sub-agents (one "
-        "per focus cluster) to scrutinize and file tickets."
+        "per focus cluster) to return validated candidates for run-wide filing."
     ),
     "title": "Triage Architecture",
     # orchestrator preamble (sentence after "You are an **orchestrator**.")
     "orchestrator_role": (
         "You do NOT audit code yourself. Your job is to detect the ticket "
         "system, cache tickets to disk, show coverage status, spawn 4 "
-        "parallel sub-agents (one per cluster), and clean up when they "
+        "parallel sub-agents (one per cluster), deduplicate and file candidates within the run budget, and clean up when they "
         "finish."
     ),
     # mode bullet for create
     "create_mode_bullet": (
         "**No argument or `create`**: Create mode, sub-agents read code, "
-        "check existing tickets for dupes, and file new tickets. They do "
+        "check existing tickets for dupes, and return validated candidates. They do "
         "NOT deeply scrutinize or rewrite existing tickets (only fix "
         "links, labels, or obviously wrong info)."
     ),
@@ -160,46 +189,28 @@ ARCHITECTURE = {
     ),
     # create-mode body block (the entire fenced ``` block under "**Create mode** ...:")
     "create_mode_section": (
-        "## Create New Tickets\n"
+        "## Prepare New Ticket Candidates\n"
         "\n"
-        "Your job: find NEW problems in the codebase within your cluster's focus areas and file well-formed tickets.\n"
-        "\n"
-        "Hard cap: maximum 3 new tickets.\n"
+        "Your job: find NEW problems in the codebase within your cluster's focus areas and prepare validated ticket drafts for the orchestrator.\n"
         "\n"
         "### Dedup Check\n"
         "\n"
-        "Before creating any ticket, scan existing tickets for overlap:\n"
+        "Before submitting any candidate, scan existing tickets for overlap:\n"
         "1. Read ticket titles and descriptions in issues-open.json. Is this problem already covered?\n"
         "2. Check issues-closed.json. Was this already filed? For tickets closed as `completed`, you have a direct title-level duplicate. For tickets closed as `not_planned` (or wontfix in non-GitHub systems), read the closing comment, if your candidate shares the rejected ticket's threat model, assumption, or framing, treat it as a refile and do not file it, even if the title differs.\n"
         "3. If already covered and your finding adds context: if the ticket is in your edit file, edit the description directly. If it is outside your edit file, write it to your cross-cluster notes file. Do NOT add comments. Do NOT rewrite existing ticket descriptions, that's refine's job.\n"
-        "4. If not covered: create a new focused ticket.\n"
+        "4. If not covered: prepare a focused candidate after passing the validation gate.\n"
         "\n"
         "If you notice an existing ticket has obviously wrong info (e.g., references a file that no longer exists, wrong label), fix it. But do NOT deeply scrutinize, rewrite descriptions, or re-evaluate severity, that's refine's job.\n"
         "\n"
-        "### Over-Cap Findings\n"
+        + CANDIDATE_OUTPUT_SECTION.replace("{TRIAGE_LABEL}", "architecture")
+        + "### Validation Gate\n"
         "\n"
-        "When you have more than 3 valid findings, file the strongest 3. Write the rest to `{CACHE_DIR}/over-cap-{CLUSTER_SLUG}.json` as a JSON array. Each entry must be a finding that cleared dedup AND the pre-filing gate, only the cap kept it from being filed. The file must always be written, an empty array if you had no overflow, so the orchestrator can distinguish \"no overflow\" from \"agent failed to record overflow\". Each entry has this shape:\n"
+        'Before submitting a candidate, ask: "So what, and is the fix worth the trade-off?" If the system already handles the outcome (negative balances by design, proxy handles security headers, parameterized queries make "unvalidated" input safe), there\'s no issue. If the fix adds complexity for marginal benefit, the cure is worse than the disease. A theoretical race condition whose consequence is already handled gracefully isn\'t a real problem.\n'
         "\n"
-        "\\`\\`\\`json\n"
-        "[\n"
-        "  {\n"
-        "    \"title\": \"Candidate title that would have been filed\",\n"
-        "    \"evidence\": \"path/to/file.ts:120 plus a one-line description\",\n"
-        "    \"severity\": \"high | medium | low\",\n"
-        "    \"why\": \"One line on why this would have been filed\"\n"
-        "  }\n"
-        "]\n"
-        "\\`\\`\\`\n"
+        "### Ticket Draft\n"
         "\n"
-        "This is for valid findings that lost a slot to the cap. Do not use it for candidates that failed the pre-filing gate or duplicated existing tickets.\n"
-        "\n"
-        "### Pre-Filing Gate\n"
-        "\n"
-        "Before filing, ask: \"So what, and is the fix worth the trade-off?\" If the system already handles the outcome (negative balances by design, proxy handles security headers, parameterized queries make \"unvalidated\" input safe), there's no issue. If the fix adds complexity for marginal benefit, the cure is worse than the disease. A theoretical race condition whose consequence is already handled gracefully isn't a real problem.\n"
-        "\n"
-        "### Filing\n"
-        "\n"
-        "Create a new ticket with the `architecture` label and a severity label (`severity:high`, `severity:medium`, or `severity:low`). Use the following structure for the body:\n"
+        "Prepare a ticket draft with the `architecture` label and a severity label (`severity:high`, `severity:medium`, or `severity:low`). Use the following structure for the body:\n"
         "\n"
         "## Problem\n"
         "What is wrong or missing. Reference specific files and line numbers.\n"
@@ -304,11 +315,11 @@ BUGS = {
         "You do NOT investigate bugs yourself. Your job is to detect the "
         "ticket system, cache tickets to disk, show coverage status, "
         "spawn 4 parallel sub-agents (one per cluster), collect their "
-        "ledgers, and clean up when they finish."
+        "ledgers, deduplicate and file candidates within the run budget, and clean up when they finish."
     ),
     "create_mode_bullet": (
         "**No argument or `create`**: Create mode, sub-agents investigate "
-        "code, check existing tickets for dupes, and file new tickets for "
+        "code, check existing tickets for dupes, and return validated candidates for "
         "proven defects. They do NOT deeply scrutinize or rewrite "
         "existing tickets (only fix links, labels, or obviously wrong "
         "info)."
@@ -330,7 +341,12 @@ BUGS = {
         "- **Conventions from CLAUDE.md**: note any project-specific conventions that affect investigation"
     ),
     "cluster_slugs": ["data-state", "security-auth", "correctness", "silent-failures"],
-    "cluster_names": ["Data & State", "Security & Auth", "Correctness", "Silent Failures"],
+    "cluster_names": [
+        "Data & State",
+        "Security & Auth",
+        "Correctness",
+        "Silent Failures",
+    ],
     "assignment_extra_rule": (
         "\n- Tickets may carry any label (`bug`, `architecture`, "
         "`product`, or unlabeled). Assign by content, not by label."
@@ -408,7 +424,7 @@ BUGS = {
         "\\`\\`\\`json\n"
         "{\n"
         "  \"confirmed\": [\n"
-        "    { \"id\": 201, \"title\": \"Race in session refresh allows double-spend\", \"severity\": \"high\" }\n"
+        '    { "candidate_id": "{CLUSTER_SLUG}:1", "title": "Race in session refresh allows double-spend", "severity": "high" }\n'
         "  ],\n"
         "  \"rejected\": [\n"
         "    {\n"
@@ -418,6 +434,8 @@ BUGS = {
         "  ]\n"
         "}\n"
         "\\`\\`\\`\n"
+        "\n"
+        "In create mode, confirmed entries use candidate_id matching Candidate Output, not ticket IDs, because no ticket has been filed yet. In refine mode, use id for the existing ticket.\n"
         "\n"
         "Both arrays may be empty. The file must always be written so the orchestrator can distinguish \"no findings\" from \"agent failed to write ledger.\"\n"
         "\n"
@@ -462,42 +480,24 @@ BUGS = {
         "| **Performance as defect** | N+1 queries that degrade to unusable at realistic scale, unbounded memory growth, missing pagination on endpoints that return unbounded results, operations that block the event loop |"
     ),
     "create_mode_section": (
-        "## Create New Tickets\n"
+        "## Prepare New Ticket Candidates\n"
         "\n"
-        "Your job: find NEW proven defects in the codebase within your cluster's focus areas and file well-formed tickets.\n"
-        "\n"
-        "Hard cap: maximum 3 new tickets. One excellent report beats five weak ones.\n"
+        "Your job: find NEW proven defects in the codebase within your cluster's focus areas and prepare validated ticket drafts for the orchestrator.\n"
         "\n"
         "### Dedup Check\n"
         "\n"
-        "Before creating any ticket, scan existing tickets for overlap:\n"
+        "Before submitting any candidate, scan existing tickets for overlap:\n"
         "1. Read ticket titles and descriptions in issues-open.json. Is this defect already covered?\n"
         "2. Check issues-closed.json. Was this already filed? For tickets closed as `completed`, you have a direct title-level duplicate. For tickets closed as `not_planned` (or wontfix in non-GitHub systems), read the closing comment, if your candidate shares the rejected ticket's threat model, assumption, or framing, treat it as a refile and do not file it, even if the title differs.\n"
         "3. If already covered and your finding adds evidence: if the ticket is in your edit file, edit the description to add the proof. If it is outside your edit file, write it to your cross-cluster notes file. Do NOT add comments. Do NOT rewrite existing ticket descriptions, that's refine's job.\n"
-        "4. If not covered: file a new ticket after passing the pre-filing gate.\n"
+        "4. If not covered: prepare a focused candidate after passing the validation gate.\n"
         "\n"
         "If you notice an existing ticket has obviously wrong info (e.g., references a file that no longer exists, wrong label), fix it. But do NOT deeply scrutinize, rewrite descriptions, or re-evaluate severity, that's refine's job.\n"
         "\n"
-        "### Over-Cap Findings\n"
+        + CANDIDATE_OUTPUT_SECTION.replace("{TRIAGE_LABEL}", "bug")
+        + "### Validation Gate\n"
         "\n"
-        "When you have more than 3 confirmed defects (each cleared dedup, the certainty bar, and the pre-filing gate), file the strongest 3. Write the rest to `{CACHE_DIR}/over-cap-{CLUSTER_SLUG}.json` as a JSON array. This is distinct from the rejection ledger: the ledger holds candidates that failed the certainty bar; over-cap holds proven defects that lost a slot to the cap. The file must always be written, an empty array if you had no overflow, so the orchestrator can distinguish \"no overflow\" from \"agent failed to record overflow\". Each entry has this shape:\n"
-        "\n"
-        "\\`\\`\\`json\n"
-        "[\n"
-        "  {\n"
-        "    \"title\": \"Candidate title that would have been filed\",\n"
-        "    \"evidence\": \"path/to/file.ts:120 plus a one-line description\",\n"
-        "    \"severity\": \"high | medium | low\",\n"
-        "    \"why\": \"One line on why this would have been filed\"\n"
-        "  }\n"
-        "]\n"
-        "\\`\\`\\`\n"
-        "\n"
-        "Do not move ledger-rejected candidates here. Do not move dedup-rejected candidates here. Only proven defects that fully cleared every gate.\n"
-        "\n"
-        "### Pre-Filing Gate\n"
-        "\n"
-        "Before filing, ask: \"Is this actually a bug, or am I pattern-matching on something that looks wrong but behaves correctly by design?\"\n"
+        'Before submitting a candidate, ask: "Is this actually a bug, or am I pattern-matching on something that looks wrong but behaves correctly by design?"\n'
         "\n"
         "Checks:\n"
         "- Is the behavior documented as intentional (in docstrings, comments, or design docs)?\n"
@@ -506,11 +506,11 @@ BUGS = {
         "- If the behavior is wrong, is the impact real or purely theoretical?\n"
         "- Did I clear the certainty bar (reproduction, code-path proof, or failing test)?\n"
         "\n"
-        "If on the fence, add to the rejection ledger instead of filing.\n"
+        "If on the fence, add to the rejection ledger instead of Candidate Output.\n"
         "\n"
-        "### Filing\n"
+        "### Ticket Draft\n"
         "\n"
-        "Create a new ticket with the `bug` label and a severity label (`severity:high`, `severity:medium`, or `severity:low`). Use the following structure for the body:\n"
+        "Prepare a ticket draft with the `bug` label and a severity label (`severity:high`, `severity:medium`, or `severity:low`). Use the following structure for the body:\n"
         "\n"
         "## Summary\n"
         "What the bug is and why it matters.\n"
@@ -626,13 +626,13 @@ BUGS = {
         "### Print Unified Summary\n"
         "\n"
         "```\n"
-        "Triage Complete (triage-bugs):\n"
+        "Triage Investigation (triage-bugs):\n"
         "Mode: create | refine\n"
         "Last run: <previous timestamp or \"never\">\n"
         "\n"
-        "Confirmed (N):\n"
-        "  #201 \"Race in session refresh allows double-spend\", severity:high [Data & State]\n"
-        "  #202 \"Missing CSRF on /api/transfer\", severity:high [Security & Auth]\n"
+        "Confirmed Candidates or Existing Tickets (N):\n"
+        '  <candidate_id in create mode, ticket ID in refine mode> "Race in session refresh allows double-spend", severity:high [Data & State]\n'
+        '  <candidate_id in create mode, ticket ID in refine mode> "Missing CSRF on /api/transfer", severity:high [Security & Auth]\n'
         "  ...\n"
         "\n"
         "Investigated & Rejected (M):\n"
@@ -650,7 +650,7 @@ BUGS = {
     ),
     "step35_heading_suffix": " and Collect Ledgers",
     "step35_intro_paragraph": "After all 4 sub-agents complete:",
-    "step4_pre_cleanup_phrase": ", ledger collection,",
+    "step4_pre_cleanup_phrase": ", ledger collection",
     "post_processor_section_examples": (
         "Summary, Impact, Evidence, Root Cause, Scope, etc."
     ),
@@ -662,18 +662,18 @@ PRODUCT = {
     "description": (
         "Use when auditing product UX and workflows. Caches tickets to "
         "disk, then spawns 4 parallel sub-agents (one per focus cluster) "
-        "to scrutinize and file tickets."
+        "to return validated candidates for run-wide filing."
     ),
     "title": "Triage Product",
     "orchestrator_role": (
         "You do NOT audit the product yourself. Your job is to detect the "
         "ticket system, cache tickets to disk, show coverage status, "
-        "spawn 4 parallel sub-agents (one per cluster), and clean up "
+        "spawn 4 parallel sub-agents (one per cluster), deduplicate and file candidates within the run budget, and clean up "
         "when they finish."
     ),
     "create_mode_bullet": (
         "**No argument or `create`**: Create mode, sub-agents read code, "
-        "check existing tickets for dupes, and file new tickets. They do "
+        "check existing tickets for dupes, and return validated candidates. They do "
         "NOT deeply scrutinize or rewrite existing tickets (only fix "
         "links, labels, or obviously wrong info)."
     ),
@@ -724,8 +724,7 @@ PRODUCT = {
         "and who the user is"
     ),
     "orient_extras": (
-        "Judge against what the product promises, not abstract ideals.\n"
-        "\n"
+        "Judge against what the product promises, not abstract ideals.\n\n"
     ),
     "focus_extras": (
         "\n"
@@ -770,46 +769,28 @@ PRODUCT = {
         "| **Competitive table stakes** | Features users expect from similar tools that are missing |"
     ),
     "create_mode_section": (
-        "## Create New Tickets\n"
+        "## Prepare New Ticket Candidates\n"
         "\n"
-        "Your job: find NEW product gaps in the codebase within your cluster's focus areas and file well-formed tickets.\n"
-        "\n"
-        "Hard cap: maximum 3 new tickets.\n"
+        "Your job: find NEW product gaps in the codebase within your cluster's focus areas and prepare validated ticket drafts for the orchestrator.\n"
         "\n"
         "### Dedup Check\n"
         "\n"
-        "Before creating any ticket, scan existing tickets for overlap:\n"
+        "Before submitting any candidate, scan existing tickets for overlap:\n"
         "1. Read ticket titles and descriptions in issues-open.json. Is this problem already covered?\n"
         "2. Check issues-closed.json. Was this already filed? For tickets closed as `completed`, you have a direct title-level duplicate. For tickets closed as `not_planned` (or wontfix in non-GitHub systems), read the closing comment, if your candidate shares the rejected ticket's threat model, assumption, or framing, treat it as a refile and do not file it, even if the title differs.\n"
         "3. If already covered and your finding adds context: if the ticket is in your edit file, edit the description directly. If it is outside your edit file, write it to your cross-cluster notes file. Do NOT add comments. Do NOT rewrite existing ticket descriptions, that's refine's job.\n"
-        "4. If not covered: create a new focused ticket.\n"
+        "4. If not covered: prepare a focused candidate after passing the validation gate.\n"
         "\n"
         "If you notice an existing ticket has obviously wrong info (e.g., references a component that no longer exists, wrong label), fix it. But do NOT deeply scrutinize, rewrite descriptions, or re-evaluate severity, that's refine's job.\n"
         "\n"
-        "### Over-Cap Findings\n"
+        + CANDIDATE_OUTPUT_SECTION.replace("{TRIAGE_LABEL}", "product")
+        + "### Validation Gate\n"
         "\n"
-        "When you have more than 3 valid findings, file the strongest 3. Write the rest to `{CACHE_DIR}/over-cap-{CLUSTER_SLUG}.json` as a JSON array. Each entry must be a finding that cleared dedup AND the pre-filing gate, only the cap kept it from being filed. The file must always be written, an empty array if you had no overflow, so the orchestrator can distinguish \"no overflow\" from \"agent failed to record overflow\". Each entry has this shape:\n"
+        "Before submitting a candidate, ask: \"What does the fix look like, and is the current behavior actually wrong?\" If the existing UX already handles the case (a button that resets IS a retry path, a transport fallback that delivers the same data ISN'T broken, a pessimistic delete that keeps the item visible on failure IS correct), there's no issue. If the fix wouldn't survive a \"would a senior PM prioritize this?\" test, don't file it.\n"
         "\n"
-        "\\`\\`\\`json\n"
-        "[\n"
-        "  {\n"
-        "    \"title\": \"Candidate title that would have been filed\",\n"
-        "    \"evidence\": \"path/to/component.tsx:120 plus a one-line description\",\n"
-        "    \"severity\": \"high | medium | low\",\n"
-        "    \"why\": \"One line on why this would have been filed\"\n"
-        "  }\n"
-        "]\n"
-        "\\`\\`\\`\n"
+        "### Ticket Draft\n"
         "\n"
-        "This is for valid findings that lost a slot to the cap. Do not use it for candidates that failed the pre-filing gate or duplicated existing tickets.\n"
-        "\n"
-        "### Pre-Filing Gate\n"
-        "\n"
-        "Before filing, ask: \"What does the fix look like, and is the current behavior actually wrong?\" If the existing UX already handles the case (a button that resets IS a retry path, a transport fallback that delivers the same data ISN'T broken, a pessimistic delete that keeps the item visible on failure IS correct), there's no issue. If the fix wouldn't survive a \"would a senior PM prioritize this?\" test, don't file it.\n"
-        "\n"
-        "### Filing\n"
-        "\n"
-        "Create a new ticket with the `product` label and a severity label (`severity:high`, `severity:medium`, or `severity:low`). Use the following structure for the body:\n"
+        "Prepare a ticket draft with the `product` label and a severity label (`severity:high`, `severity:medium`, or `severity:low`). Use the following structure for the body:\n"
         "\n"
         "## Problem\n"
         "What the user experiences. Be specific, reference the actual screen/flow/component.\n"
@@ -879,9 +860,7 @@ PRODUCT = {
     ),
     "step35_pre_cross_cluster": "",
     "step4_pre_cleanup_phrase": "",
-    "post_processor_section_examples": (
-        "Problem, Impact, Suggested Direction, etc."
-    ),
+    "post_processor_section_examples": ("Problem, Impact, Suggested Direction, etc."),
 }
 
 
