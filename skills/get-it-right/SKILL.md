@@ -34,7 +34,7 @@ fi
 BASE_REF="$BASE_BRANCH"
 git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
 git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
-  printf 'base branch "%s" resolves neither locally nor on origin\n' "$BASE_BRANCH" >&2
+  printf 'default branch "%s" resolves neither locally nor on origin\n' "$BASE_BRANCH" >&2
   exit 1
 }
 ```
@@ -101,7 +101,7 @@ fi
 BASE_REF="$BASE_BRANCH"
 git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
 git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
-  printf 'base branch "%s" resolves neither locally nor on origin\n' "$BASE_BRANCH" >&2
+  printf 'default branch "%s" resolves neither locally nor on origin\n' "$BASE_BRANCH" >&2
   exit 1
 }
 {

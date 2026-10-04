@@ -159,7 +159,7 @@ fi
 BASE_REF="$BASE_BRANCH"
 git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
 git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
-  printf 'base branch "%s" resolves neither locally nor on origin\n' "$BASE_BRANCH" >&2
+  printf 'default branch "%s" resolves neither locally nor on origin\n' "$BASE_BRANCH" >&2
   exit 1
 }
 git diff --name-only "$BASE_REF"...HEAD
@@ -198,7 +198,7 @@ fi
 BASE_REF="$BASE_BRANCH"
 git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || BASE_REF="origin/$BASE_BRANCH"
 git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || {
-  printf 'base branch "%s" resolves neither locally nor on origin, cannot run the pre-push gate\n' "$BASE_BRANCH" >&2
+  printf 'default branch "%s" resolves neither locally nor on origin, cannot run the pre-push gate\n' "$BASE_BRANCH" >&2
   exit 1
 }
 printf -- '--- publication inventory ---\n'
@@ -208,7 +208,7 @@ git diff --name-only "$BASE_REF"...HEAD |
   grep -Ei '(^|/)(\.env|\.npmrc|\.pypirc)(\.|/|$)|(^|/)id_(rsa|dsa|ecdsa|ed25519)([-_. 0-9][^/]*)?(\.|/|$)|(^|/)([^/]*[-_. ])?(credentials?|secrets?)([-_ ][^/.]*)?(/|$|\.(json|ya?ml|env|txt|ini|cfg|conf|toml|properties|xml|csv|tsv|pem|key|p12|enc)$)|\.(pem|p12|pfx|key|crt|sqlite3?|db3?|dump|env)(-(wal|shm|journal))?$' || [ $? -eq 1 ]
 ```
 
-The grep is the high-risk path screen that every publishing and reviewing skill carries verbatim. **A non-zero exit means the gate never ran.** Stop and report it rather than treating the absent output as a clean result. That covers an unresolved base branch and a failed screen alike: the screen ends in `|| [ $? -eq 1 ]` rather than `|| true`, since `grep` exits 1 for "no matches", which is clean, and 2 for a failure such as an invalid pattern, which is not. Otherwise stop and report every matched path. The user must confirm or remove the path before push.
+The grep is the high-risk path screen that every publishing and reviewing skill carries verbatim. **A non-zero exit means the gate never ran.** Stop and report it rather than treating the absent output as a clean result. That covers an unresolved default branch and a failed screen alike: the screen ends in `|| [ $? -eq 1 ]` rather than `|| true`, since `grep` exits 1 for "no matches", which is clean, and 2 for a failure such as an invalid pattern, which is not. Otherwise stop and report every matched path. The user must confirm or remove the path before push.
 
 Push:
 
