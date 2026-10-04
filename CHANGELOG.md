@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.0...v1.4.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **mods:** automatically enable Claude Ship Gate ([#157](https://github.com/AdamCaviness/agentic-toolkit/issues/157)) ([29d1788](https://github.com/AdamCaviness/agentic-toolkit/commit/29d1788e6b598a77e7917b2cbf968ffe56984c5d))
+
 ## [1.4.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.3.0...v1.4.0) (2026-10-04)
 
 
