@@ -29,3 +29,78 @@ test('a quoted body preserves literal punctuation', () => {
 for (const command of ['git \\'+ '\n' + 'push --force origin feat/x', 'g\\'+ '\n' + 'it push origin feat/x', 'gh pr \\'+ '\n' + 'merge 1 --admin', '"g\\'+ '\n' + 'it" push --force']) {
   test('shell continuations cannot hide publication ' + JSON.stringify(command), () => expect(classifyCommand(command).kind).toBe('unsupported-publication'));
 }
+
+const reportedCommand = 'gh auth status 2>&1 | head -3 && '
+  + 'git push -u origin fix/ticket-system-config-recovery 2>&1 | tail -2 && '
+  + 'gh pr view fix/ticket-system-config-recovery --repo AdamCaviness/agentic-toolkit --json number,state 2>&1';
+test('the reported read-only chain extracts exactly the literal push', () => {
+  const action = classifyCommand(reportedCommand);
+  expect(action.kind).toBe('publish');
+  expect(action.operation).toBe('push');
+  expect(action.remote).toBe('origin');
+  expect(action.branch).toBe('fix/ticket-system-config-recovery');
+  expect(action.argv).toEqual(['git','push','-u','origin','fix/ticket-system-config-recovery']);
+});
+
+const wrappedCases: [string, string[]][] = [
+  ['git push origin feat/x 2>&1', ['git','push','origin','feat/x']],
+  ['2>&1 git push origin feat/x', ['git','push','origin','feat/x']],
+  ['git push 2>&1 origin feat/x | tail -2', ['git','push','origin','feat/x']],
+  ['git status --short --branch && git push origin feat/x 1>&2 | tail -n 2', ['git','push','origin','feat/x']],
+  ['git push origin feat/x && gh pr view feat/x --repo=a/b --json=number,state', ['git','push','origin','feat/x']],
+  ['gh pr create --body "A && B | C" 2>&1 | tail -2', ['gh','pr','create','--body','A && B | C']],
+  ['gh pr merge 1 --squash 2>&1 | head -n 2', ['gh','pr','merge','1','--squash']],
+  ['git push origin --delete feat/x | tail -2', ['git','push','origin','--delete','feat/x']],
+  ['git -C "a b" push origin feat/x 2>& 1', ['git','-C','a b','push','origin','feat/x']],
+];
+for (const [command, argv] of wrappedCases) {
+  test('extracts supported wrapper ' + command, () => {
+    const action = classifyCommand(command);
+    expect(['publish','delete'].includes(action.kind)).toBe(true);
+    expect(action.argv).toEqual(argv);
+  });
+}
+
+for (const command of [
+  'git commit -am change && git push origin feat/x',
+  'git status --help && git push origin feat/x',
+  'git push origin feat/x && gh pr view --web',
+  'gh auth login && git push origin feat/x',
+  'git push origin feat/x && gh pr create --title title',
+  'printf yes | gh pr merge 1 --squash',
+  'gh auth status || git push origin feat/x',
+  'git push origin feat/x &',
+  'git push origin feat/x > output.txt',
+  'git push origin feat/x 2>&1 > output.txt',
+  'git push origin feat/x | tail -f',
+  'git push origin feat/x | tail -2 file',
+  'git push origin feat/x && gh pr view --repo=a/b --repo=c/d',
+  'git push origin feat/x && gh pr view --json="number;state"',
+  'git push origin feat/x && gh pr view --repo',
+  'git push origin feat/x &&',
+  'git push origin feat/x |',
+  'git push origin feat/x 2>&1 && npm test',
+  'git push --force origin feat/x 2>&1 | tail -2',
+  'gh pr merge 1 --admin 2>&1 | tail -2',
+  'FOO=bar git push origin feat/x 2>&1',
+  'git push origin "$BRANCH" 2>&1',
+  'git push origin feat/{a,b} 2>&1',
+  'git push origin feat/x # comment',
+  'git push origin feat/x 2>&1 && (git status)',
+  'git push origin feat/x 2>&"',
+]) {
+  test('rejects unsupported publication context ' + command, () => {
+    expect(classifyCommand(command).kind).toBe('unsupported-publication');
+  });
+}
+
+test('quoted or escaped descriptor numbers remain branch arguments', () => {
+  for (const command of ['git push origin "2" 1>&2', "git push origin ''2 1>&2", 'git push origin \\2 1>&2', 'git push origin 2 1>&2']) {
+    expect(classifyCommand(command).argv).toEqual(['git','push','origin','2']);
+    expect(classifyCommand(command).branch).toBe('2');
+  }
+});
+test('a quoted operator in an argument does not introduce a pipeline', () => {
+  expect(classifyCommand("gh pr create --body '2>&1 && git push --force' 2>&1").argv)
+    .toEqual(['gh','pr','create','--body','2>&1 && git push --force']);
+});

@@ -1,82 +1,56 @@
+import { parseShell, isReadOnly, isOutputFilter } from './shell.ts';
+
 export type Action = {
   kind: 'pass' | 'unsupported-publication' | 'publish' | 'delete';
   argv: string[];
   operation?: 'push' | 'create' | 'merge' | 'delete';
   directory?: string; remote?: string; branch?: string;
   repo?: string; head?: string; base?: string; selector?: string;
-  explicitStrategy?: string; matchHead?: string;
+  explicitStrategy?: string; matchHead?: string; reason?: string;
 };
 
-type Word = { text: string; quoted: boolean; operator: boolean };
-
-function tokenize(command: string): { words: Word[]; unsafe: boolean } {
-  const words: Word[] = [];
-  let text = '', quote = '', quoted = false, started = false, unsafe = false;
-  const flush = () => {
-    if (started) words.push({ text, quoted, operator: false });
-    text = ''; quoted = false; started = false;
-  };
-  for (let i = 0; i < command.length; i++) {
-    const c = command[i]!;
-    if (quote) {
-      if (c === quote) { quote = ''; continue; }
-      if (quote === '"' && (c === '$' || c === '`')) unsafe = true;
-      if (quote === '"' && c === '\\' && /[\"\\$`\n]/.test(command[i + 1] ?? '')) {
-        if (command[i + 1] === '\n') { unsafe = true; i++; continue; }
-        text += command[++i]!; continue;
-      }
-      text += c; continue;
-    }
-    if (c === '"' || c === "'") { quote = c; quoted = true; started = true; continue; }
-    if (c === '\\') {
-      if (command[i + 1] === '\n') { unsafe = true; i++; continue; }
-      if (i + 1 === command.length) unsafe = true;
-      else { started = true; text += command[++i]!; }
-      continue;
-    }
-    if (';&|<>\n'.includes(c)) {
-      flush(); words.push({ text: c, quoted: false, operator: true }); continue;
-    }
-    if (/\s/.test(c)) { flush(); continue; }
-    if ('$`*?[]()'.includes(c)) unsafe = true;
-    started = true; text += c;
-  }
-  flush();
-  return { words, unsafe: unsafe || !!quote };
-}
-
-function isPublication(words: Word[]): boolean {
+function isPublication(words: string[]): boolean {
   let assignmentCount = 0;
-  while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[assignmentCount]?.text ?? '')) assignmentCount++;
+  while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[assignmentCount] ?? '')) assignmentCount++;
   if (assignmentCount) return isPublication(words.slice(assignmentCount));
-  const exe = words[0]?.text.split('/').pop();
+  const exe = words[0]?.split('/').pop();
   if (exe === 'git' || exe === 'gh') {
     const valued = exe === 'git' ? ['-C','-c','--git-dir','--work-tree','--namespace','--config-env'] : ['-R','--repo','--hostname'];
     let i = 1;
-    while (words[i]?.text.startsWith('-')) {
-      i += valued.includes(words[i]!.text) ? 2 : 1;
+    while (words[i]?.startsWith('-')) {
+      i += valued.includes(words[i]!) ? 2 : 1;
     }
-    return exe === 'git' ? words[i]?.text === 'push'
-      : words[i]?.text === 'pr' && ['create', 'merge'].includes(words[i + 1]?.text ?? '');
+    return exe === 'git' ? words[i] === 'push'
+      : words[i] === 'pr' && ['create', 'merge'].includes(words[i + 1] ?? '');
   }
   if (['env', 'sudo', 'command', 'exec'].includes(exe ?? '')) {
-    const i = words.findIndex(w => ['git', 'gh'].includes(w.text.split('/').pop() ?? ''));
+    const i = words.findIndex(w => ['git', 'gh'].includes(w.split('/').pop() ?? ''));
     return i > 0 && isPublication(words.slice(i));
   }
   return false;
 }
 
 export function classifyCommand(command: string): Action {
-  const { words, unsafe } = tokenize(command);
-  const argv = words.map(w => w.text);
-  const pass: Action = { kind: 'pass', argv };
-  const deny: Action = { kind: 'unsupported-publication', argv };
-  const segments: Word[][] = [[]];
-  for (const w of words) {
-    if (w.operator) segments.push([]); else segments[segments.length - 1]!.push(w);
+  const shell = parseShell(command);
+  const stages = shell.pipelines.flat();
+  const candidates = stages.filter(isPublication);
+  const argv = stages.flat();
+  const deny = (reason: string): Action => ({kind:'unsupported-publication',argv,reason});
+  if (!candidates.length && !shell.recognition.some(isPublication)) return {kind:'pass',argv};
+  if (shell.reason) return deny(shell.reason);
+  if (candidates.length !== 1) return deny('Run each publication operation separately so it receives fresh repository and host checks.');
+  const publication = candidates[0]!;
+  for (const pipeline of shell.pipelines) {
+    if (pipeline.slice(1).some(isPublication)) return deny('Run publication at the start of its pipeline without commands feeding its input.');
+    if (pipeline[0] !== publication && !isReadOnly(pipeline[0]!)) return deny('Separate publication from neighboring commands whose effects cannot be verified.');
+    if (!pipeline.slice(1).every(isOutputFilter)) return deny('Publication pipelines support only head/tail filters with a literal line count and no files or other flags.');
   }
-  if (!segments.some(isPublication)) return pass;
-  if (unsafe || words.some(w => w.operator)) return deny;
+  return classifyPublication(publication);
+}
+
+function classifyPublication(argv: string[]): Action {
+  const pass: Action = {kind:'pass',argv};
+  const deny: Action = {kind:'unsupported-publication',argv,reason:'Use a direct publication command with supported literal arguments, no force/admin options or unsupported flags.'};
   let i = 1;
   const action: Action = { kind: 'publish', argv };
   if (argv[0] === 'git') {

@@ -136,7 +136,7 @@ export const register: Register = (on, options) => {
       await notice($, 'Ship Gate blocked: ' + reason);
       return { decision:'deny' as const, reason:'Ship Gate: ' + reason };
     };
-    if (action.kind === 'unsupported-publication') return deny('Use a separate direct publication command with literal arguments, no force/admin options or unsupported flags.');
+    if (action.kind === 'unsupported-publication') return deny(action.reason ?? 'Use a direct publication command with supported literal arguments.');
     const checks = parseChecks(config.checks);
     const before = await collect($, action);
     const pr = await inspectPR($, action, before);

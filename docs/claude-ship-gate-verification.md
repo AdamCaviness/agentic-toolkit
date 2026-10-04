@@ -49,10 +49,35 @@ truncated inventories, missing confirmation, and changed repository snapshots
 or settings deny the pending action. Confirmation never overrides another
 failed rule. The module collects evidence but never launches publication itself.
 
-Run publication separately with literal arguments. Compound shell programs,
-force options, administrator merges, additional refs, and ambiguous destinations
-are rejected when recognized. Scripts, aliases, MCP tools, other modules, and
-publication outside supported Claude Bash calls are outside coverage. Hooks
+Publication uses literal arguments. A supported compound call contains exactly
+one publication invocation, at the start of its pipeline. `&&` may join it to
+known read-only commands; subsequent pipeline stages are only `head -N`,
+`tail -N`, `head -n N`, or `tail -n N`, with a literal nonnegative decimal count
+and no files or other flags. Literal `2>&1` and `1>&2` duplicate output descriptors
+without opening files. Quoted operators remain argument content; descriptor
+numbers are distinguished from quoted, escaped, or whitespace-separated words.
+
+Supported read-only neighbors are `gh auth status` without options, `git status`
+with `--short`, `--branch`, `--porcelain`, `--porcelain=v1`, or
+`--untracked-files=all`, and `gh pr view` with an optional literal selector,
+`--repo`/`-R`, and `--json` fields. Long valued flags accept separate or equals
+forms; duplicate selectors/options and other flags are rejected. JSON fields
+are comma-separated identifier names. Every neighboring command is validated
+by subcommand and arguments, not merely its executable name.
+
+State changes, unknown neighbors, multiple publication invocations, commands
+feeding publication input, file redirection, expansion, grouping, background
+execution, `||`, semicolons, command-separating newlines, and unsupported syntax
+require separate publication calls. Force options, administrator merges,
+additional refs, and ambiguous destinations retain their existing rejection.
+Diagnostics identify the unsupported context without echoing arbitrary bodies
+or arguments. The gate does not rewrite the Bash input, run its neighbors,
+or publish on the model's behalf. Native permissions check the full original
+input. Output filters can mask publication failure in Bash's exit status; the
+gate's pre-execution pass never certifies completion. Workflow skills and later
+publication checks use actual remote and host evidence. Scripts, aliases, MCP
+tools, other modules, and publication outside supported Claude Bash calls are
+outside coverage. Hooks
 must be enabled and loaded. A process can change state after the final check;
 this is not an atomic host transaction. Filenames are screened, not contents.
 Keep host protections and content secret scanning in place.
@@ -70,7 +95,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -t tests
 ruff check .
 claude plugin validate . --json
 claude plugin test .
-node --test tests/ship_gate_integration.mjs
+node --test tests/ship_gate_integration.mjs tests/ship_gate_shell_integration.mjs
 node --test tests/ship_gate_runtime_smoke.mjs
 npx --yes --package typescript@5.9.3 tsc -p tsconfig.json --allowImportingTsExtensions
 ```
@@ -91,7 +116,11 @@ GitHub target inference and merge evidence, host-neutral Git cleanup, shell
 line continuations, intermediate commit paths, and configuration changes.
 Process calls and human answers are stubbed through Claude's own test runner.
 Local Git integration tests use disposable repositories and bare origins,
-including newline-containing filenames and remote-only default refs. They do
+including newline-containing filenames and remote-only default refs. Bash
+integration tests use disposable recording executables to compare actual
+publication argv and cwd with the extracted action, including descriptor and
+quoting boundaries. They also demonstrate that a passing output-filter pipeline
+can mask a failed publication executable. These tests do
 not push, merge, or delete anything on a hosted repository.
 
 ## Compatibility evidence
