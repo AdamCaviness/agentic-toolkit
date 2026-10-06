@@ -19,6 +19,9 @@
     "dependencies",
     "compression"
   ],
+  "dependencies": [
+    "prompt-marks"
+  ],
   "hooks": "./claude-mods/hooks.json",
   "userConfig": {
     "ship_gate_checks": {
