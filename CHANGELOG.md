@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.5.0...v1.5.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* make Ship Gate explain refusals and publish in other repositories ([#175](https://github.com/AdamCaviness/agentic-toolkit/issues/175)) ([9937623](https://github.com/AdamCaviness/agentic-toolkit/commit/9937623b41691838aee1fa24544bc2af4517e749))
+
 ## [1.5.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.6...v1.5.0) (2026-10-06)
 
 
