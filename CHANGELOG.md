@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.3](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.5.2...v1.5.3) (2026-10-06)
+
+
+### Bug Fixes
+
+* define where skills get credentials and where they may send them ([#179](https://github.com/AdamCaviness/agentic-toolkit/issues/179)) ([9a596d1](https://github.com/AdamCaviness/agentic-toolkit/commit/9a596d162e40975bc8413c84812725b83cb1013e))
+
 ## [1.5.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.5.1...v1.5.2) (2026-10-06)
 
 
