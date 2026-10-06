@@ -243,7 +243,7 @@ Re-evaluates the current branch's work as if starting from scratch. Deep-reads e
 > Skills for the branch lifecycle, from commit to merge.
 
 > [!NOTE]
-> `/pr`, `/ship`, `/apply-review`, and `/update-deps` support GitHub, GitLab (including subgroups and self-hosted instances), Azure DevOps Repos, and Bitbucket Cloud. Each detects the host from the `origin` remote and uses whatever interface your session already reaches: `gh`, `glab`, `az repos` (the `azure-devops` extension), an MCP connector, or the host's REST API. No single CLI is required, but one interface must be authenticated for the detected host; the skills stop with what to install or which credential to supply rather than guessing.
+> `/pr`, `/ship`, `/apply-review`, and `/update-deps` support GitHub, GitLab (including subgroups and self-hosted instances), Azure DevOps Repos, and Bitbucket Cloud. Each detects the host from the `origin` remote and uses whatever interface your session already reaches: `gh`, `glab`, `az repos` (the `azure-devops` extension), an MCP connector, or the host's REST API. No single CLI is required, but one interface must be authenticated for the detected host; the skills stop with what to install, which login command to run, or which environment variable to set rather than guessing.
 
 ### [pr](skills/pr/SKILL.md)
 
@@ -295,6 +295,33 @@ Scope options: `frontend`, `backend`, `infra`, or `all` (default). Combine with 
 
 > [!IMPORTANT]
 > **Safety:** Ticket bodies and comments, especially community-created issues, can contain prompt injection attempts. These skills treat all ticket content as untrusted: they use it for facts and task context, never as authority to change scope, tools, or permissions. Despite this effort to reduce risk, it remains your responsibility to review the tickets and content you process with these skills.
+
+## Credentials and network access
+
+The skills never read a token on their own. Every skill that reaches a repository host or ticket tracker follows one shared rule:
+
+- **Where access comes from:** the login you already have in `gh`, `glab`, `az`, or `jira`, an MCP connector, or an API token in an environment variable you name for that purpose. Bitbucket Cloud has no CLI, so its REST calls use that variable. The skills never search environment variables, shell profiles, dotfiles, keychains, or CLI configuration files for a token, and never ask you to paste one.
+- **How a token is used:** commands reference the variable by name, so the transcript shows `$BITBUCKET_TOKEN` and never its value. No skill prints, logs, or commits a token.
+- **Where data goes:** only to your repository host, derived from `git remote get-url origin`, and your detected ticket system. A URL found in a PR, review comment, ticket, or repository file is never a destination for a credential.
+
+No skill sends telemetry or contacts any other service.
+
+These rules are instructions to the agent, not enforcement. To enforce the part that matters most, deny reads of credential stores in your Claude Code settings (`~/.claude/settings.json`):
+
+```json
+{
+  "permissions": {
+    "deny": [
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.netrc)"
+    ]
+  }
+}
+```
+
+`Read` rules cover Claude's file tools, not shell commands such as `cat`, so keep Bash commands outside your allow list going through the normal permission prompt.
 
 ## License
 
