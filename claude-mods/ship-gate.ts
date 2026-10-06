@@ -11,9 +11,10 @@ async function configuration($: EngineInterface, options: PluginOptions) {
 }
 async function run($: EngineInterface, argv: string[], cwd: string, optional = false) {
   const result = await $.process.run(argv, { cwd, timeoutMs: 30000 });
-  if (result.isStdoutTruncated) throw new Error(argv[0] + ' evidence output was truncated.');
+  const command = argv.slice(0, 3).join(' ');
+  if (result.isStdoutTruncated) throw new Error('Could not read repository state: ' + command + ' output was truncated.');
   if (optional && result.exitCode === 1) return '';
-  if (result.exitCode !== 0) throw new Error(argv[0] + ' evidence collection failed (exit ' + result.exitCode + ').');
+  if (result.exitCode !== 0) throw new Error('Could not read repository state: ' + command + ' exited ' + result.exitCode + '.');
   return result.stdout;
 }
 async function collect($: EngineInterface, a: Action): Promise<Snapshot> {
@@ -23,21 +24,23 @@ async function collect($: EngineInterface, a: Action): Promise<Snapshot> {
   const git = async (args: string[], optional = false) => run($, ['git', ...args], repository, optional);
   const branch = (await git(['branch', '--show-current'])).trim();
   const head = (await git(['rev-parse', '--verify', 'HEAD'])).trim();
-  let baseBranch: string;
+  // origin/HEAD names the default branch; a fresh clone or a new remote may not set it.
+  const resolve = async (ref: string) => {
+    const result = await $.process.run(['git', 'rev-parse', '--verify', ref], { cwd: repository });
+    return result.exitCode === 0 && result.stdout.trim() ? result.stdout.trim() : undefined;
+  };
   const symbolic = await $.process.run(['git', 'symbolic-ref', 'refs/remotes/origin/HEAD'], { cwd: repository });
-  if (symbolic.exitCode === 0 && symbolic.stdout.startsWith('refs/remotes/origin/')) {
-    baseBranch = symbolic.stdout.trim().slice('refs/remotes/origin/'.length);
-  } else {
-    const conventional = await $.process.run(['git', 'rev-parse', '--verify', 'main'], { cwd: repository });
-    baseBranch = conventional.exitCode === 0 ? 'main' : 'master';
+  const candidates = symbolic.exitCode === 0 && symbolic.stdout.startsWith('refs/remotes/origin/')
+    ? [symbolic.stdout.trim().slice('refs/remotes/origin/'.length)] : ['main', 'master'];
+  let baseBranch = '', baseRef = '', baseCommit: string | undefined;
+  for (const candidate of candidates) {
+    for (const ref of [candidate, 'origin/' + candidate]) {
+      baseCommit = await resolve(ref);
+      if (baseCommit) { baseBranch = candidate; baseRef = ref; break; }
+    }
+    if (baseCommit) break;
   }
-  let baseRef = baseBranch;
-  let base = await $.process.run(['git', 'rev-parse', '--verify', baseRef], { cwd: repository });
-  if (base.exitCode !== 0) {
-    baseRef = 'origin/' + baseBranch;
-    base = await $.process.run(['git', 'rev-parse', '--verify', baseRef], { cwd: repository });
-  }
-  if (base.exitCode !== 0 || !base.stdout.trim()) throw new Error('The default branch does not resolve locally or on origin.');
+  if (!baseCommit) throw new Error('This repository has no default branch yet. Push its first commit to the default branch yourself; Ship Gate only publishes feature branches.');
   const fetchUrl = (await git(['remote', 'get-url', 'origin'])).trim();
   const pushUrls = (await git(['remote', 'get-url', '--push', '--all', 'origin'])).trim().split('\n');
   const origin = fetchUrl;
@@ -66,7 +69,7 @@ async function collect($: EngineInterface, a: Action): Promise<Snapshot> {
   const count = Number((await git(['rev-list','--count',baseRef + '..HEAD'])).trim());
   if (!Number.isSafeInteger(count) || count < 0) throw new Error('The feature commit count is invalid.');
   return {
-    repository, branch, head, baseBranch, baseRef, baseCommit:base.stdout.trim(), origin,
+    repository, branch, head, baseBranch, baseRef, baseCommit, origin,
     clean: (await git(['status','--porcelain=v1','--untracked-files=all'])).length === 0,
     commitsAhead:count,
     paths:[...new Set((await git(['log','--format=','--name-only','-z','--no-renames','--diff-merges=separate',baseRef + '..HEAD'])).split('\0').filter(Boolean))],
@@ -81,7 +84,12 @@ async function inspectPR($: EngineInterface, a: Action, s: Snapshot): Promise<Pu
     if (a.repo) argv.push(a.repo);
     argv.push('--json','url,defaultBranchRef');
     const target = JSON.parse(await run($, argv, s.repository));
-    if (githubRepository(target.url) !== origin || target.defaultBranchRef?.name !== s.baseBranch) throw new Error('GitHub inferred a different repository or default branch. Specify origin with --repo and its default branch with --base.');
+    if (githubRepository(target.url) !== origin) {
+      throw new Error(a.repo
+        ? 'The PR targets ' + a.repo + ', but this command runs in ' + s.repository + ' (origin ' + origin + '). Run it from that repository: cd <its path> && gh pr ...'
+        : 'GitHub resolved a different repository than origin ' + origin + '. Name it with --repo.');
+    }
+    if (target.defaultBranchRef?.name !== s.baseBranch) throw new Error('GitHub reports default branch ' + target.defaultBranchRef?.name + ', but the local default branch is ' + s.baseBranch + '. Run git remote set-head origin --auto, then retry.');
     if (a.operation === 'create') {
       const configuredBase = (await run($, ['git','config','--get','branch.' + s.branch + '.gh-merge-base'], s.repository, true)).trim();
       const upstreamRemote = (await run($, ['git','config','--get','branch.' + s.branch + '.remote'], s.repository, true)).trim();
@@ -103,6 +111,14 @@ async function inspectPR($: EngineInterface, a: Action, s: Snapshot): Promise<Pu
     return pr;
   }
   return undefined;
+}
+
+// The deny reason for a hook that threw: its own message when it gave one, so the
+// person learns what to change instead of a generic refusal.
+function failureReason(error: { kind: string; message?: string } | undefined): string {
+  if (error?.kind === 'timeout') return 'Repository checks timed out. Retry the command.';
+  const message = error?.message?.replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '').trim().slice(0, 512);
+  return message || 'Repository checks failed before publication could be verified.';
 }
 
 async function notice($: EngineInterface, text: string) {
@@ -169,8 +185,9 @@ export const register: Register = (on, options) => {
   }).catch(async ($, e, next) => {
     const command = (e.input as { command?: unknown })?.command;
     if (typeof command === 'string' && classifyCommand(command).kind !== 'pass') {
-      await notice($, 'Ship Gate blocked: evidence collection, verification, or confirmation failed.');
-      return { decision:'deny', reason:'Ship Gate: evidence collection, verification, or confirmation failed. No publication was permitted.' };
+      const reason = failureReason(next.error);
+      await notice($, 'Ship Gate blocked: ' + reason);
+      return { decision:'deny', reason:'Ship Gate: ' + reason + ' No publication was permitted.' };
     }
     if (!next.called) return next(e);
     throw new Error('The native permission check failed.');

@@ -30,6 +30,12 @@ function isPublication(words: string[]): boolean {
   return false;
 }
 
+// `cd <path>` alone: names the repository a publication runs in. gh has no -C,
+// so this is how a session publishes in a repository other than its own.
+function isDirectoryChange(argv: string[]): boolean {
+  return argv[0] === 'cd' && argv.length === 2 && !argv[1]!.startsWith('-');
+}
+
 export function classifyCommand(command: string): Action {
   const shell = parseShell(command);
   const stages = shell.pipelines.flat();
@@ -40,12 +46,22 @@ export function classifyCommand(command: string): Action {
   if (shell.reason) return deny(shell.reason);
   if (candidates.length !== 1) return deny('Run each publication operation separately so it receives fresh repository and host checks.');
   const publication = candidates[0]!;
-  for (const pipeline of shell.pipelines) {
+  const publicationIndex = shell.pipelines.findIndex(pipeline => pipeline.includes(publication));
+  let directory: string | undefined;
+  for (const [index, pipeline] of shell.pipelines.entries()) {
     if (pipeline.slice(1).some(isPublication)) return deny('Run publication at the start of its pipeline without commands feeding its input.');
+    if (index < publicationIndex && pipeline.length === 1 && isDirectoryChange(pipeline[0]!)) {
+      if (directory !== undefined) return deny('Change directory at most once before publication.');
+      directory = pipeline[0]![1];
+      continue;
+    }
     if (pipeline[0] !== publication && !isReadOnly(pipeline[0]!)) return deny('Separate publication from neighboring commands whose effects cannot be verified.');
     if (!pipeline.slice(1).every(isOutputFilter)) return deny('Publication pipelines support only head/tail filters with a literal line count and no files or other flags.');
   }
-  return classifyPublication(publication);
+  const action = classifyPublication(publication);
+  if (directory === undefined || action.kind === 'pass' || action.kind === 'unsupported-publication') return action;
+  if (action.directory !== undefined) return deny('Name the repository once: use cd or git -C, not both.');
+  return { ...action, directory };
 }
 
 function classifyPublication(argv: string[]): Action {

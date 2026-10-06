@@ -104,3 +104,26 @@ test('a quoted operator in an argument does not introduce a pipeline', () => {
   expect(classifyCommand("gh pr create --body '2>&1 && git push --force' 2>&1").argv)
     .toEqual(['gh','pr','create','--body','2>&1 && git push --force']);
 });
+
+test('a leading cd names the repository a gh publication runs in', () => {
+  const action = classifyCommand('cd /work/other && gh pr create --title t --body b');
+  expect(action.kind).toBe('publish');
+  expect(action.operation).toBe('create');
+  expect(action.directory).toBe('/work/other');
+  expect(action.argv).toEqual(['gh','pr','create','--title','t','--body','b']);
+});
+test('a leading cd names the repository a push runs in', () => {
+  expect(classifyCommand('cd ../other && git push -u origin feat/x').directory).toBe('../other');
+});
+for (const command of [
+  'cd a && cd b && git push origin feat/x',
+  'cd a && git -C b push origin feat/x',
+  'cd ~/x && git push origin feat/x',
+  'cd a; git push origin feat/x',
+  'cd a b && git push origin feat/x',
+  'cd -P a && git push origin feat/x',
+  'git push origin feat/x && cd a',
+  'cd a | tail -2 && git push origin feat/x',
+]) {
+  test('rejects directory change ' + command, () => expect(classifyCommand(command).kind).toBe('unsupported-publication'));
+}
