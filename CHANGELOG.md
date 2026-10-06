@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.5.1...v1.5.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* remove the Ship Gate mod and add a directory listing icon ([#177](https://github.com/AdamCaviness/agentic-toolkit/issues/177)) ([ba7d0bb](https://github.com/AdamCaviness/agentic-toolkit/commit/ba7d0bb139829c282dbfbed59c0ea928994d8c13))
+
 ## [1.5.1](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.5.0...v1.5.1) (2026-10-06)
 
 
