@@ -21,14 +21,5 @@
   ],
   "dependencies": [
     "prompt-marks"
-  ],
-  "hooks": "./claude-mods/hooks.json",
-  "userConfig": {
-    "ship_gate_checks": {
-      "type": "string",
-      "title": "Ship Gate verification commands",
-      "description": "JSON argv arrays run in the target repository, for example [[\"npm\",\"test\"]].",
-      "default": "[]"
-    }
-  }
+  ]
 }

@@ -1,7 +1,6 @@
 name: test
 
-# Python validators keep shared skill contracts consistent. Claude's native
-# test runner and TypeScript checks validate the Claude module.
+# Python validators keep shared skill contracts consistent.
 
 # `main` is written literally here on purpose. The AGENTS.md rule against
 # hardcoding a default branch governs `skills/`, which run inside arbitrary
@@ -52,24 +51,3 @@ jobs:
           pip install ruff==0.15.6
           ruff check .
 
-  claude-mods:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Install pinned Claude test runtime
-        run: npm install --global @anthropic-ai/claude-code@2.1.288
-      - name: Verify runtime version
-        run: test "$(claude --version)" = '2.1.288 (Claude Code)'
-      - name: Validate Claude module registration
-        run: claude plugin validate . --json
-      - name: Run native mod tests
-        run: claude plugin test .
-      - name: Run local Git and Bash integration tests
-        run: node --test tests/ship_gate_integration.mjs tests/ship_gate_shell_integration.mjs
-      - name: Verify automatic startup and generate runtime declarations
-        run: node --test tests/ship_gate_runtime_smoke.mjs
-      - name: Check module types
-        run: npx --yes --package typescript@5.9.3 tsc -p tsconfig.json --allowImportingTsExtensions

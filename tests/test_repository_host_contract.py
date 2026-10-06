@@ -309,14 +309,6 @@ class ReadmeSupportClaimsTest(unittest.TestCase):
     def test_apply_review_claim_is_not_github_only(self):
         self.assertNotIn("resolves addressed threads via GitHub's API", self.text)
 
-    def test_ship_gate_no_longer_defers_to_this_ticket(self):
-        self.assertNotIn("issues/118", self.text)
-
-    def test_ship_gate_documents_optional_ci_policy(self):
-        gate = section(self.text, "### Claude Ship Gate")
-        self.assertIn("pending or failed optional checks", gate)
-        self.assertIn("`CLEAN`", gate)
-
 
 if __name__ == "__main__":
     unittest.main()
