@@ -48,9 +48,10 @@ export function evaluatePublication(s: Snapshot, a: Action, pr?: PullRequest): D
     if (!s.remoteHead) return deny('Cleanup requires an existing remote feature branch.');
     return { kind: 'pass' };
   }
-  if (!s.branch || s.branch === s.baseBranch) return deny('Publication requires a feature branch.');
+  if (!s.branch || s.branch === s.baseBranch) return deny('Ship Gate publishes feature branches, and ' + (s.branch || 'a detached HEAD') + ' is not one. Create a feature branch for these commits first.');
   if (!s.clean) return deny('Commit or exclude remaining staged, unstaged, and untracked changes first.');
-  if (a.branch && a.branch !== s.branch) return deny('Publish the current feature branch with a single destination.');
+  if (a.branch && a.branch === s.baseBranch) return deny('Ship Gate never pushes the default branch ' + s.baseBranch + '. Push it yourself if that is intended.');
+  if (a.branch && a.branch !== s.branch) return deny('Only the checked-out branch ' + s.branch + ' can be pushed; this command names ' + a.branch + '. Check out ' + a.branch + ' first, or push ' + s.branch + '.');
   if (a.head && a.head !== s.branch) return deny('The PR head must be the current branch.');
   if (a.base && a.base !== s.baseBranch) return deny('The PR base must be the default branch.');
   if (a.operation !== 'merge' && s.commitsAhead === 0) return deny('There are no feature commits to publish.');

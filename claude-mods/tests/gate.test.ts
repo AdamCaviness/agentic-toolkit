@@ -38,11 +38,16 @@ test('unrelated commands preserve native permissions', async ($, on) => {
   expect((await $.tool.check({tool:'Bash',input:{command:'git status'}})).decision).toBe('ask');
 });
 
-function repository(on: any, options: {paths?: string; dirty?: boolean; changes?: boolean; checkExit?: number; checkError?: string; ghDefault?: string; gitConfig?: Record<string,string>; truncatedPaths?: boolean; pr?: unknown; ghExit?: number; inferredPR?: unknown; origin?: string; pushOrigin?: string; remoteChanges?: boolean} = {}) {
+function repository(on: any, options: {paths?: string; dirty?: boolean; changes?: boolean; checkExit?: number; checkError?: string; ghDefault?: string; gitConfig?: Record<string,string>; truncatedPaths?: boolean; pr?: unknown; ghExit?: number; inferredPR?: unknown; origin?: string; pushOrigin?: string; remoteChanges?: boolean; originHead?: false; argvLog?: string[][]} = {}) {
   let snapshots = 0;
   on('session.cwd', () => ({value:'/session'}));
   on('process.run', (_$: any, e: any) => {
     const args = [...e.argv];
+    options.argvLog?.push(args);
+    // Without origin/HEAD the gate falls back to main, found here only on origin.
+    const baseRef = options.originHead === false ? 'origin/main' : 'trunk';
+    if (options.originHead === false && args[1] === 'symbolic-ref') return {value:{exitCode:1,stdout:'',stderr:''}};
+    if (options.originHead === false && args.join(' ') === 'git rev-parse --verify main') return {value:{exitCode:1,stdout:'',stderr:''}};
     if (args[0] === 'check') return {value:{exitCode:options.checkExit ?? 0,stdout:'',stderr:options.checkError ?? ''}};
     const gitIndex = args.indexOf('rev-parse');
     if (gitIndex >= 0 && args[gitIndex + 1] === '--show-toplevel') { snapshots++; return {value:{exitCode:0,stdout:'/repo\n',stderr:''}}; }
@@ -51,16 +56,16 @@ function repository(on: any, options: {paths?: string; dirty?: boolean; changes?
       'branch --show-current':'feat/x\n',
       'rev-parse --verify HEAD': options.changes && snapshots > 1 ? 'new\n' : 'abc\n',
       'symbolic-ref refs/remotes/origin/HEAD':'refs/remotes/origin/trunk\n',
-      'rev-parse --verify trunk':'base\n',
+      ['rev-parse --verify ' + baseRef]:'base\n',
       'remote get-url origin':(options.origin ?? 'https://github.com/a/b.git') + '\n',
       'remote get-url --push --all origin':(options.pushOrigin ?? options.origin ?? 'https://github.com/a/b.git') + '\n',
       'ls-remote --heads origin refs/heads/feat/x':(options.remoteChanges && snapshots > 1 ? 'new' : 'abc') + '\trefs/heads/feat/x\n',
-      'rev-list --count trunk..HEAD':'1\n',
+      ['rev-list --count ' + baseRef + '..HEAD']:'1\n',
       'status --porcelain=v1 --untracked-files=all':options.dirty ? '?? other.txt\n' : '',
-      'log --format= --name-only -z --no-renames --diff-merges=separate trunk..HEAD':options.paths ?? 'src/x.ts\0',
+      ['log --format= --name-only -z --no-renames --diff-merges=separate ' + baseRef + '..HEAD']:options.paths ?? 'src/x.ts\0',
     };
     if (args[0] === 'gh' && args[1] === 'pr') return {value:{exitCode:options.ghExit ?? 0,stdout:JSON.stringify(args[2] === 'list' ? [options.pr] : args[3] === '--repo' ? options.inferredPR ?? options.pr : options.pr),stderr:''}};
-    if (args[0] === 'gh' && args[1] === 'repo') return {value:{exitCode:0,stdout:JSON.stringify({url:options.ghDefault ?? 'https://github.com/a/b', defaultBranchRef:{name:'trunk'}, mergeCommitAllowed:true,squashMergeAllowed:true,rebaseMergeAllowed:true}),stderr:''}};
+    if (args[0] === 'gh' && args[1] === 'repo') return {value:{exitCode:0,stdout:JSON.stringify({url:options.ghDefault ?? 'https://github.com/a/b', defaultBranchRef:{name:options.originHead === false ? 'main' : 'trunk'}, mergeCommitAllowed:true,squashMergeAllowed:true,rebaseMergeAllowed:true}),stderr:''}};
     if (args[0] === 'git' && args[1] === 'config') {
       const v = options.gitConfig?.[args[args.length - 1]];
       return {value:{exitCode:v === undefined ? 1 : 0,stdout:v ?? '',stderr:''}};
@@ -242,7 +247,7 @@ test('evidence collection errors produce a blocked notice', async ($, on) => {
   on('session.cwd', () => ({value:'/repo'}));
   on('process.run', () => ({value:{exitCode:128,stdout:'',stderr:'not a repo'}}));
   expect((await $.tool.check({tool:'Bash',input:{command:'git push'}})).decision).toBe('deny');
-  expect(notices).toEqual(['Ship Gate blocked: evidence collection, verification, or confirmation failed.']);
+  expect(notices).toEqual(['Ship Gate blocked: Could not read repository state: git rev-parse --show-toplevel exited 128.']);
 });
 test('unrelated commands do not print a gate verdict', async ($, on) => {
   const notices: string[] = [];
@@ -283,4 +288,32 @@ test('wrapped publication refuses settings changed during checks', async ($, on)
   on('config.list', () => ({value:[{key:'agentic-toolkit.ship_gate_checks',value:++reads === 1 ? '[]' : '[["check"]]'}]}));
   repository(on); on('tool.check', () => ({decision:'allow'}));
   expect((await $.tool.check({tool:'Bash',input:{command:wrappedPush}})).decision).toBe('deny');
+});
+
+test('without origin/HEAD the default branch is found on origin', async ($, on) => {
+  config(on); repository(on, {originHead:false});
+  on('tool.check', () => ({decision:'allow'}));
+  expect((await $.tool.check({tool:'Bash',input:{command:'git push origin feat/x'}})).decision).toBe('allow');
+});
+test('pushing the default branch is refused with a reason that names it', async ($, on) => {
+  config(on); repository(on);
+  on('tool.check', () => ({decision:'allow'}));
+  const result = await $.tool.check({tool:'Bash',input:{command:'git push origin trunk'}});
+  expect(result.decision).toBe('deny');
+  expect((result as {reason:string}).reason).toContain('never pushes the default branch trunk');
+});
+test('a PR for another repository explains how to run it from there', async ($, on) => {
+  config(on); repository(on, {ghDefault:'https://github.com/a/other'});
+  on('tool.check', () => ({decision:'allow'}));
+  const result = await $.tool.check({tool:'Bash',input:{command:'gh pr create -R a/other --title t --body b'}});
+  expect(result.decision).toBe('deny');
+  expect((result as {reason:string}).reason).toContain('The PR targets a/other');
+  expect((result as {reason:string}).reason).toContain('cd <its path> &&');
+});
+test('a leading cd collects evidence in the named repository', async ($, on) => {
+  const argvLog: string[][] = [];
+  config(on); repository(on, {argvLog});
+  on('tool.check', () => ({decision:'allow'}));
+  expect((await $.tool.check({tool:'Bash',input:{command:'cd /work/b && gh pr create --title t --body b'}})).decision).toBe('allow');
+  expect(argvLog.some(argv => argv.join(' ') === 'git -C /work/b rev-parse --show-toplevel')).toBe(true);
 });

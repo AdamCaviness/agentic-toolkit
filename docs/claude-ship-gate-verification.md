@@ -24,7 +24,8 @@ projects. Empty `[]` means **verification not configured**, never tests passed.
 
 The gate checks supported Bash calls for direct `git push`, `gh pr create`,
 `gh pr merge`, and `git push origin --delete <branch>`. Publication requires a
-clean feature branch and a verified default branch and origin. Generic Git
+clean feature branch and a verified default branch and origin. The default branch
+comes from `origin/HEAD`, or else `main` then `master`, locally or on origin. Generic Git
 operations accept GitLab subgroup, Azure DevOps, Bitbucket, self-hosted, and
 local remote layouts without a GitHub CLI or login. Origin must have one push
 URL identical to its fetch URL. Different transport or path spellings are
@@ -46,11 +47,14 @@ with NUL-delimited names and merge diffs. Matching
 paths need exact **Proceed once** confirmation. Native permission decisions,
 including **ask**, remain in force. Failed checks, failed evidence collection,
 truncated inventories, missing confirmation, and changed repository snapshots
-or settings deny the pending action. Confirmation never overrides another
+or settings deny the pending action, and the denial carries the specific
+reason. Confirmation never overrides another
 failed rule. The module collects evidence but never launches publication itself.
 
 Publication uses literal arguments. A supported compound call contains exactly
-one publication invocation, at the start of its pipeline. `&&` may join it to
+one publication invocation, at the start of its pipeline. One leading
+`cd <path> &&` names the repository the publication runs in, and evidence is
+collected there; it cannot be combined with `git -C`. `&&` may join it to
 known read-only commands; subsequent pipeline stages are only `head -N`,
 `tail -N`, `head -n N`, or `tail -n N`, with a literal nonnegative decimal count
 and no files or other flags. Literal `2>&1` and `1>&2` duplicate output descriptors
