@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.6...v1.5.0) (2026-10-06)
+
+
+### Features
+
+* install the prompt-marks mod as a dependency ([#173](https://github.com/AdamCaviness/agentic-toolkit/issues/173)) ([6c5ab65](https://github.com/AdamCaviness/agentic-toolkit/commit/6c5ab6585fed25707cb3d4fc490530b737df4a62))
+
 ## [1.4.6](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.4.5...v1.4.6) (2026-10-04)
 
 
