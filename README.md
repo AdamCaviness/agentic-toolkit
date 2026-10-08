@@ -34,6 +34,8 @@ Register the marketplace, then install the plugin:
 /plugin install agentic-toolkit@agentic-marketplace
 ```
 
+Then turn on auto-update: `/plugin` → **Marketplaces** → **agentic-marketplace** → **Enable auto-update**. Claude Code leaves it off for marketplaces outside Anthropic's, so without it you keep the version you first installed. That includes prompt-marks, which agentic-toolkit installs as a dependency.
+
 </details>
 
 <details>
