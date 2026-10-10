@@ -21,7 +21,7 @@ SCRIPT_PATH = REPO_ROOT / "skills" / "next-ticket" / "ticket_policy.py"
 
 CANDIDATE = {"version": 2, "tiers": [["Ready", "(none)"], ["Backlog"]], "exclude": ["Idea"], "bugs": "any_tier"}
 LEGACY_CANDIDATE = {"filter": "open"}
-IN_PROGRESS = {"labels": {"add": ["in progress"], "remove": ["ready"]}}
+IN_PROGRESS = {"version": 2, "labels": {"add": ["in progress"], "remove": ["ready"]}}
 
 
 def load_script():
@@ -124,6 +124,43 @@ class ReadTest(PolicyTestCase):
         self.write_policy({"version": 1, "system": "github"})
         result = self.run_cmd("read")
         self.assertEqual(result["system"], "github")
+
+
+class LegacyStatesTest(PolicyTestCase):
+    def test_old_github_sentinel_and_old_shapes_are_legacy(self):
+        self.write_cache(
+            {
+                "system": "github",
+                "states": {
+                    "in_progress": {"unsupported": "plain GitHub Issues with no project board"},
+                    "in_review": {"field": "PVTSSF_x", "option": "abc"},
+                    "done": {"version": 2, "unsupported": "no done label"},
+                    "filed": IN_PROGRESS,
+                    "candidate": LEGACY_CANDIDATE,
+                },
+            }
+        )
+        self.assertEqual(self.run_cmd("read")["legacy_states"], ["in_progress", "in_review"])
+
+    def test_a_free_form_github_system_name_still_counts(self):
+        self.write_cache({"system": "GitHub Issues", "states": {"in_progress": {"unsupported": "x"}}})
+        self.assertEqual(self.run_cmd("read")["legacy_states"], ["in_progress"])
+
+    def test_other_systems_keep_their_values(self):
+        self.write_cache({"system": "jira", "states": {"in_progress": {"transition": "31"}}})
+        self.assertEqual(self.run_cmd("read")["legacy_states"], [])
+
+    def test_a_policy_value_without_a_version_is_legacy_too(self):
+        self.write_policy({"version": 1, "system": "github", "states": {"in_progress": {"labels": {"add": ["x"]}}}})
+        self.assertEqual(self.run_cmd("read")["legacy_states"], ["in_progress"])
+
+    def test_export_does_not_commit_legacy_values(self):
+        self.write_cache(
+            {"system": "github", "states": {"in_progress": {"unsupported": "old"}, "in_review": IN_PROGRESS}}
+        )
+        result = self.run_cmd("export")
+        self.assertEqual(result["skipped_legacy"], ["in_progress"])
+        self.assertEqual(list(json.loads(self.policy.read_text())["states"]), ["in_review"])
 
 
 class ExportTest(PolicyTestCase):

@@ -38,7 +38,7 @@ Send a credential only to the API of the system it belongs to: the repository ho
 
 Skills keep a ticket's state current as work moves, using the state mechanisms the ticket system already has: a status field or board column, workflow labels, a Jira or Azure transition, or several together. Four states exist: `in_progress` (work claimed and started), `in_review` (a PR or MR is open), `done` (the change merged), and `filed` (the state a new ticket starts in, before it is groomed, such as Backlog or Idea, never a started state). A skill applies only the state its step names. Every update is non-blocking: on failure, log one line and continue.
 
-A state's value is read from the committed policy (`.agents/ticket-policy.json`) first, then from the cache, then by discovery. `python3 ticket_policy.py read` prints the effective values and where each came from, using the `ticket_policy.py` in the same directory as `gh_issues.py` below. The cache keeps each state under `states.<name>` in the project-root entry of `next-ticket-config.json` in the system temp directory. A plain-string entry becomes `{"system": "<value>", "states": {...}}` when it gains its first state. For GitHub the value is `{"project": {"project_id": "...", "field_id": "...", "option_id": "...", "option_name": "...", "add_if_missing": true}, "labels": {"add": [...], "remove": [...]}}`; either part may be absent, and every part present is applied. Other systems store whatever IDs, transition IDs, or label names replay the change. `{"unsupported": "<reason>"}` means discovery found no mechanism for that state, and the skill skips it without discovering, applying, or printing anything.
+A state's value is read from the committed policy (`.agents/ticket-policy.json`) first, then from the cache, then by discovery. `python3 ticket_policy.py read` prints the effective values and where each came from, using the `ticket_policy.py` in the same directory as `gh_issues.py` below. The cache keeps each state under `states.<name>` in the project-root entry of `next-ticket-config.json` in the system temp directory. A plain-string entry becomes `{"system": "<value>", "states": {...}}` when it gains its first state. For GitHub the value is `{"version": 2, "project": {"project_id": "...", "field_id": "...", "option_id": "...", "option_name": "...", "add_if_missing": true}, "labels": {"add": [...], "remove": [...]}}`; either part may be absent, and every part present is applied. Other systems store whatever IDs, transition IDs, or label names replay the change. `{"unsupported": "<reason>"}` means discovery found no mechanism for that state, and the skill skips it without discovering, applying, or printing anything; for GitHub the sentinel also carries `"version": 2`. A GitHub value without `"version": 2` was written before workflow labels counted as a mechanism, so it does not count: treat the state as unset, rediscover it once with the old value as the starting proposal, and replace it. `python3 ticket_policy.py read` lists these as `legacy_states`. Values for other systems keep their meaning.
 
 When the cache has no value for the state, discover once. Look at every mechanism the system offers, workflow labels included, because a repository with no board but an `in progress` label still has an in-progress state, and one state may need a status change and a label swap together. The label swap removes the labels naming the state being left, such as `ready` or `backlog`, so a ticket never carries two states. For GitHub Issues, run `python3 gh_issues.py discover` using the `gh_issues.py` in the `next-ticket` skill's directory (the same directory as this SKILL.md for `next-ticket`, otherwise `../next-ticket/gh_issues.py`). It returns the linked projects with each field's options and `option_ids`, and `repo_labels`, every label the repository defines. Confirm once: "Move the ticket to '<option>' and relabel (add <labels>, remove <labels>)? Issues not yet on the board are added. Cached for future runs." Then write the value.
 
@@ -255,7 +255,7 @@ Before branching or writing code, self-assign the selected ticket in the source 
 
 ## Step 4.6: Transition to In Progress (non-blocking)
 
-Apply the `in_progress` state as described in Ticket State, so the board and the workflow labels show that implementation has started. If `states.in_progress` holds the unsupported sentinel (`{"unsupported": "<reason>"}`), skip this entire step without discovering, applying, or printing anything. Whatever the outcome, continue to Step 5; a failed update never blocks implementation.
+Apply the `in_progress` state as described in Ticket State, so the board and the workflow labels show that implementation has started. If `states.in_progress` holds the unsupported sentinel (`{"unsupported": "<reason>"}`; on GitHub only one carrying `"version": 2`), skip this entire step without discovering, applying, or printing anything. Whatever the outcome, continue to Step 5; a failed update never blocks implementation.
 
 When a project-root entry gains `states`, it migrates from a plain string to an object. Both forms are valid; read the string form as `{"system": "<value>"}` with no states yet. The evolved shape:
 
@@ -286,12 +286,13 @@ When a project-root entry gains `states`, it migrates from a plain string to an 
         "order": "Bug track first, then Priority P0 to P3, then Score high to low"
       },
       "in_progress": {
+        "version": 2,
         "project": { "project_id": "PVT_...", "field_id": "PVTSSF_...", "option_id": "b7528088", "option_name": "In progress", "add_if_missing": true },
         "labels": { "add": ["in progress"], "remove": ["ready"] }
       },
-      "in_review": { "labels": { "add": ["in review"], "remove": ["in progress"] } },
-      "done": { "unsupported": "no done state or label" },
-      "filed": { "project": { "project_id": "PVT_...", "field_id": "PVTSSF_...", "option_id": "06a9a5b5", "option_name": "Backlog", "add_if_missing": true } }
+      "in_review": { "version": 2, "labels": { "add": ["in review"], "remove": ["in progress"] } },
+      "done": { "version": 2, "unsupported": "no done state or label" },
+      "filed": { "version": 2, "project": { "project_id": "PVT_...", "field_id": "PVTSSF_...", "option_id": "06a9a5b5", "option_name": "Backlog", "add_if_missing": true } }
     }
   },
   "/home/user/repo-b": "jira"

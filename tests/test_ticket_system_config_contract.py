@@ -160,7 +160,7 @@ class TicketStateSectionTest(unittest.TestCase):
         expectations = {
             "skills/next-ticket/SKILL.md": ("## Step 4.6", "`in_progress`"),
             "skills/pr/SKILL.md": ("Apply the `in_review` state", "`in_review`"),
-            "skills/ship/SKILL.md": ("apply the `done` state", "`done`"),
+            "skills/ship/SKILL.md": ("Apply the `done` state", "`done`"),
             "skills/create-ticket/SKILL.md": ("apply the `filed` state", "`filed`"),
             "triage_shared/template.md": ("apply the `filed` state", "`filed`"),
         }
@@ -222,6 +222,28 @@ class PortablePolicyContractTest(unittest.TestCase):
             with self.subTest(path=path.relative_to(REPO_ROOT)):
                 block = paragraph_starting(path.read_text(), "**Correcting the ticket system.**")
                 self.assertIn("(committed policy)", block)
+
+    def test_old_github_state_values_are_rediscovered_once(self):
+        for path in TICKET_STATE_SOURCES:
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                body = section(path.read_text(), STATE_HEADING)
+                self.assertIn('{"version": 2, "project"', body)
+                self.assertIn('for GitHub the sentinel also carries `"version": 2`', body)
+                self.assertIn("rediscover it once with the old value as the starting proposal", body)
+                self.assertIn("`legacy_states`", body)
+        for path in (NEXT_TICKET, PR):
+            with self.subTest(call_site=path.name):
+                self.assertIn('on GitHub only one carrying `"version": 2`', path.read_text())
+
+    def test_ship_updates_the_done_state_after_cleanup(self):
+        text = (REPO_ROOT / "skills" / "ship" / "SKILL.md").read_text()
+        cleanup = text.index("10. **Clean up**")
+        update = text.index("11. **Update ticket state**")
+        report = text.index("12. **Report**")
+        self.assertLess(cleanup, update)
+        self.assertLess(update, report)
+        self.assertIn("note the ticket ID in the branch name", text)
+        self.assertNotIn("Once the merged state is confirmed, apply the `done` state", text)
 
     def test_next_ticket_documents_the_unattended_argument(self):
         text = NEXT_TICKET.read_text()

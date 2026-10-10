@@ -13,12 +13,14 @@ Two subcommands print one JSON object and exit 0, so the caller branches on the
 
   read    The effective system and states, with where each value came from
           (`policy` or `cache`), the cache and policy paths, and whether the
-          candidate filter is the current version. An invalid policy file is
+          candidate filter is the current version, and `legacy_states`, the
+          GitHub transition values an older release wrote that must be
+          rediscovered once. An invalid policy file is
           reported as `invalid_policy` with the cache values still returned,
           so the caller can say so and carry on.
   export  Write the cache entry for this repository into the policy file, so
           the operator can commit it. Existing policy keys the cache does not
-          hold are kept.
+          hold are kept, and legacy GitHub values are not exported.
 
 `status` is one of: ok, no_repo, invalid_policy, no_cache_entry.
 
@@ -37,6 +39,8 @@ POLICY_RELATIVE = os.path.join(".agents", "ticket-policy.json")
 CACHE_NAME = "next-ticket-config.json"
 POLICY_VERSION = 1
 CANDIDATE_VERSION = 2
+STATE_VERSION = 2
+TRANSITION_STATES = ("in_progress", "in_review", "done", "filed")
 
 
 class PolicyError(Exception):
@@ -118,6 +122,22 @@ def effective(policy, entry):
     return {"system": system, "system_source": system_source, "states": states}
 
 
+def legacy_states(system, states):
+    """GitHub transition values written before workflow labels counted.
+
+    An older release cached plain GitHub Issues as unsupported, or stored a
+    shape without the project and labels parts, so such a value is stale and
+    must be rediscovered once. Values for other systems keep their meaning.
+    """
+    if not (system or "").lower().startswith("github"):
+        return []
+    return [
+        name
+        for name in TRANSITION_STATES
+        if name in states and states[name].get("version") != STATE_VERSION
+    ]
+
+
 def read(args):
     root = repo_root(args.root)
     policy_file = os.path.join(root, POLICY_RELATIVE)
@@ -132,6 +152,9 @@ def read(args):
     candidate = result["states"].get("candidate")
     result["candidate_current"] = bool(
         candidate and candidate["value"].get("version") == CANDIDATE_VERSION
+    )
+    result["legacy_states"] = legacy_states(
+        result["system"], {n: v["value"] for n, v in result["states"].items()}
     )
     result.update(
         {
@@ -154,10 +177,13 @@ def export(args):
     if not entry or not (entry.get("system") or entry.get("states")):
         raise PolicyError("no_cache_entry", "no saved choices for %s" % root)
     existing = load_policy(policy_file) or {}
+    system = entry.get("system") or existing.get("system")
+    stale = legacy_states(system, entry["states"])
+    current = {n: v for n, v in entry["states"].items() if n not in stale}
     merged = {
         "version": POLICY_VERSION,
-        "system": entry.get("system") or existing.get("system"),
-        "states": {**existing.get("states", {}), **entry["states"]},
+        "system": system,
+        "states": {**existing.get("states", {}), **current},
     }
     merged = {k: v for k, v in merged.items() if v not in (None, {})}
     os.makedirs(os.path.dirname(policy_file), exist_ok=True)
@@ -166,7 +192,12 @@ def export(args):
         json.dump(merged, handle, indent=2)
         handle.write("\n")
     os.replace(staging, policy_file)
-    return {"status": "ok", "path": policy_file, "keys": sorted(merged.get("states", {}))}
+    return {
+        "status": "ok",
+        "path": policy_file,
+        "keys": sorted(merged.get("states", {})),
+        "skipped_legacy": stale,
+    }
 
 
 def build_parser():
