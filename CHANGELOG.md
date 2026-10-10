@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.6.0...v1.7.0) (2026-10-10)
+
+
+### Features
+
+* **next-ticket:** commit ticket choices and add an unattended mode for scheduled runs ([#184](https://github.com/AdamCaviness/agentic-toolkit/issues/184)) ([358a87f](https://github.com/AdamCaviness/agentic-toolkit/commit/358a87fd3c43291b595833c54281b129d58b3e29))
+
 ## [1.6.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.5.3...v1.6.0) (2026-10-10)
 
 
