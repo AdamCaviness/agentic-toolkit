@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.5.3...v1.6.0) (2026-10-10)
+
+
+### Features
+
+* **next-ticket:** keep ticket state current and read GitHub workflow state ([#182](https://github.com/AdamCaviness/agentic-toolkit/issues/182)) ([92e45cf](https://github.com/AdamCaviness/agentic-toolkit/commit/92e45cf7b642c82ab704049d3b795fa029dd749f))
+
 ## [1.5.3](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.5.2...v1.5.3) (2026-10-06)
 
 
