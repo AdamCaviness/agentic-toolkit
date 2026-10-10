@@ -160,7 +160,7 @@ class TicketStateSectionTest(unittest.TestCase):
         expectations = {
             "skills/next-ticket/SKILL.md": ("## Step 4.6", "`in_progress`"),
             "skills/pr/SKILL.md": ("Apply the `in_review` state", "`in_review`"),
-            "skills/ship/SKILL.md": ("apply the `done` state", "`done`"),
+            "skills/ship/SKILL.md": ("Apply the `done` state", "`done`"),
             "skills/create-ticket/SKILL.md": ("apply the `filed` state", "`filed`"),
             "triage_shared/template.md": ("apply the `filed` state", "`filed`"),
         }
@@ -179,6 +179,87 @@ class TicketStateSectionTest(unittest.TestCase):
         text = NEXT_TICKET.read_text()
         schema = paragraph_starting(text, "The `states` values are opaque")
         self.assertIn(SENTINEL, schema)
+
+
+class PortablePolicyContractTest(unittest.TestCase):
+    """A fresh cloud run has no temp cache and no operator to answer.
+
+    The committed `.agents/ticket-policy.json` carries the saved choices inside
+    the repository, ranks between the `ticketSystem:` override and the cache,
+    and the `unattended` argument makes every skill that would ask a question
+    use saved values or this run's judgment instead of waiting.
+    """
+
+    def test_committed_policy_sits_between_the_override_and_the_cache(self):
+        for path in DETECTING_SOURCES:
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                text = path.read_text()
+                override = text.index("**Project override (always wins)**")
+                policy = text.index("**Committed policy**")
+                cache = text.index("**Cached config**")
+                self.assertLess(override, policy)
+                self.assertLess(policy, cache)
+                self.assertIn("python3 ticket_policy.py read", text)
+
+    def test_unattended_runs_never_ask_during_detection(self):
+        for path in DETECTING_SOURCES:
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                text = path.read_text()
+                self.assertIn("In an unattended run (see Ticket State), skip the confirmation", text)
+                self.assertIn("In an unattended run, stop instead and say the project should declare", text)
+
+    def test_ticket_state_section_covers_saving_and_unattended_runs(self):
+        for path in TICKET_STATE_SOURCES:
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                body = section(path.read_text(), STATE_HEADING)
+                self.assertIn("committed policy (`.agents/ticket-policy.json`) first", body)
+                self.assertIn("python3 ticket_policy.py export", body)
+                self.assertIn("**Unattended runs.**", body)
+                self.assertIn("has no saved value; skipping (unattended)", body)
+
+    def test_correction_paragraph_covers_a_system_that_came_from_the_policy(self):
+        for path in DETECTING_SOURCES:
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                block = paragraph_starting(path.read_text(), "**Correcting the ticket system.**")
+                self.assertIn("(committed policy)", block)
+
+    def test_old_github_state_values_are_rediscovered_once(self):
+        for path in TICKET_STATE_SOURCES:
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                body = section(path.read_text(), STATE_HEADING)
+                self.assertIn('{"version": 2, "project"', body)
+                self.assertIn('for GitHub the sentinel also carries `"version": 2`', body)
+                self.assertIn("rediscover it once with the old value as the starting proposal", body)
+                self.assertIn("`legacy_states`", body)
+        for path in (NEXT_TICKET, PR):
+            with self.subTest(call_site=path.name):
+                self.assertIn('on GitHub only one carrying `"version": 2`', path.read_text())
+
+    def test_ship_updates_the_done_state_after_cleanup(self):
+        text = (REPO_ROOT / "skills" / "ship" / "SKILL.md").read_text()
+        cleanup = text.index("10. **Clean up**")
+        update = text.index("11. **Update ticket state**")
+        report = text.index("12. **Report**")
+        self.assertLess(cleanup, update)
+        self.assertLess(update, report)
+        self.assertIn("note the ticket ID in the branch name", text)
+        self.assertNotIn("Once the merged state is confirmed, apply the `done` state", text)
+
+    def test_next_ticket_documents_the_unattended_argument(self):
+        text = NEXT_TICKET.read_text()
+        self.assertRegex(text, r"\| `unattended` \| No \|")
+        self.assertIn("an unattended run stops instead", text)
+        self.assertIn("use your recommended choices (bugs first in any group) for this run only", text)
+
+    def test_triage_skills_accept_unattended_and_defer_instead_of_waiting(self):
+        for path in TICKET_STATE_SOURCES[4:]:
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                text = path.read_text()
+                self.assertIn("[unattended]", text)
+                self.assertIn("**In an unattended run, do not ask.**", text)
+                self.assertIn("deferred in an unattended run", text)
+                # The original wait stays for attended runs.
+                self.assertIn("**Wait for the operator before cleanup.", text)
 
 
 if __name__ == "__main__":
