@@ -75,7 +75,7 @@ ARCHITECTURE = {
         "- **Directory structure**: actual tree output, pruned to reasonable depth\n"
         "- **Key files**: path + one-line description of what it does (entry points, middleware, routes, models, schemas, config)\n"
         "- **Architectural patterns**: how auth works, how errors are handled, how data flows (just name the files/patterns, don't explain the code)\n"
-        "- **Conventions from CLAUDE.md**: note any project-specific conventions that affect auditing"
+        "- **Conventions from the project's instruction files**: note any project-specific conventions that affect auditing"
     ),
     # cluster slugs and human names, in display order
     "cluster_slugs": ["safety", "correctness", "maintainability", "completeness"],
@@ -338,7 +338,7 @@ BUGS = {
         "- **Database access patterns**: ORM vs raw queries, transaction usage, connection pooling, migration state\n"
         "- **Auth middleware chain**: which routes are protected, how tokens are validated, session management\n"
         "- **External API integrations**: third-party services, webhooks, outbound HTTP calls, retry policies\n"
-        "- **Conventions from CLAUDE.md**: note any project-specific conventions that affect investigation"
+        "- **Conventions from the project's instruction files**: note any project-specific conventions that affect investigation"
     ),
     "cluster_slugs": ["data-state", "security-auth", "correctness", "silent-failures"],
     "cluster_names": [
@@ -686,7 +686,7 @@ PRODUCT = {
         "- **Directory structure**: actual tree output, pruned to reasonable depth\n"
         "- **Key files**: path + one-line description of what it does (entry points, routes, components, layouts, config)\n"
         "- **Product context**: what the product promises the user (from README), who the user is, core workflows\n"
-        "- **Conventions from CLAUDE.md**: note any project-specific conventions that affect auditing"
+        "- **Conventions from the project's instruction files**: note any project-specific conventions that affect auditing"
     ),
     "cluster_slugs": ["core-experience", "error-edge", "polish", "reach-access"],
     "cluster_names": [

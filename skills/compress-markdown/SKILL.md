@@ -19,7 +19,7 @@ description: >
 
 **Default (lossless):** Reduce verbosity of prose without consulting the codebase. Every distinct idea survives, just stated more concisely. Safe for any markdown file.
 
-**Deep (lossy):** Read the file section by section and verify each claim against the actual codebase. Remove content that is stale or incorrect. Update content that is partially right. Then apply the same verbosity reduction as default mode. Only meaningful for files that reference a codebase (CLAUDE.md, architecture docs, onboarding guides).
+**Deep (lossy):** Read the file section by section and verify each claim against the actual codebase. Remove content that is stale or incorrect. Update content that is partially right. Then apply the same verbosity reduction as default mode. Only meaningful for files that reference a codebase (CLAUDE.md, AGENTS.md, architecture docs, onboarding guides).
 
 ## Process
 

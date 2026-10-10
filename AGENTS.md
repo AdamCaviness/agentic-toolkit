@@ -100,15 +100,19 @@ An unreachable or unauthenticated host is never an empty result. `ship` merges o
 
 The detecting skills carry one `**Correcting the ticket system.**` paragraph verbatim. It prints the cached system on every run and lets the operator correct it in conversation, because the cache otherwise lives in a temp file no operator should be asked to find. A correction deletes the whole project-root entry so cached `states`, which describe the old system's workflow, cannot leak into the new one.
 
-A state transition the project structurally cannot make, such as in-progress on plain GitHub Issues with no project board, is cached as `{"unsupported": "<reason>"}` under its `states` key, so later runs skip it silently instead of rediscovering it and repeating the warning. Transient failures and declines are never cached. `tests/test_ticket_system_config_contract.py` enforces the order, the shared paragraph, `create-ticket`'s access gate before research, and the sentinel in `next-ticket` and `pr`.
+A state transition the project structurally cannot make, such as in-progress on plain GitHub Issues with no project board and no matching label, is cached as `{"unsupported": "<reason>"}` under its `states` key, so later runs skip it silently instead of rediscovering it and repeating the warning. Transient failures and declines are never cached. `tests/test_ticket_system_config_contract.py` enforces the order, the shared paragraph, `create-ticket`'s access gate before research, and the sentinel in `next-ticket`.
+
+## Ticket state
+
+`next-ticket` (in progress), `pr` (in review), `ship` (done), `create-ticket` and the triage skills (filed) each carry one `## Ticket State` section verbatim. It defines the four states, the `states.<name>` cache value (a GitHub project part and a label part, either optional, both applied), discovery that treats workflow labels as first-class beside status fields, and the failure rule: cache only structural absence, delete stale values, cache nothing for transient failures. Edit it in one skill, copy it to the rest, and regenerate the triage skills; `tests/test_ticket_system_config_contract.py` enforces identical text. For GitHub, the deterministic work lives in `skills/next-ticket/gh_issues.py` (`discover`, `candidates`, `transition`), which other skills reach as `../next-ticket/gh_issues.py`. `tests/test_gh_issues.py` runs it against canned GraphQL payloads. The candidate filter in `states.candidate` carries `"version": 2`; bump it whenever that entry's shape changes so older caches are rediscovered.
 
 ## Capability glossary for public skills
 
-Public skills are distributed to Claude Code, Cursor, Codex, and Gemini. Skill prose may use harness-specific tool names where they read naturally (`Task tool`, `WebSearch`, `Agent tool`); other harnesses generally infer the equivalent. This is a **glossary**, not a required vocabulary, that names recurring capabilities so future skills and adapter docs have a shared lexicon to reach for.
+Public skills are distributed to Claude Code, Cursor, Codex, and Gemini. Skill prose may use harness-specific tool names where they read naturally (`Agent tool`, `WebSearch`); other harnesses generally infer the equivalent. This is a **glossary**, not a required vocabulary, that names recurring capabilities so future skills and adapter docs have a shared lexicon to reach for.
 
 | Capability | What it provides |
 | --- | --- |
-| `project.instructions` | The project's own contributor instructions, found in `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/`, or `GEMINI.md` depending on harness. |
+| `project.instructions` | The project's own contributor instructions, found in `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, or `.github/copilot-instructions.md` depending on harness. |
 | `ticket.read` | Read access to the project's ticket system (GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, etc.). |
 | `ticket.write` | Create, update, comment on, or close tickets in the project's ticket system. |
 | `subagent.dispatch` | Dispatch one isolated subagent with a fresh context, given a single prompt as its full instructions. |
