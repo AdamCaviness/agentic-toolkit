@@ -227,7 +227,7 @@ def scan_open_issues(owner, name, limit, with_projects):
                 {
                     "id": str(node["number"]),
                     "title": node["title"],
-                    "labels": [l["name"] for l in node["labels"]["nodes"]],
+                    "labels": [label["name"] for label in node["labels"]["nodes"]],
                     "assignees": [a["login"] for a in node["assignees"]["nodes"]],
                     "created_at": node["createdAt"],
                     "boards": {
@@ -352,7 +352,7 @@ def tier_of(found, status, tiers, excluded):
 
 def is_bug(issue, values, signal):
     if signal.startswith("label:"):
-        return signal[len("label:"):].lower() in {l.lower() for l in issue["labels"]}
+        return signal[len("label:"):].lower() in {label.lower() for label in issue["labels"]}
     field, _, expected = signal.partition("=")
     return values is not None and str(values.get(field, "")).lower() == expected.lower()
 

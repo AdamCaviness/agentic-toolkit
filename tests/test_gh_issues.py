@@ -50,7 +50,7 @@ def issue(num, title="t", labels=(), assignees=(), items=None, created="2026-01-
         "number": num,
         "title": title,
         "createdAt": created,
-        "labels": {"nodes": [{"name": l} for l in labels]},
+        "labels": {"nodes": [{"name": label} for label in labels]},
         "assignees": {"nodes": [{"login": a} for a in assignees]},
         "projectItems": {
             "nodes": [
@@ -370,7 +370,7 @@ class DiscoverTest(ScriptTestCase):
         )
         result = self.run_cmd(fake, ["discover", "--repo", "acme/app"])
         self.assertEqual(result["repo_labels"], ["blocked", "bug", "in progress"])
-        self.assertEqual([l["name"] for l in result["labels"]], ["bug"])
+        self.assertEqual([entry["name"] for entry in result["labels"]], ["bug"])
 
     def test_readme_is_truncated(self):
         long_readme = "x" * (self.script.README_LIMIT + 500)
