@@ -26,9 +26,20 @@ When `triage-architecture`, `triage-bugs`, or any other skill audits this repo, 
 
 This boundary is load-bearing for the triage skills' rejection-learning loop: when the operator closes a ticket as not-planned with reasoning grounded in this context, the triage skills cache that reasoning into `issues-closed.json` so future runs can recognize the same class of concern under a different title and skip refiling.
 
-## User-only skills
+## Model invocation policy
 
-Skills that should only be triggered by the user (not autonomously by the model) declare `disable-model-invocation: true` in frontmatter. This prevents the model from invoking the skill on its own initiative; the user must type the slash command explicitly. It does not restrict what the model does during execution. Currently honored by Claude Code and Cursor, tolerated by Codex and Gemini. Apply to skills with side effects or timing sensitivity where the user controls when they run: `pr`, `ship`, and `convert-worktree`. Add the key to any future skill the user should invoke deliberately rather than the model triggering automatically.
+`disable-model-invocation: true` answers one question: must a human at the keyboard start this skill? Claude Code enforces it against every start that is not a human typing the command. The model's Skill tool call is refused, and a scheduled fire (`/loop`, `CronCreate`, desktop scheduled tasks) delivers the skill's name as plain text instead of running it. The key cannot tell a model acting on its own initiative from an operator who configured a schedule on purpose, so decide with both in mind. The key is honored by Claude Code and Cursor and tolerated by Codex and Gemini, which means it is defense in depth and never the only control: Cursor has had plugin skills with the key missing from the `/` palette, and Codex and Gemini ignore it.
+
+**Set it** when an unattended run is never wanted, because the skill publishes or restructures the checkout the user is working in and the user must choose the moment. `pr` and `ship` push and merge. `convert-worktree` rebases and moves a worktree. Unattended publishing is not lost, since a routine or automation opens its own branch and pull request through the platform.
+
+**Leave it off** when the skill is meant to run from a schedule or an event, or when it is read-only, local, or gated by an approval inside the skill:
+
+- `next-ticket`, `apply-review`, and the three `triage-*` skills are the unattended workflow: nightly triage, a routine that addresses review comments when a pull request event arrives, a loop that picks up tickets. Flagging them breaks exactly those runs.
+- `create-ticket` files only after the user approves the draft. `code-review`, `get-it-right`, `compress-markdown`, and `update-deps` change nothing outside the working tree or never push.
+
+**When it is off**, a skill that writes to the tracker or the remote keeps its description to explicit requests ("Use when asked to ...") so a loosely related message does not load it, and its own steps carry the gates: the clean-tree check, the claim protocol, the pre-push gate. A user who wants a hard lock adds a `Skill` deny rule or a `skillOverrides` entry in their own settings. `tests/test_mechanical_skill_execution_profile.py` enforces both directions: the three flagged skills carry the key, and no other skill does.
+
+**Known gap.** `next-ticket` Step 5 runs `git checkout "$BASE_BRANCH" && git pull --ff-only` in whatever checkout it runs in, behind only the clean-tree check, so a model-started run can leave the branch a user was on. A typed command or a configured schedule is the authorization for that switch.
 
 ## Branch lifecycle
 

@@ -186,7 +186,7 @@ Read the `{{name}}` value from the state file for the "Last run" timestamp{{cove
 
 ## Step 3: Deploy Cluster Agents
 
-Spawn **4 sub-agents in parallel using the Agent tool**, one per cluster. **All 4 MUST be in a single message** so they run concurrently. Use `description: "{{deploy_description_verb}} <ClusterName> cluster"` for each.
+Spawn **4 sub-agents in parallel** (in Claude Code, with the Agent tool; other harnesses use their own parallel subagent mechanism), one per cluster. **All 4 MUST be in a single message** so they run concurrently. Use `description: "{{deploy_description_verb}} <ClusterName> cluster"` for each.
 
 For each cluster, construct a prompt by taking the Sub-Agent Prompt Template below and replacing:
 - `{MODE}` with `create` or `refine`

@@ -1,6 +1,6 @@
 ---
 name: get-it-right
-description: Use when work on a branch is complete or in-progress and you want to re-evaluate the approach from scratch. Performs retrospective analysis, re-architects to reduce complexity and fragmentation, auto-implements without committing, and outputs a brief testing playbook for validation.
+description: Use when work on a branch is complete or in progress and its approach should be re-evaluated from scratch. Performs retrospective analysis, re-architects to reduce complexity and fragmentation, auto-implements without committing, and outputs a brief testing playbook for validation.
 ---
 
 # Get It Right

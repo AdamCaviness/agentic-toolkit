@@ -83,7 +83,7 @@ The block prints every value it builds. Shell state does not persist between Bas
 
 **2. Dispatch the code-reviewer subagent:**
 
-Dispatch one subagent with the Agent tool (or your harness's equivalent), passing the filled reviewer prompt (see "Reviewer prompt template" below) as the prompt. The reviewer sees only that prompt, never your session history.
+Dispatch one fresh subagent (in Claude Code, the Agent tool; other harnesses use their own subagent mechanism), passing the filled reviewer prompt (see "Reviewer prompt template" below) as the prompt. The reviewer sees only that prompt, never your session history.
 
 Do not substitute a specialized reviewer agent from another plugin (for example, `superpowers:code-reviewer`). Those agents carry their own system prompts that layer over the template, making output nondeterministic, and they make this skill silently depend on another plugin being installed. The default unspecialized subagent takes the template as its full instructions, which is what the template is written for.
 

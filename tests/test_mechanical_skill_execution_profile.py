@@ -10,10 +10,20 @@ AGENTS = REPO_ROOT / "AGENTS.md"
 
 USER_ONLY_SKILLS = ["pr", "ship", "convert-worktree"]
 
+# Skills that write to the tracker or the remote and run from schedules, so they
+# stay model-invocable and keep their descriptions to explicit requests.
+UNATTENDED_WRITE_SKILLS = [
+    "apply-review",
+    "next-ticket",
+    "triage-architecture",
+    "triage-bugs",
+    "triage-product",
+]
+
 FRONTMATTER_KEY = "disable-model-invocation: true"
 
 AGENTS_REQUIRED_PHRASES = [
-    "user-only skills",
+    "model invocation policy",
     "disable-model-invocation: true",
 ]
 
@@ -37,6 +47,29 @@ class UserOnlySkillTest(unittest.TestCase):
                     f"{skill_name}: frontmatter must declare {FRONTMATTER_KEY!r} "
                     "so the model cannot invoke it autonomously",
                 )
+
+    def test_every_other_skill_stays_model_invocable(self):
+        # Scheduled fires and routines reach a skill through the model, so the
+        # key on an unattended skill silently breaks scheduled runs.
+        for skill_dir in sorted(SKILLS_DIR.iterdir()):
+            if skill_dir.name in USER_ONLY_SKILLS or not (skill_dir / "SKILL.md").is_file():
+                continue
+            with self.subTest(skill=skill_dir.name):
+                self.assertNotIn(
+                    FRONTMATTER_KEY,
+                    read_frontmatter(skill_dir.name),
+                    f"{skill_dir.name} is meant to run unattended or is gated inside the "
+                    "skill; see the Model invocation policy in AGENTS.md before adding the key",
+                )
+
+    def test_unattended_write_skills_describe_explicit_requests(self):
+        for skill_name in UNATTENDED_WRITE_SKILLS:
+            with self.subTest(skill=skill_name):
+                description = next(
+                    line for line in read_frontmatter(skill_name).splitlines()
+                    if line.startswith("description:")
+                )
+                self.assertIn("Use when asked to ", description)
 
     def test_agents_md_documents_user_only_skill_rule(self):
         text = AGENTS.read_text().lower()

@@ -2,7 +2,7 @@
 name: pr
 model: sonnet
 effort: high
-description: "Use when work is done but you want review first. Formats, lints, tests, commits, pushes, and opens a PR (an MR on GitLab). The cautious \"I'm done\": stops for CI/review."
+description: "Use when work is done and should be reviewed before it merges. Formats, lints, tests, commits, pushes, and opens a PR (an MR on GitLab). The cautious \"I'm done\": stops for CI/review."
 disable-model-invocation: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: create-ticket
-description: Use when you have an idea to file. Researches context and prior art, dedupes the backlog, and files one well-structured ticket.
+description: Use when an idea is ready to file. Researches context and prior art, dedupes the backlog, and files one well-structured ticket.
 argument-hint: "[idea]"
 ---
 

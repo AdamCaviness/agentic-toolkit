@@ -43,7 +43,7 @@ Severity must be `high`, `medium`, or `low`; include the matching severity label
 ARCHITECTURE = {
     # frontmatter
     "description": (
-        "Use when auditing a codebase for structural and safety issues. "
+        "Use when asked to audit a codebase for structural and safety issues. "
         "Caches tickets to disk, then spawns 4 parallel sub-agents (one "
         "per focus cluster) to return validated candidates for run-wide filing."
     ),
@@ -304,7 +304,7 @@ ARCHITECTURE = {
 # triage-bugs data
 BUGS = {
     "description": (
-        "Use when hunting proven defects. Adversarial 4-pass analysis "
+        "Use when asked to hunt proven defects. Adversarial 4-pass analysis "
         "(frame, trace, falsify, prove). Caches tickets to disk, then "
         "spawns 4 parallel sub-agents (one per bug category) to find, "
         "prove, and document bugs with enough rigor that a skeptical "
@@ -660,7 +660,7 @@ BUGS = {
 # triage-product data
 PRODUCT = {
     "description": (
-        "Use when auditing product UX and workflows. Caches tickets to "
+        "Use when asked to audit product UX and workflows. Caches tickets to "
         "disk, then spawns 4 parallel sub-agents (one per focus cluster) "
         "to return validated candidates for run-wide filing."
     ),

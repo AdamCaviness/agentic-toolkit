@@ -1,6 +1,6 @@
 ---
 name: next-ticket
-description: Use when looking for the next ticket to work on. Detects the project's ticket system (GitHub Issues, Jira, GitLab Issues, Azure Boards, etc.), fetches actionable open tickets that are unassigned or assigned to you, scores by severity/simplicity/value/blocking-power/dependencies, picks the best candidate, claims it by self-assigning (team-safe), branches, implements, tests, formats, and waits for review with a UI testing tip. Accepts an optional ticket ID argument (e.g., `/next-ticket 42`, `/next-ticket PROJ-42`) to skip evaluation and pick up a specific ticket directly.
+description: Use when asked to pick up the next ticket to work on. Detects the project's ticket system (GitHub Issues, Jira, GitLab Issues, Azure Boards, etc.), fetches actionable open tickets that are unassigned or assigned to the current user, scores by severity/simplicity/value/blocking-power/dependencies, picks the best candidate, claims it by self-assigning (team-safe), branches, implements, tests, formats, and waits for review with a UI testing tip. Accepts an optional ticket ID argument (e.g., `/next-ticket 42`, `/next-ticket PROJ-42`) to skip evaluation and pick up a specific ticket directly.
 ---
 
 # Next Ticket
@@ -418,7 +418,7 @@ The grep opens with the high-risk path screen that every publishing and reviewin
    - `DESCRIPTION`: a one to two sentence summary of the change you just implemented.
    - `PLAN_OR_REQUIREMENTS`: the ticket title plus the ticket body, verbatim, as fetched in Step 2.
 
-3. **Load and dispatch.** Read `reviewer-prompt.md` from the `code-review` skill's directory, which is a sibling of this skill's own directory (`../code-review/reviewer-prompt.md`). Substitute every `{PLACEHOLDER}` with the values built above, and pass the resulting text as the prompt to the unspecialized reviewer subagent via the Agent tool or your harness's equivalent. Do not name a specialized reviewer agent from another plugin; the unspecialized subagent takes the template as its full instructions, which is what the template is written for.
+3. **Load and dispatch.** Read `reviewer-prompt.md` from the `code-review` skill's directory, which is a sibling of this skill's own directory (`../code-review/reviewer-prompt.md`). Substitute every `{PLACEHOLDER}` with the values built above, and pass the resulting text as the prompt to the unspecialized reviewer as a fresh subagent (in Claude Code, the Agent tool). Do not name a specialized reviewer agent from another plugin; the unspecialized subagent takes the template as its full instructions, which is what the template is written for.
 
 4. **Capture findings.** Parse the reviewer's structured output for severity counts (Critical, Important, Minor), the Assessment verdict line (Yes / No / With fixes), and the top issues in severity order with their file:line references. Cap the captured issues at five.
 

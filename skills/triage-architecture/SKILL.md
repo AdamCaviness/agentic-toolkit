@@ -1,6 +1,6 @@
 ---
 name: triage-architecture
-description: Use when auditing a codebase for structural and safety issues. Caches tickets to disk, then spawns 4 parallel sub-agents (one per focus cluster) to return validated candidates for run-wide filing.
+description: Use when asked to audit a codebase for structural and safety issues. Caches tickets to disk, then spawns 4 parallel sub-agents (one per focus cluster) to return validated candidates for run-wide filing.
 argument-hint: "[create | refine [<duration>]]"
 ---
 
@@ -195,7 +195,7 @@ Read the `triage-architecture` value from the state file for the "Last run" time
 
 ## Step 3: Deploy Cluster Agents
 
-Spawn **4 sub-agents in parallel using the Agent tool**, one per cluster. **All 4 MUST be in a single message** so they run concurrently. Use `description: "Audit <ClusterName> cluster"` for each.
+Spawn **4 sub-agents in parallel** (in Claude Code, with the Agent tool; other harnesses use their own parallel subagent mechanism), one per cluster. **All 4 MUST be in a single message** so they run concurrently. Use `description: "Audit <ClusterName> cluster"` for each.
 
 For each cluster, construct a prompt by taking the Sub-Agent Prompt Template below and replacing:
 - `{MODE}` with `create` or `refine`
