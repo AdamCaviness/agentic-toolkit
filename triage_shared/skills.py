@@ -43,7 +43,7 @@ Severity must be `high`, `medium`, or `low`; include the matching severity label
 ARCHITECTURE = {
     # frontmatter
     "description": (
-        "Use when auditing a codebase for structural and safety issues. "
+        "Use when asked to audit a codebase for structural and safety issues. "
         "Caches tickets to disk, then spawns 4 parallel sub-agents (one "
         "per focus cluster) to return validated candidates for run-wide filing."
     ),
@@ -75,7 +75,7 @@ ARCHITECTURE = {
         "- **Directory structure**: actual tree output, pruned to reasonable depth\n"
         "- **Key files**: path + one-line description of what it does (entry points, middleware, routes, models, schemas, config)\n"
         "- **Architectural patterns**: how auth works, how errors are handled, how data flows (just name the files/patterns, don't explain the code)\n"
-        "- **Conventions from CLAUDE.md**: note any project-specific conventions that affect auditing"
+        "- **Conventions from the project's instruction files**: note any project-specific conventions that affect auditing"
     ),
     # cluster slugs and human names, in display order
     "cluster_slugs": ["safety", "correctness", "maintainability", "completeness"],
@@ -304,7 +304,7 @@ ARCHITECTURE = {
 # triage-bugs data
 BUGS = {
     "description": (
-        "Use when hunting proven defects. Adversarial 4-pass analysis "
+        "Use when asked to hunt proven defects. Adversarial 4-pass analysis "
         "(frame, trace, falsify, prove). Caches tickets to disk, then "
         "spawns 4 parallel sub-agents (one per bug category) to find, "
         "prove, and document bugs with enough rigor that a skeptical "
@@ -338,7 +338,7 @@ BUGS = {
         "- **Database access patterns**: ORM vs raw queries, transaction usage, connection pooling, migration state\n"
         "- **Auth middleware chain**: which routes are protected, how tokens are validated, session management\n"
         "- **External API integrations**: third-party services, webhooks, outbound HTTP calls, retry policies\n"
-        "- **Conventions from CLAUDE.md**: note any project-specific conventions that affect investigation"
+        "- **Conventions from the project's instruction files**: note any project-specific conventions that affect investigation"
     ),
     "cluster_slugs": ["data-state", "security-auth", "correctness", "silent-failures"],
     "cluster_names": [
@@ -660,7 +660,7 @@ BUGS = {
 # triage-product data
 PRODUCT = {
     "description": (
-        "Use when auditing product UX and workflows. Caches tickets to "
+        "Use when asked to audit product UX and workflows. Caches tickets to "
         "disk, then spawns 4 parallel sub-agents (one per focus cluster) "
         "to return validated candidates for run-wide filing."
     ),
@@ -686,7 +686,7 @@ PRODUCT = {
         "- **Directory structure**: actual tree output, pruned to reasonable depth\n"
         "- **Key files**: path + one-line description of what it does (entry points, routes, components, layouts, config)\n"
         "- **Product context**: what the product promises the user (from README), who the user is, core workflows\n"
-        "- **Conventions from CLAUDE.md**: note any project-specific conventions that affect auditing"
+        "- **Conventions from the project's instruction files**: note any project-specific conventions that affect auditing"
     ),
     "cluster_slugs": ["core-experience", "error-edge", "polish", "reach-access"],
     "cluster_names": [

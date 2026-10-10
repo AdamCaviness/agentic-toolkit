@@ -64,7 +64,7 @@ Review committed and uncommitted changes together as a single body of work. The 
 
 ## Gathering context beyond the diff
 
-The diff is rarely self-sufficient. Use Read, Grep, and Bash to pull call sites for changed signatures, adjacent tests, type definitions, configs referenced in the diff, and project conventions (CLAUDE.md, AGENTS.md, README). Do not guess, verify.
+The diff is rarely self-sufficient. Use Read, Grep, and Bash to pull call sites for changed signatures, adjacent tests, type definitions, configs referenced in the diff, and project conventions (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, `.github/copilot-instructions.md`, README). Do not guess, verify.
 
 ## Run project verification
 

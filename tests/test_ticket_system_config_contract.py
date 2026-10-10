@@ -102,25 +102,83 @@ class CreateTicketAccessGateTest(unittest.TestCase):
         self.assertRegex(filing, r"print the approved draft")
 
 
-class UnsupportedTransitionCacheTest(unittest.TestCase):
-    def test_next_ticket_caches_structural_failure_only(self):
+TICKET_STATE_SOURCES = [
+    REPO_ROOT / "skills" / "next-ticket" / "SKILL.md",
+    REPO_ROOT / "skills" / "pr" / "SKILL.md",
+    REPO_ROOT / "skills" / "ship" / "SKILL.md",
+    REPO_ROOT / "skills" / "create-ticket" / "SKILL.md",
+    REPO_ROOT / "triage_shared" / "template.md",
+    REPO_ROOT / "skills" / "triage-architecture" / "SKILL.md",
+    REPO_ROOT / "skills" / "triage-bugs" / "SKILL.md",
+    REPO_ROOT / "skills" / "triage-product" / "SKILL.md",
+]
+
+STATE_HEADING = "## Ticket State"
+
+
+class TicketStateSectionTest(unittest.TestCase):
+    """Every skill that moves a ticket carries one Ticket State section verbatim.
+
+    A ticket's state is kept current by four skills at four moments: claimed
+    (next-ticket), PR open (pr), merged (ship), and filed (create-ticket and
+    the triage skills). They share one cache shape, one discovery rule that
+    treats workflow labels as first-class, and one failure-caching rule, so a
+    repository behaves the same whichever skill touches the ticket.
+    """
+
+    def sections(self):
+        return {
+            path.relative_to(REPO_ROOT): section(path.read_text(), STATE_HEADING)
+            for path in TICKET_STATE_SOURCES
+        }
+
+    def test_section_is_identical_everywhere(self):
+        sections = self.sections()
+        self.assertEqual(len(set(sections.values())), 1, list(sections))
+
+    def test_section_names_every_state_and_both_mechanisms(self):
+        body = next(iter(self.sections().values()))
+        for state in ("`in_progress`", "`in_review`", "`done`", "`filed`"):
+            self.assertIn(state, body)
+        self.assertIn("workflow labels", body)
+        self.assertIn('"project"', body)
+        self.assertIn('"labels"', body)
+        self.assertIn("python3 gh_issues.py transition", body)
+
+    def test_failure_classes_cache_only_what_is_structural(self):
+        body = next(iter(self.sections().values()))
+        self.assertIn(SENTINEL, body)
+        self.assertRegex(body, r"skips it without discovering, applying, or printing anything")
+        self.assertRegex(body, r"plain GitHub Issues with no project board")
+        transient = re.search(r"\*\*Transient or declined\*\*[^\n]*", body).group(0)
+        self.assertIn("cache nothing", transient)
+        self.assertIn("permission denial", transient)
+        stale = re.search(r"\*\*Stale\*\*[^\n]*", body).group(0)
+        self.assertIn("rediscovers", stale)
+
+    def test_each_skill_applies_its_own_state_and_never_blocks(self):
+        expectations = {
+            "skills/next-ticket/SKILL.md": ("## Step 4.6", "`in_progress`"),
+            "skills/pr/SKILL.md": ("Apply the `in_review` state", "`in_review`"),
+            "skills/ship/SKILL.md": ("apply the `done` state", "`done`"),
+            "skills/create-ticket/SKILL.md": ("apply the `filed` state", "`filed`"),
+            "triage_shared/template.md": ("apply the `filed` state", "`filed`"),
+        }
+        for rel, (marker, state) in expectations.items():
+            with self.subTest(path=rel):
+                text = (REPO_ROOT / rel).read_text()
+                self.assertIn(marker, text)
+                self.assertIn(state, text)
+
+    def test_next_ticket_skips_a_cached_unsupported_state_silently(self):
         step = section(NEXT_TICKET.read_text(), "## Step 4.6: Transition to In Progress")
         self.assertIn(SENTINEL, step)
         self.assertRegex(step, r"skip this entire step without discovering, applying, or printing")
-        self.assertRegex(step, r"plain GitHub Issues with no project board")
-        transient = re.search(r"\*\*Transient or declined\*\*[^\n]*", step).group(0)
-        self.assertIn("cache nothing", transient)
-        self.assertIn("permission denial", transient)
 
     def test_schema_documents_the_sentinel(self):
         text = NEXT_TICKET.read_text()
-        schema = paragraph_starting(text, "A project-root entry without `states`")
+        schema = paragraph_starting(text, "The `states` values are opaque")
         self.assertIn(SENTINEL, schema)
-
-    def test_pr_in_review_uses_the_same_sentinel(self):
-        text = PR.read_text()
-        self.assertGreaterEqual(text.count(SENTINEL), 2)
-        self.assertRegex(text, r"Cache nothing for a missing config file, an API error")
 
 
 if __name__ == "__main__":

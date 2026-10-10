@@ -1,6 +1,6 @@
 ---
 name: apply-review
-description: Use when a PR or MR has review comments to address. Validates feedback against code, fixes valid items, pushes, and resolves threads.
+description: Use when asked to address the review comments on a PR or MR. Validates feedback against code, fixes valid items, pushes, and resolves threads.
 argument-hint: "[<pr-number>]"
 ---
 
@@ -188,7 +188,7 @@ If no comments are valid and fixable (all are already addressed, incorrect, or q
 
 ## Step 7: Commit and Push
 
-Batch all review-driven fixes into a single commit. Choose the Conventional Commits type from the dominant category of changes:
+Batch all review-driven fixes into a single commit. If the project's instructions, contributing guide, or commit tooling (commitlint, a commit template) name a different commit format, follow that format instead of the Conventional Commits default in this skill. Choose the Conventional Commits type from the dominant category of changes:
 
 ```bash
 git commit -m "fix: address PR review feedback"

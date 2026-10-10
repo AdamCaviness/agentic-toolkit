@@ -160,6 +160,7 @@ Turns a user-provided idea into a well-researched, well-structured ticket and fi
 - Asks clarifying questions only when options are too nuanced to auto-resolve
 - Produces one ticket per run with type-appropriate body structure (feature, bug, architecture, product, or chore)
 - Presents a full draft for review and files only after approval
+- Puts the new ticket in your tracker's starting state, such as a Backlog column or label (see Ticket state below)
 
 **Usage:** `/create-ticket add dark mode support` or `/create-ticket` then describe the idea.
 
@@ -168,6 +169,7 @@ Turns a user-provided idea into a well-researched, well-structured ticket and fi
 Picks up a ticket from your issue tracker, implements it end-to-end with TDD, and waits for your review.
 
 - **Auto-pick** (no argument): fetches all eligible tickets, scores by severity, simplicity, blocking power, and value, picks the best candidate
+- **Workflow aware**: ready tickets and tickets with no workflow signal come first, groomed backlog tickets only when none are ready, and parked ones (Idea, Blocked, On Hold) never. Bugs can be worked first in any group. On GitHub, Status columns from a linked project and workflow labels both count, and a project's Priority or Score fields can set the order
 - **Specific ticket** (with ID): fetches that ticket directly, skips scoring
 - Validates the ticket against current code, checking for prior fixes or partial resolution
 - Claims with a team-safe self-assignment protocol (re-reads assignee after a randomized pause to avoid collisions)
@@ -176,7 +178,11 @@ Picks up a ticket from your issue tracker, implements it end-to-end with TDD, an
 **Usage:** `/next-ticket` (auto-pick best ticket) or `/next-ticket 42` (pick up a specific ticket).
 
 > [!NOTE]
-> All ticket skills auto-detect your ticket system: the agent reads repo signals (README, CLAUDE.md, git remotes, commit conventions) to determine which system you use. Supported out of the box: GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs in your session. Detection results are cached so detection only runs once per project, and each run prints the cached system in one line; if it is wrong, say so and the skill re-detects. For a persistent override that beats the cache, add `ticketSystem: <name>` to your project's CLAUDE.md. The ticket system is independent of the repository host, so a GitLab repository can track work in Jira (see [Workflow Skills](#workflow-skills) for supported hosts).
+> All ticket skills auto-detect your ticket system: the agent reads repo signals (README, project instruction files, git remotes, commit conventions) to determine which system you use. Supported out of the box: GitHub Issues, Jira, GitLab Issues, Azure Boards, Linear, Shortcut, and anything else the model can reach via CLI, MCP, or APIs in your session. Detection results are cached so detection only runs once per project, and each run prints the cached system in one line; if it is wrong, say so and the skill re-detects. For a persistent override that beats the cache, add `ticketSystem: <name>` to any of your project's instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, `.github/copilot-instructions.md`). The ticket system is independent of the repository host, so a GitLab repository can track work in Jira (see [Workflow Skills](#workflow-skills) for supported hosts).
+
+
+> [!NOTE]
+> **Ticket state.** Skills keep the ticket current as work moves, using what your tracker already has: a status column, workflow labels, a Jira or Azure transition, or several together. `next-ticket` moves it to in progress when it claims it, `pr` to in review when the PR opens, `ship` to done after the merge, and `create-ticket` and the triage skills file new tickets in a starting state. The first use asks you once which column or labels to use, then caches the answer. A tracker with no such mechanism is remembered and skipped, and a failed update never blocks the work. On GitHub, project columns need the `project` token scope (`gh auth refresh -s project`); without it a run falls back to the plain open-ticket list and says what to fix. Cached workflow choices from older releases are rediscovered once.
 
 ---
 
@@ -281,7 +287,7 @@ Cleanup errors and safely aborted rebase conflicts produce warnings. A dirty des
 
 ### [compress-markdown](skills/compress-markdown/SKILL.md)
 
-Reduces markdown verbosity to save input tokens, particularly useful for CLAUDE.md files but works on any markdown. Default mode is lossless: drops filler words, uses short synonyms, converts sentences to fragments while preserving all code blocks, URLs, paths, and directive keywords character-for-character. Deep mode (pass `deep` before the filepath) verifies each section against the codebase first, removing stale content before compressing. A deterministic validator catches structural regressions.
+Reduces markdown verbosity to save input tokens, particularly useful for instruction files such as AGENTS.md and CLAUDE.md but works on any markdown. Default mode is lossless: drops filler words, uses short synonyms, converts sentences to fragments while preserving all code blocks, URLs, paths, and directive keywords character-for-character. Deep mode (pass `deep` before the filepath) verifies each section against the codebase first, removing stale content before compressing. A deterministic validator catches structural regressions.
 
 **Usage:** `/compress-markdown <filepath>`, `/compress-markdown deep <filepath>`
 

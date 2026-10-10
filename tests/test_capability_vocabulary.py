@@ -13,7 +13,7 @@ concrete and untested abstractions cannot fix:
 3. Generated PR or commit output does not brand a single harness, since the
    output is user-visible on every harness that runs the skill.
 
-Stylistic harness-specific nouns (`Task tool`, `Agent tool`, `WebSearch`)
+Stylistic harness-specific nouns (`Agent tool`, `WebSearch`)
 are *not* enforced. Replacing them with abstract capability names removes
 the noun but degrades execution on the harness that has the tool, with no
 measured benefit on harnesses that don't.

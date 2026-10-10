@@ -1,6 +1,6 @@
 ---
 name: get-it-right
-description: Use when work on a branch is complete or in-progress and you want to re-evaluate the approach from scratch. Performs retrospective analysis, re-architects to reduce complexity and fragmentation, auto-implements without committing, and outputs a brief testing playbook for validation.
+description: Use when work on a branch is complete or in progress and its approach should be re-evaluated from scratch. Performs retrospective analysis, re-architects to reduce complexity and fragmentation, auto-implements without committing, and outputs a brief testing playbook for validation.
 ---
 
 # Get It Right
@@ -80,7 +80,7 @@ Present one confident recommendation. Do not present options A/B/C.
 
 ### 4. Plan the Re-architecture
 
-Enter plan mode. The plan must:
+Write the plan before changing any file. Do not enter a harness plan mode that waits for the user's approval, because this skill auto-implements when the dirty-tree gate and the footprint guard hold. The plan must:
 - State what changes and why (retrospective insights drive the plan)
 - Specify exact files to modify, create, or delete
 - Order steps to minimize broken intermediate states
@@ -144,8 +144,8 @@ Do not start this step while uncommitted paths remain unconfirmed. The Step 1 di
 
 Execute the plan without user interaction:
 - Make all changes across the codebase
-- Run format and lint (check CLAUDE.md for project commands)
-- Run tests (check CLAUDE.md for project test commands)
+- Run format and lint (check the project instructions for commands)
+- Run tests (check the project instructions for test commands)
 - Fix any failures from format/lint/tests
 - **Do NOT commit.** Leave all changes unstaged for user review.
 
