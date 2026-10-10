@@ -1,7 +1,7 @@
 ---
 name: {{name}}
 description: {{description}}
-argument-hint: "[create | refine [<duration>]]"
+argument-hint: "[create | refine [<duration>]] [unattended]"
 ---
 
 <!-- GENERATED FROM triage_shared/template.md. Edit triage_shared/template.md or triage_shared/skills.py and run: python3 -m triage_shared.generate -->
@@ -16,8 +16,9 @@ Check the argument passed to this skill:
 - {{create_mode_bullet}}
 - **`refine`**: Refine mode, sub-agents scrutinize, improve, correct, and close existing tickets but **create ZERO new tickets**
 - **`refine <duration>`**: Time-windowed refine, same as refine but only tickets created within the window (e.g., `5h`, `10m`, `6d`)
+- **`unattended`**: Combine with any mode for scheduled and cloud runs, where no operator is present and the temp cache does not survive. Never ask a question: use the committed `.agents/ticket-policy.json` and the cache when they hold values, otherwise this run's best judgment, which is not saved. Where a step would wait for the operator, defer instead (see Step 3).
 
-Usage: `/{{name}}`, `/{{name}} refine`, or `/{{name}} refine 5h`
+Usage: `/{{name}}`, `/{{name}} refine`, or `/{{name}} refine 5h`, each optionally followed by `unattended`.
 
 ## Credentials
 
@@ -31,7 +32,7 @@ Send a credential only to the API of the system it belongs to: the repository ho
 
 Skills keep a ticket's state current as work moves, using the state mechanisms the ticket system already has: a status field or board column, workflow labels, a Jira or Azure transition, or several together. Four states exist: `in_progress` (work claimed and started), `in_review` (a PR or MR is open), `done` (the change merged), and `filed` (the state a new ticket starts in, before it is groomed, such as Backlog or Idea, never a started state). A skill applies only the state its step names. Every update is non-blocking: on failure, log one line and continue.
 
-Each state is cached under `states.<name>` in the project-root entry of `next-ticket-config.json` in the system temp directory. A plain-string entry becomes `{"system": "<value>", "states": {...}}` when it gains its first state. For GitHub the value is `{"project": {"project_id": "...", "field_id": "...", "option_id": "...", "option_name": "...", "add_if_missing": true}, "labels": {"add": [...], "remove": [...]}}`; either part may be absent, and every part present is applied. Other systems store whatever IDs, transition IDs, or label names replay the change. `{"unsupported": "<reason>"}` means discovery found no mechanism for that state, and the skill skips it without discovering, applying, or printing anything.
+A state's value is read from the committed policy (`.agents/ticket-policy.json`) first, then from the cache, then by discovery. `python3 ticket_policy.py read` prints the effective values and where each came from, using the `ticket_policy.py` in the same directory as `gh_issues.py` below. The cache keeps each state under `states.<name>` in the project-root entry of `next-ticket-config.json` in the system temp directory. A plain-string entry becomes `{"system": "<value>", "states": {...}}` when it gains its first state. For GitHub the value is `{"project": {"project_id": "...", "field_id": "...", "option_id": "...", "option_name": "...", "add_if_missing": true}, "labels": {"add": [...], "remove": [...]}}`; either part may be absent, and every part present is applied. Other systems store whatever IDs, transition IDs, or label names replay the change. `{"unsupported": "<reason>"}` means discovery found no mechanism for that state, and the skill skips it without discovering, applying, or printing anything.
 
 When the cache has no value for the state, discover once. Look at every mechanism the system offers, workflow labels included, because a repository with no board but an `in progress` label still has an in-progress state, and one state may need a status change and a label swap together. The label swap removes the labels naming the state being left, such as `ready` or `backlog`, so a ticket never carries two states. For GitHub Issues, run `python3 gh_issues.py discover` using the `gh_issues.py` in the `next-ticket` skill's directory (the same directory as this SKILL.md for `next-ticket`, otherwise `../next-ticket/gh_issues.py`). It returns the linked projects with each field's options and `option_ids`, and `repo_labels`, every label the repository defines. Confirm once: "Move the ticket to '<option>' and relabel (add <labels>, remove <labels>)? Issues not yet on the board are added. Cached for future runs." Then write the value.
 
@@ -43,19 +44,24 @@ Apply a cached value. For GitHub Issues, run `python3 gh_issues.py transition --
 
 When the operator says the project now has a mechanism for a state, such as a board or a label that was added, delete that state's value.
 
+**Saving choices.** After an interactive discovery confirms new choices, offer once: "Save these ticket choices to `.agents/ticket-policy.json` so scheduled runs, cloud runs, and teammates reuse them? Commit the file to share it." On yes, run `python3 ticket_policy.py export`. It writes the file; you do not commit it. Offer again only after a later discovery adds choices the file lacks.
+
+**Unattended runs.** A run started with the argument `unattended` has no one to answer: a scheduled or cloud run begins without the cache and without an operator. Never ask. Apply a state only when the committed policy or the cache holds a value for it; with neither, log "Ticket state '<name>' has no saved value; skipping (unattended)." and continue. Discovery and the save offer do not run.
+
 ## Step 0: Detect Ticket System
 
 Determine which ticket system this project uses. Check in this order:
 
 1. **Project override (always wins)**: If the project's instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, `.github/copilot-instructions.md`) declare `ticketSystem: <name>`, use that system and skip the rest of detection. When the cached entry for this project root names a different system, replace that entry with the plain string `"<name>"` and say so in one line. The replaced entry's `states` described the old system's workflow, so they go with it.
-2. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip the rest of detection. Never re-detect when the cache has an answer, except through the correction below.
-3. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
-4. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut").
-5. **Confirm with the user.** Tell them what you concluded and where the evidence came from, e.g., "Detected ticket system: GitHub Issues (github.com remote). Correct?" If they confirm, cache it. If they correct, cache the correction.
+2. **Committed policy**: If `.agents/ticket-policy.json` exists at the repository root, read it with `python3 ticket_policy.py read`, using the `ticket_policy.py` in the `next-ticket` skill's directory (the same directory as this SKILL.md for `next-ticket`, otherwise `../next-ticket/ticket_policy.py`). When its `system` is set, use that system and skip the rest of detection; its `states` apply to every later step and win over the cache. A `ticketSystem:` declaration still beats it. When the result's `status` is `invalid_policy`, say so in one line, ignore the file, and carry on.
+3. **Cached config**: Check for a `next-ticket-config.json` file in the system temp directory. It maps project root paths to ticket system names. If the current project has an entry, use it and skip the rest of detection. Never re-detect when the cache has an answer, except through the correction below.
+4. **Auto-detect**: Run `git remote -v` and interpret the host to determine the likely ticket system (e.g., github.com suggests GitHub Issues, bitbucket.org suggests Jira, gitlab.com suggests GitLab Issues, dev.azure.com or visualstudio.com suggests Azure Boards).
+5. **Ask the user**: If auto-detect fails, ask: "What ticket system does this project use?" Accept a free-form answer (e.g., "jira", "github issues", "linear", "shortcut"). In an unattended run, stop instead and say the project should declare `ticketSystem: <name>` in its instruction files or commit `.agents/ticket-policy.json`.
+6. **Confirm with the user.** Tell them what you concluded and where the evidence came from, e.g., "Detected ticket system: GitHub Issues (github.com remote). Correct?" If they confirm, cache it. If they correct, cache the correction. In an unattended run (see Ticket State), skip the confirmation, use the conclusion for this run only, and do not cache it.
 
 Cache writes go to `next-ticket-config.json` in the system temp directory, keyed by project root path. Create the file if it doesn't exist. Merge with existing entries; never overwrite unrelated keys. The cache write happens **after** the user confirms or corrects, so the cached value reflects the operator's verdict, not the auto-detection guess.
 
-**Correcting the ticket system.** Whenever the system comes from the cache, print it in one line before using it, so a wrong cached answer is visible on every run: `Ticket system: <name> (cached for <project root>). If this is wrong, say so and it will be re-detected.` When the operator says the cached system is wrong, delete this project root's entry from `next-ticket-config.json`, keep every other key including `__user__`, and run detection again from the step after the cached-config check. Deleting the whole entry also drops any cached `states`, which describe the old system's workflow. If the correction arrives after later steps have already used the old system, stop the current step, re-detect, and restart this skill from the top. Never ask the operator to find or edit the cache file by hand.
+**Correcting the ticket system.** Whenever the system comes from the cache, print it in one line before using it, so a wrong cached answer is visible on every run: `Ticket system: <name> (cached for <project root>). If this is wrong, say so and it will be re-detected.` When the operator says the cached system is wrong, delete this project root's entry from `next-ticket-config.json`, keep every other key including `__user__`, and run detection again from the step after the cached-config check. Deleting the whole entry also drops any cached `states`, which describe the old system's workflow. If the correction arrives after later steps have already used the old system, stop the current step, re-detect, and restart this skill from the top. Never ask the operator to find or edit the cache file by hand. When the system comes from the committed policy, print `Ticket system: <name> (committed policy)` instead; correcting it means editing or deleting `.agents/ticket-policy.json`, which you do only when the operator asks.
 
 ## Step 1: Cache to Disk
 
@@ -371,13 +377,15 @@ For a new run, initialize `<cache>/run-decisions.json` before processing candida
 
    `N more validated candidates remain. Say "file all", "file <numbers>", or "skip".`
 
+   **In an unattended run, do not ask.** Record every remaining candidate as `deferred` in `run-decisions.json`, list them in the report, and continue to Step 4. A deferred candidate counts as settled for cleanup and is not filed; a later run finds it again. This replaces the wait below.
+
    **Wait for the operator before cleanup. Do not delete the cache or update completion state while this choice is pending.** Record that pending status in `run-decisions.json`, and retain stable candidate IDs in the displayed list across follow-ups. Record the additional authorization and selected candidate IDs before filing; this explicitly permits those creations beyond the initial run budget without resetting the count. On resume, honor that saved authorization for the selected candidate IDs before asking again, even when the initial budget is exhausted; do not reask permission for those IDs, but reconcile unresolved creation attempts before sending further requests. A partial selection authorizes only those candidates; file them sequentially with the same live dedup and creation checks, then offer the choice again for any still remaining. If the reply is unclear, keep the pending choice and clarify rather than guessing. `skip` records the remaining candidates as skipped by the operator and permits cleanup. An explicit earlier instruction to file all candidates or skip additional candidates already settles that choice, apply it without asking again. Never interpret silence as skip or ask the operator to locate JSON files or rerun the audit.
 
 ---
 
 ## Step 4: Cleanup & Update State
 
-After all sub-agents{{step4_pre_cleanup_phrase}} and post-processing complete, inspect saved decisions regardless of the requested mode. A stored create run with unsettled candidates or unresolved creations blocks cleanup and completion-state updates, even if the new request says refine. Finish that saved run under its stored create mode first. When every candidate is filed, merged, already covered, rejected, or explicitly skipped by the operator and every creation attempt is resolved, persist the saved run's status as complete.
+After all sub-agents{{step4_pre_cleanup_phrase}} and post-processing complete, inspect saved decisions regardless of the requested mode. A stored create run with unsettled candidates or unresolved creations blocks cleanup and completion-state updates, even if the new request says refine. Finish that saved run under its stored create mode first. When every candidate is filed, merged, already covered, rejected, explicitly skipped by the operator, or deferred in an unattended run, and every creation attempt is resolved, persist the saved run's status as complete.
 
 **Delete the cache directory and verify it's gone.** If cleanup fails, do NOT proceed. Investigate and retry. Stale cache left behind will corrupt the next run.
 
