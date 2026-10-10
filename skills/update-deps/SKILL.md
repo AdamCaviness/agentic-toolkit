@@ -196,7 +196,7 @@ Apply all safe (minor/patch, non-CVE) dependencies in a single batch per manifes
 
 1. Run the appropriate update command for each manifest (e.g., `npm update`, `pip install --upgrade`, `cargo update`).
 2. Run the project's full test suite.
-3. If tests pass, commit all safe updates in one commit per manifest, listing the updated deps:
+3. If tests pass, commit all safe updates in one commit per manifest, listing the updated deps. If the project's instructions, contributing guide, or commit tooling (commitlint, a commit template) name a different commit format, follow that format instead of the Conventional Commits default in this skill. The default:
 
 ```
 chore(deps): update minor/patch dependencies
@@ -250,7 +250,7 @@ Write two files to the cache:
 - Directory structure (pruned tree, excluding `.git` and dependency directories)
 - Key files (path plus one-line description of purpose)
 - Test patterns (where tests live, how to run them)
-- Conventions from CLAUDE.md that affect dependency usage
+- Conventions from the project instructions that affect dependency usage
 
 ## Step 6: Deploy Parallel Research Sub-Agents
 
@@ -438,7 +438,7 @@ CVE-driven dep bumps use `fix(deps):` because they are functional fixes that sho
 ## Step 8: Final Validation
 
 1. Run the full test suite to catch interaction effects between independently applied updates.
-2. Run the project's linter and formatter (check CLAUDE.md for commands). If auto-fixes are applied, commit them separately with message `style: auto-format and lint fixes`.
+2. Run the project's linter and formatter (check the project instructions for commands). If auto-fixes are applied, commit them separately with message `style: auto-format and lint fixes`.
 3. If the final test suite fails, identify which combination of updates caused the interaction and report it to the user.
 
 ## Step 9: Cleanup and Summary
