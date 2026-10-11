@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.7.0...v1.8.0) (2026-10-11)
+
+
+### Features
+
+* install the cache-handoff mod as a dependency ([#186](https://github.com/AdamCaviness/agentic-toolkit/issues/186)) ([dbcaeae](https://github.com/AdamCaviness/agentic-toolkit/commit/dbcaeae59aa8a2253933e812e12d069797fa2a20))
+
 ## [1.7.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.6.0...v1.7.0) (2026-10-10)
 
 
