@@ -50,7 +50,7 @@ jobs:
           done
           gh pr checks "$pr_number" --watch --fail-fast --repo "$REPO"
 
-          gh pr merge "$pr_number" --squash --repo "$REPO"
+          gh pr merge "$pr_number" --squash --delete-branch --repo "$REPO"
 
           # Confirm main reflects the squash commit before dispatching, so
           # the dispatched run sees the bumped manifest and not stale main.
