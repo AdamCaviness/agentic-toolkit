@@ -34,7 +34,9 @@ Register the marketplace, then install the plugin:
 /plugin install agentic-toolkit@agentic-marketplace
 ```
 
-Then turn on auto-update: `/plugin` → **Marketplaces** → **agentic-marketplace** → **Enable auto-update**. Claude Code leaves it off for marketplaces outside Anthropic's, so without it you keep the version you first installed. That includes prompt-marks, which agentic-toolkit installs as a dependency.
+Then turn on auto-update: `/plugin` → **Marketplaces** → **agentic-marketplace** → **Enable auto-update**. Claude Code leaves it off for marketplaces outside Anthropic's, so without it you keep the version you first installed. That includes prompt-marks and cache-handoff, which agentic-toolkit installs as dependencies.
+
+cache-handoff is off by default, so installing it changes nothing until you opt in. Once enabled, it writes a handoff while a large idle session's prompt cache is still warm, then offers to load it once the cache has gone cold. To enable it, run `/plugin configure cache-handoff@agentic-marketplace` and set **Cache Handoff: Enabled**. If you are on a Claude subscription and within plan usage, also set **Cache TTL override** to `1h`.
 
 </details>
 
