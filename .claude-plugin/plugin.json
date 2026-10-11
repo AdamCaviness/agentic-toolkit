@@ -20,7 +20,6 @@
     "compression"
   ],
   "dependencies": [
-    "prompt-marks",
-    "cache-magic"
+    "prompt-marks"
   ]
 }

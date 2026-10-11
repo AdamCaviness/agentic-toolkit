@@ -34,9 +34,7 @@ Register the marketplace, then install the plugin:
 /plugin install agentic-toolkit@agentic-marketplace
 ```
 
-Then turn on auto-update: `/plugin` → **Marketplaces** → **agentic-marketplace** → **Enable auto-update**. Claude Code leaves it off for marketplaces outside Anthropic's, so without it you keep the version you first installed. That includes prompt-marks and cache-magic, which agentic-toolkit installs as dependencies.
-
-[cache-magic](https://github.com/adamcaviness/cache-magic) acts only in sessions over 50k tokens. Just before an idle session's prompt cache expires, it writes a handoff of the session. A prompt you send after the cache expired can then go out after the handoff instead of re-sending the whole context; it asks the first time. Its settings are the "Cache Magic" rows in `/config`. If you had cache-handoff, its earlier name, run `/plugin uninstall cache-handoff@agentic-marketplace`.
+Then turn on auto-update: `/plugin` → **Marketplaces** → **agentic-marketplace** → **Enable auto-update**. Claude Code leaves it off for marketplaces outside Anthropic's, so without it you keep the version you first installed. That includes prompt-marks, which agentic-toolkit installs as a dependency.
 
 </details>
 
