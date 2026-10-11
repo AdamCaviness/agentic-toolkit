@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.8.0...v1.9.0) (2026-10-11)
+
+
+### Features
+
+* depend on cache-magic, the renamed cache-handoff mod ([#188](https://github.com/AdamCaviness/agentic-toolkit/issues/188)) ([c07aae8](https://github.com/AdamCaviness/agentic-toolkit/commit/c07aae8b4ff0870f8d40d322d8981b30b9c0aa0d))
+
 ## [1.8.0](https://github.com/AdamCaviness/agentic-toolkit/compare/v1.7.0...v1.8.0) (2026-10-11)
 
 
