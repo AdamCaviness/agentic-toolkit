@@ -21,6 +21,6 @@
   ],
   "dependencies": [
     "prompt-marks",
-    "cache-handoff"
+    "cache-magic"
   ]
 }
